@@ -4,9 +4,9 @@
 
 ## Booking inquiries
 
-The booking form opens the visitor's default email app with their request addressed to `zakotarastudio@gmail.com`. The visitor must review and send the email themselves. This static site does not send email automatically or send a confirmation to the client.
+The booking form submits directly to `zakotarastudio@gmail.com` through FormSubmit's AJAX endpoint. The client stays on the page and sees a thank-you message when the service accepts the request. This confirms inquiry receipt, not a reserved session.
 
-[`email-template.html`](./email-template.html) is a visual email mockup only; it is not used by the booking form.
+Before using the form, submit one test inquiry on the live site and approve FormSubmit's one-time activation email in the studio inbox. Until that address is activated, FormSubmit won't deliver submissions. The client doesn't need to open an email app or do anything beyond submitting the form.
 # ZakoStudio
 # ZakoSudio
 # ZakoSudio

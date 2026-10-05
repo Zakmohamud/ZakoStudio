@@ -1031,19 +1031,25 @@
         <section class="contact-section reveal" id="contact">
           <p class="section-kicker">Let’s make something together</p>
           <h2 class="section-heading">Your story, <em>beautifully told.</em></h2>
-          <p class="section-copy">Share a few details about the session you have in mind. Your email app will open with a booking inquiry addressed to us, ready for you to review and send.</p>
-          <form class="booking-form" id="booking" novalidate>
+          <p class="section-copy">Share a few details about the session you have in mind. I’ll get back to you to confirm availability and booking details.</p>
+          <form class="booking-form" id="booking" action="https://formsubmit.co/ajax/zakotarastudio@gmail.com" method="POST">
+            <input type="hidden" name="_subject" value="New photography booking inquiry" />
+            <input type="hidden" name="_template" value="table" />
+            <div class="form-trap" aria-hidden="true">
+              <label for="company-website">Leave this blank</label>
+              <input id="company-website" name="_honey" tabindex="-1" autocomplete="off" />
+            </div>
             <div class="form-field">
               <label for="customer-name">Your name</label>
-              <input id="customer-name" name="customer_name" autocomplete="name" required />
+              <input id="customer-name" name="name" autocomplete="name" required />
             </div>
             <div class="form-field">
               <label for="customer-email">Email address</label>
-              <input id="customer-email" name="customer_email" type="email" autocomplete="email" required />
+              <input id="customer-email" name="email" type="email" autocomplete="email" required />
             </div>
             <div class="form-field">
               <label for="customer-phone">Phone (optional)</label>
-              <input id="customer-phone" name="customer_phone" type="tel" autocomplete="tel" />
+              <input id="customer-phone" name="phone" type="tel" autocomplete="tel" />
             </div>
             <div class="form-field">
               <label for="session-service">What are you looking for?</label>
@@ -1059,11 +1065,11 @@
             </div>
             <div class="form-field">
               <label for="preferred-date">Preferred date (optional)</label>
-              <input id="preferred-date" name="preferred_date" type="date" />
+              <input id="preferred-date" name="preferred date" type="date" />
             </div>
             <div class="form-field">
               <label for="preferred-time">Preferred time (optional)</label>
-              <input id="preferred-time" name="preferred_time" placeholder="Morning, afternoon…" />
+              <input id="preferred-time" name="preferred time" placeholder="Morning, afternoon…" />
             </div>
             <div class="form-field full">
               <label for="session-location">Location or area (optional)</label>
@@ -1071,10 +1077,10 @@
             </div>
             <div class="form-field full">
               <label for="session-message">A little about your idea</label>
-              <textarea id="session-message" name="message" required></textarea>
+              <textarea id="session-message" name="project details" required></textarea>
             </div>
-            <button class="form-submit" id="booking-submit" type="submit">Email your booking request <span aria-hidden="true">→</span></button>
-            <p class="form-note">Your default email app will open with your request addressed to zakotarastudio@gmail.com. Review it and press Send to complete your inquiry. This is a request, not a confirmed reservation.</p>
+            <button class="form-submit" id="booking-submit" type="submit">Send inquiry <span aria-hidden="true">→</span></button>
+            <p class="form-note">Sending an inquiry doesn’t reserve a date. I’ll contact you to confirm the details.</p>
             <p class="form-status" id="booking-status" role="status" aria-live="polite"></p>
           </form>
           <div class="contact-actions">
@@ -1098,35 +1104,43 @@
       const bookingSubmit = document.getElementById("booking-submit");
 
       if (bookingForm && bookingStatus && bookingSubmit) {
-        bookingForm.addEventListener("submit", (event) => {
+        bookingForm.addEventListener("submit", async (event) => {
           event.preventDefault();
           bookingStatus.textContent = "";
           bookingStatus.removeAttribute("data-state");
 
           if (!bookingForm.reportValidity()) return;
 
-          const formData = new FormData(bookingForm);
-          const fields = [
-            ["Name", "customer_name"],
-            ["Email", "customer_email"],
-            ["Phone", "customer_phone"],
-            ["Service", "service"],
-            ["Preferred date", "preferred_date"],
-            ["Preferred time", "preferred_time"],
-            ["Location", "location"],
-            ["Project details", "message"]
-          ];
-          const body = fields
-            .map(([label, name]) => {
-              const value = String(formData.get(name) || "").trim();
-              return `${label}: ${value || "Not provided"}`;
-            })
-            .join("\n\n");
-          const subject = `Photography booking inquiry — ${String(formData.get("customer_name")).trim()}`;
-          const mailto = `mailto:zakotarastudio@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          bookingSubmit.disabled = true;
+          bookingSubmit.textContent = "Sending…";
+          bookingStatus.textContent = "Sending your inquiry…";
 
-          bookingStatus.textContent = "Opening your email app with the inquiry addressed to zakotarastudio@gmail.com. Review the message and press Send to finish.";
-          window.location.href = mailto;
+          try {
+            const response = await fetch(bookingForm.action, {
+              method: "POST",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(Object.fromEntries(new FormData(bookingForm).entries()))
+            });
+            const result = await response.json();
+
+            if (!response.ok || (result.success !== true && result.success !== "true")) {
+              throw new Error(result.message || `Form service returned ${response.status}.`);
+            }
+
+            bookingForm.reset();
+            bookingStatus.textContent = "Thank you! Your inquiry has been sent. I’ll be in touch soon.";
+            bookingStatus.dataset.state = "success";
+          } catch (error) {
+            console.error("Booking inquiry submission failed:", error);
+            bookingStatus.textContent = "Sorry, your inquiry could not be sent right now. Please try again or email zakotarastudio@gmail.com.";
+            bookingStatus.dataset.state = "error";
+          } finally {
+            bookingSubmit.disabled = false;
+            bookingSubmit.innerHTML = 'Send inquiry <span aria-hidden="true">→</span>';
+          }
         });
       }
 
