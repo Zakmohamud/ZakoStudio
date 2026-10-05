@@ -55,6 +55,20 @@
         padding: 16px 22px 10px 22px;
       }
 
+      .booking-confirmation {
+        margin: 0 4px 16px;
+        padding: 14px 18px;
+        border-left: 3px solid var(--green);
+        background: rgba(28, 154, 109, 0.1);
+        color: var(--ink);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .booking-confirmation[hidden] {
+        display: none;
+      }
+
       .site-nav {
         min-height: 54px;
         display: flex;
@@ -750,22 +764,13 @@
         transform: translateY(-2px);
       }
 
-      .form-note,
-      .form-status {
+      .form-note {
         grid-column: 1 / -1;
         margin: 0;
         color: var(--muted);
         font-size: 10px;
         line-height: 1.7;
       }
-
-      .form-status {
-        min-height: 1.7em;
-        font-weight: 700;
-      }
-
-      .form-status[data-state="success"] { color: #14734f; }
-      .form-status[data-state="error"] { color: #a52f25; }
 
       .contact-actions {
         display: flex;
@@ -905,7 +910,9 @@
             <li><a href="#contact">Contact</a></li>
           </ul>
         </nav>
-
+        <p class="booking-confirmation" id="booking-confirmation" role="status" hidden>
+          Your inquiry was sent. A confirmation email should arrive shortly; check your spam folder if you don’t see it.
+        </p>
         <section class="hero-stage" id="top" aria-label="Hero image">
           <a href="#work" class="hero-explore" aria-label="Explore the portfolio">
             <span>Explore the work</span>
@@ -1044,9 +1051,11 @@
           <p class="section-kicker">Let’s make something together</p>
           <h2 class="section-heading">Your story, <em>beautifully told.</em></h2>
           <p class="section-copy">Share a few details about the session you have in mind. I’ll get back to you to confirm availability and booking details.</p>
-          <form class="booking-form" id="booking" action="https://formsubmit.co/ajax/zakotarastudio@gmail.com" method="POST">
+          <form class="booking-form" id="booking" action="https://formsubmit.co/99d771edb12d7b8e0b9256b9e724d7f9" method="POST">
             <input type="hidden" name="_subject" value="New photography booking inquiry" />
             <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_next" value="https://zakmohamud.github.io/ZakoStudio/?inquiry=sent#top" />
+            <input type="hidden" name="_autoresponse" value="Thanks for reaching out to Zako Studio! I received your inquiry and will be in touch soon to confirm availability and next steps. This is not a confirmed booking. — Zakary" />
             <div class="form-trap" aria-hidden="true">
               <label for="company-website">Leave this blank</label>
               <input id="company-website" name="_honey" tabindex="-1" autocomplete="off" />
@@ -1093,7 +1102,6 @@
             </div>
             <button class="form-submit" id="booking-submit" type="submit">Send inquiry <span aria-hidden="true">→</span></button>
             <p class="form-note">Sending an inquiry doesn’t reserve a date. I’ll contact you to confirm the details.</p>
-            <p class="form-status" id="booking-status" role="status" aria-live="polite"></p>
           </form>
           <div class="contact-actions">
             <a class="contact-link" href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener noreferrer">Instagram</a>
@@ -1111,49 +1119,10 @@
       const year = document.getElementById("year");
       if (year) year.textContent = String(new Date().getFullYear());
 
-      const bookingForm = document.getElementById("booking");
-      const bookingStatus = document.getElementById("booking-status");
-      const bookingSubmit = document.getElementById("booking-submit");
-
-      if (bookingForm && bookingStatus && bookingSubmit) {
-        bookingForm.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          bookingStatus.textContent = "";
-          bookingStatus.removeAttribute("data-state");
-
-          if (!bookingForm.reportValidity()) return;
-
-          bookingSubmit.disabled = true;
-          bookingSubmit.textContent = "Sending…";
-          bookingStatus.textContent = "Sending your inquiry…";
-
-          try {
-            const response = await fetch(bookingForm.action, {
-              method: "POST",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify(Object.fromEntries(new FormData(bookingForm).entries()))
-            });
-            const result = await response.json();
-
-            if (!response.ok || (result.success !== true && result.success !== "true")) {
-              throw new Error(result.message || `Form service returned ${response.status}.`);
-            }
-
-            bookingForm.reset();
-            bookingStatus.textContent = "Thank you! Your inquiry has been sent. I’ll be in touch soon.";
-            bookingStatus.dataset.state = "success";
-          } catch (error) {
-            console.error("Booking inquiry submission failed:", error);
-            bookingStatus.textContent = "Sorry, your inquiry could not be sent right now. Please try again or email zakotarastudio@gmail.com.";
-            bookingStatus.dataset.state = "error";
-          } finally {
-            bookingSubmit.disabled = false;
-            bookingSubmit.innerHTML = 'Send inquiry <span aria-hidden="true">→</span>';
-          }
-        });
+      const bookingConfirmation = document.getElementById("booking-confirmation");
+      if (bookingConfirmation && new URLSearchParams(window.location.search).get("inquiry") === "sent") {
+        bookingConfirmation.hidden = false;
+        window.history.replaceState(null, "", `${window.location.pathname}#top`);
       }
 
       const revealItems = document.querySelectorAll(".reveal");

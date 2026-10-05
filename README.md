@@ -4,9 +4,9 @@
 
 ## Booking inquiries
 
-The booking form submits directly to `zakotarastudio@gmail.com` through FormSubmit's AJAX endpoint. The client stays on the page and sees a thank-you message when the service accepts the request. This confirms inquiry receipt, not a reserved session.
+The booking form submits to the studio inbox through FormSubmit. On successful submission, clients return to the home page and see a confirmation notice. FormSubmit also sends an automatic receipt email to the email address supplied in the form. This confirms inquiry receipt, not a reserved session.
 
-Before using the form, submit one test inquiry on the live site and approve FormSubmit's one-time activation email in the studio inbox. Until that address is activated, FormSubmit won't deliver submissions. The client doesn't need to open an email app or do anything beyond submitting the form.
+The studio inbox must approve FormSubmit's one-time activation email before submissions are delivered. Keep FormSubmit's reCAPTCHA enabled; autoresponse emails are not supported for AJAX submissions or when reCAPTCHA is disabled.
 # ZakoStudio
 # ZakoSudio
 # ZakoSudio
