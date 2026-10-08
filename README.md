@@ -10,9 +10,11 @@ The studio inbox must approve FormSubmit's one-time activation email before subm
 
 ## Christmas family-session bookings
 
-Share this Google Calendar booking page directly in Instagram and Facebook ads: <https://calendar.app.google/FtFvMFYHvD4LUwKb6>. The floating “Christmas family sessions” button on the portfolio opens the same calendar.
+Share the deposit and package details page in Instagram and Facebook ads: <https://zako-studio.netlify.app/christmas-booking.html>. The floating “Christmas family sessions” button on the portfolio opens this page. Its booking button continues to the Google Calendar schedule: <https://calendar.app.google/FtFvMFYHvD4LUwKb6>.
 
-The schedule is set to Vancouver time, with weekday availability from 7–10 p.m. and weekend availability from 10 a.m.–7 p.m., through November 30, 2026. Clients enter their preferred length (30 minutes, 1 hour, 1.5 hours, or 2 hours) in a required response. Google Calendar reserves a full two-hour block for every booking, including shorter sessions. Package prices and edited-image counts appear on the booking page; confirm the final price and location with each client.
+Packages: 30-minute Mini, $200 CAD, 5–10 edited images; 1-hour Standard, $350 CAD, 15–25 edited images; 1.5-hour Standard, $450 CAD, 15–25 edited images; and 2-hour Extended, $650 CAD, 30–50 edited images. A 50% deposit is invoiced after a client books; the session is confirmed once it is paid. Deposits are non-refundable, with one reschedule allowed with at least 48 hours’ notice.
+
+The schedule is set to Vancouver time, with weekday availability from 7–10 p.m. and weekend availability from 10 a.m.–7 p.m., through November 30, 2026. Clients enter their preferred length in a required response. Google Calendar reserves a full two-hour block for every booking, including shorter sessions. The meeting location is confirmed after booking.
 
 ## Updating portfolio galleries
 
