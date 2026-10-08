@@ -69,6 +69,48 @@
         display: none;
       }
 
+      .christmas-booking-link {
+        position: fixed;
+        right: clamp(12px, 2vw, 26px);
+        bottom: clamp(12px, 2vw, 26px);
+        z-index: 20;
+        display: grid;
+        gap: 4px;
+        max-width: calc(100vw - 24px);
+        padding: 12px 16px;
+        background: var(--ink);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+        color: white;
+        text-decoration: none;
+        transition: background 180ms ease, transform 180ms ease;
+      }
+
+      .christmas-booking-link:hover {
+        background: var(--red-deep);
+        transform: translateY(-2px);
+      }
+
+      .christmas-booking-link:focus-visible {
+        outline: 3px solid var(--red-deep);
+        outline-offset: 3px;
+      }
+
+      .christmas-booking-link small {
+        color: #e8b9a9;
+        font-size: 8px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .christmas-booking-link span {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
       .site-nav {
         min-height: 54px;
         display: flex;
@@ -994,6 +1036,7 @@
         .hero-explore:focus-visible { width: 46px; }
         .hero-explore span:first-child { font-size: 8px; }
         .hero-badge { right: 16px; font-size: 10px; }
+        .christmas-booking-link { right: 12px; bottom: 12px; padding: 10px 12px; }
         .intro { padding-top: 18px; }
         .ticket-meta { letter-spacing: 0.18em; font-size: 8px; }
         .ticket-grid { overflow: hidden; }
@@ -1262,6 +1305,14 @@
         </footer>
       </main>
     </div>
+    <a
+      class="christmas-booking-link"
+      href="https://calendar.app.google/FtFvMFYHvD4LUwKb6"
+      aria-label="Book a Christmas family photoshoot"
+    >
+      <small>Christmas family sessions</small>
+      <span>Choose your time →</span>
+    </a>
     <script>
       const year = document.getElementById("year");
       if (year) year.textContent = String(new Date().getFullYear());
