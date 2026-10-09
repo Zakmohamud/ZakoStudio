@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f1eee9" />
-    <meta name="description" content="Book a Christmas family photo session in Vancouver. Choose your session length, review package pricing and deposit terms, then select an available time." />
+    <meta name="description" content="Explore Christmas family photo packages in Vancouver, review the details, and choose a session." />
     <title>Christmas Family Sessions — Zako Studio</title>
     <link rel="icon" type="image/png" href="images/zako-studio-logo-trim.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -31,7 +31,8 @@
       }
 
       main {
-        width: min(900px, 100%);
+        width: min(1040px, 100%);
+        min-height: calc(100vh - 48px);
         margin: 0 auto;
         padding: clamp(24px, 6vw, 64px);
         background: var(--paper);
@@ -66,21 +67,21 @@
         text-transform: uppercase;
       }
 
-      h1, h2 {
+      h1, h2, h3 {
         font-family: "Cormorant Garamond", serif;
         font-weight: 500;
       }
 
       h1 {
-        max-width: 680px;
+        max-width: 760px;
         margin: 0;
         font-size: clamp(46px, 9vw, 82px);
         line-height: 0.95;
       }
 
       .intro {
-        max-width: 620px;
-        margin: 18px 0 30px;
+        max-width: 650px;
+        margin: 18px 0 32px;
         color: var(--muted);
         font-size: 14px;
         line-height: 1.8;
@@ -89,96 +90,276 @@
       .packages {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        gap: 16px;
       }
 
-      .package {
-        padding: 20px;
+      .package-card {
+        display: grid;
+        grid-template-rows: 300px 1fr;
+        overflow: hidden;
         background: var(--panel);
         border: 1px solid var(--line);
+        color: inherit;
+        text-decoration: none;
+        transition: transform 180ms ease, box-shadow 180ms ease;
       }
 
-      .package h2 {
+      .package-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(23, 19, 18, 0.12);
+      }
+
+      .package-card:focus-visible,
+      .button:focus-visible,
+      .brand:focus-visible,
+      input:focus-visible {
+        outline: 3px solid var(--red);
+        outline-offset: 3px;
+      }
+
+      .package-photo,
+      .detail-photo {
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at 50% 110%, rgba(217, 67, 53, 0.36), transparent 46%),
+          linear-gradient(135deg, #c5b8aa, #e9e1d7 48%, #aaa092);
+        color: rgba(23, 19, 18, 0.72);
+      }
+
+      .package-photo img,
+      .detail-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .mini-photo {
+        object-position: center 62%;
+      }
+
+      .package-card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
+      }
+
+      .package-card h2,
+      .detail-copy h2 {
         margin: 0;
-        font-size: 30px;
+        font-size: 32px;
       }
 
       .price {
-        margin: 8px 0;
+        margin: 6px 0;
         color: var(--red);
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
       }
 
-      .package p:last-child {
-        margin: 0;
+      .package-summary {
+        margin: 6px 0 18px;
         color: var(--muted);
         font-size: 12px;
         line-height: 1.7;
       }
 
-      .deposit {
-        margin-top: 18px;
-        padding: 20px;
-        border-left: 3px solid var(--red);
-        background: #e9e1d7;
+      .card-action {
+        margin-top: auto;
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
       }
 
-      .deposit h2 {
+      .detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+        gap: 28px;
+        margin-top: 28px;
+      }
+
+      .detail-photo {
+        aspect-ratio: 3 / 2;
+      }
+
+      .detail-copy {
+        align-self: center;
+      }
+
+      .detail-copy .price {
+        font-size: 20px;
+      }
+
+      .detail-copy p,
+      .detail-copy li {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.8;
+      }
+
+      .detail-copy ul {
+        padding-left: 20px;
+      }
+
+      .availability {
+        margin-top: 30px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+
+      .availability h2 {
         margin: 0 0 8px;
-        font-size: 30px;
+        font-size: 34px;
       }
 
-      .deposit p {
-        margin: 0;
-        color: #514a44;
+      .availability > p {
+        max-width: 700px;
+        color: var(--muted);
         font-size: 12px;
         line-height: 1.8;
       }
 
-      .book {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        min-height: 52px;
-        margin-top: 24px;
-        padding: 0 22px;
-        background: var(--red);
-        color: white;
+      .form-trap {
+        position: absolute;
+        left: -10000px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
+      .booking-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 22px;
+      }
+
+      .booking-form label {
+        display: grid;
+        gap: 7px;
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.12em;
-        text-decoration: none;
-        text-transform: uppercase;
-        transition: background 180ms ease, transform 180ms ease;
       }
 
-      .book:hover {
-        background: var(--ink);
-        transform: translateY(-2px);
+      .booking-form .full {
+        grid-column: 1 / -1;
       }
 
-      .book:focus-visible,
-      .brand:focus-visible {
-        outline: 3px solid var(--red);
-        outline-offset: 3px;
+      .date-field {
+        display: grid;
+        max-width: 320px;
+        gap: 8px;
+        margin: 18px 0;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      input {
+        min-height: 46px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 0;
+        background: white;
+        color: var(--ink);
+        font: inherit;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 110px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        background: white;
+        color: var(--ink);
+        font: inherit;
+        resize: vertical;
+      }
+
+      .notice {
+        padding: 14px 16px;
+        border-left: 3px solid var(--red);
+        background: #e9e1d7;
+        color: #514a44;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .checkout-policy {
+        margin-top: 22px;
+        grid-column: 1 / -1;
+      }
+
+      .checkout-policy h3 {
+        margin: 0 0 8px;
+        font-size: 27px;
       }
 
       .booking-note {
-        max-width: 620px;
-        margin: 14px 0 0;
+        grid-column: 1 / -1;
+        margin: 0;
         color: var(--muted);
         font-size: 11px;
         line-height: 1.8;
       }
 
-      @media (max-width: 560px) {
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        justify-self: start;
+        padding: 0 20px;
+        border: 0;
+        background: var(--ink);
+        color: white;
+        font: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .booking-confirmation {
+        margin: 0;
+        padding: 14px 16px;
+        border-left: 3px solid #1c9a6d;
+        background: rgba(28, 154, 109, 0.1);
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 22px;
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      [hidden] { display: none !important; }
+
+      @media (max-width: 700px) {
         body { padding: 10px; }
-        main { padding: 24px 18px; }
+        main { min-height: calc(100vh - 20px); padding: 24px 18px; }
         .eyebrow { margin-top: 34px; }
         .packages { grid-template-columns: 1fr; }
-        .book { width: 100%; }
+        .package-card { grid-template-rows: auto 1fr; }
+        .package-photo { aspect-ratio: 3 / 2; }
+        .detail { grid-template-columns: 1fr; }
+        .detail-photo { min-height: 0; }
+      }
+
+      @media (max-width: 460px) {
+        .booking-form { grid-template-columns: 1fr; }
+        .booking-form .full,
+        .checkout-policy,
+        .booking-note { grid-column: auto; }
+        .booking-form .button { width: 100%; }
       }
     </style>
   </head>
@@ -189,56 +370,222 @@
         <span>Zako Studio</span>
       </a>
 
-      <p class="eyebrow">Christmas family sessions · Vancouver</p>
-      <h1>Make a little holiday magic.</h1>
-      <p class="intro">
-        Choose your session package, then select an available date and time.
-        Sessions are available now through November 30, 2026, in Vancouver time.
-      </p>
-
-      <section class="packages" aria-label="Christmas family photography packages">
-        <article class="package">
-          <h2>Mini</h2>
-          <p class="price">$200 CAD · 30 minutes</p>
-          <p>Includes 5–10 edited images. Deposit: $100 CAD.</p>
-        </article>
-        <article class="package">
-          <h2>Standard</h2>
-          <p class="price">$350 CAD · 1 hour</p>
-          <p>Includes 15–25 edited images. Deposit: $175 CAD.</p>
-        </article>
-        <article class="package">
-          <h2>Standard</h2>
-          <p class="price">$450 CAD · 1.5 hours</p>
-          <p>Includes 15–25 edited images. Deposit: $225 CAD.</p>
-        </article>
-        <article class="package">
-          <h2>Extended</h2>
-          <p class="price">$650 CAD · 2 hours</p>
-          <p>Includes 30–50 edited images. Deposit: $325 CAD.</p>
-        </article>
-      </section>
-
-      <section class="deposit" aria-labelledby="deposit-title">
-        <h2 id="deposit-title">A deposit secures your session.</h2>
-        <p>
-          A 50% deposit is required after you choose a time. After you book,
-          I’ll contact you with an invoice for the deposit that matches your
-          selected package. Your session is confirmed once the deposit is paid.
-          The deposit is non-refundable. You may reschedule once with at least
-          48 hours’ notice.
+      <section id="package-list">
+        <p class="eyebrow">Christmas family sessions · Vancouver</p>
+        <h1>Make a little holiday magic.</h1>
+        <p class="intro">
+          Choose the session that feels right for your family. Each package opens
+          with its details, availability, and booking steps.
         </p>
+
+        <div class="packages" aria-label="Christmas family photography packages">
+          <a class="package-card" href="?package=mini">
+            <div class="package-photo">
+              <img class="mini-photo" src="images/christmas-mini.jpg" alt="A child enjoying a cozy Christmas portrait setup" loading="lazy" />
+            </div>
+            <div class="package-card-content">
+              <h2>Mini</h2>
+              <p class="price">$200 CAD · 30 minutes</p>
+              <p class="package-summary">5–10 edited images</p>
+              <span class="card-action">View session details →</span>
+            </div>
+          </a>
+          <a class="package-card" href="?package=standard-60">
+            <div class="package-photo">
+              <img src="images/christmas-standard-one-hour.jpg" alt="Parents and their baby sharing a Christmas family portrait" loading="lazy" />
+            </div>
+            <div class="package-card-content">
+              <h2>Standard · 1 hour</h2>
+              <p class="price">$350 CAD · 1 hour</p>
+              <p class="package-summary">15–25 edited images</p>
+              <span class="card-action">View session details →</span>
+            </div>
+          </a>
+          <a class="package-card" href="?package=standard-90">
+            <div class="package-photo">
+              <img src="images/christmas-standard-one-and-half-hours.jpg" alt="Parents with their son in front of a Christmas tree" loading="lazy" />
+            </div>
+            <div class="package-card-content">
+              <h2>Standard · 1.5 hours</h2>
+              <p class="price">$450 CAD · 1.5 hours</p>
+              <p class="package-summary">15–25 edited images</p>
+              <span class="card-action">View session details →</span>
+            </div>
+          </a>
+          <a class="package-card" href="?package=extended">
+            <div class="package-photo">
+              <img src="images/christmas-extended.jpg" alt="Two children sharing a Christmas storybook portrait" loading="lazy" />
+            </div>
+            <div class="package-card-content">
+              <h2>Extended</h2>
+              <p class="price">$650 CAD · 2 hours</p>
+              <p class="package-summary">30–50 edited images</p>
+              <span class="card-action">View session details →</span>
+            </div>
+          </a>
+        </div>
       </section>
 
-      <a class="book" href="https://calendar.app.google/FtFvMFYHvD4LUwKb6">
-        Choose an available time <span aria-hidden="true">→</span>
-      </a>
-      <p class="booking-note">
-        In the booking form, type your chosen session length. Calendar holds a
-        two-hour block for every reservation, even for shorter sessions.
-        Weekday availability is 7–10 p.m.; weekend availability is 10 a.m.–7 p.m.
-        The meeting location will be confirmed after booking.
-      </p>
+      <section id="package-detail" hidden>
+        <p class="eyebrow">Christmas family sessions · Vancouver</p>
+        <h1 id="detail-title">Choose your session time.</h1>
+        <div class="detail">
+          <div class="detail-photo">
+            <img id="detail-photo-image" class="mini-photo" src="images/christmas-mini.jpg" alt="" />
+          </div>
+          <div class="detail-copy">
+            <h2 id="detail-package-name"></h2>
+            <p class="price" id="detail-price"></p>
+            <p id="detail-images"></p>
+            <p>Sessions are in Vancouver, with the exact meeting location confirmed after booking.</p>
+          </div>
+        </div>
+
+        <section class="availability" aria-labelledby="availability-title">
+          <h2 id="availability-title">Request your session</h2>
+          <p>
+            Tell me which date works for you and I’ll get back to you to confirm
+            availability and arrange your session.
+          </p>
+          <form
+            class="booking-form"
+            id="christmas-inquiry"
+            action="https://formsubmit.co/99d771edb12d7b8e0b9256b9e724d7f9"
+            method="POST"
+          >
+            <input type="hidden" name="_subject" value="New Christmas family session inquiry" />
+            <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_next" id="inquiry-next" />
+            <input
+              type="hidden"
+              name="_autoresponse"
+              value="Thanks for reaching out to Zako Studio about a Christmas family session! I received your inquiry and will email you to confirm date availability and arrange the 50% deposit. Your session is not confirmed until the deposit is paid. — Zakary"
+            />
+            <input type="hidden" name="Package" id="inquiry-package" />
+            <div class="form-trap" aria-hidden="true">
+              <label for="inquiry-company">Leave this blank</label>
+              <input id="inquiry-company" name="_honey" tabindex="-1" autocomplete="off" />
+            </div>
+            <label class="full date-field" for="booking-date">
+              Preferred date
+              <input id="booking-date" name="Preferred date" type="date" max="2026-11-30" required />
+            </label>
+            <label for="booking-time">
+              Preferred time (optional)
+              <input id="booking-time" name="Preferred time" type="time" />
+            </label>
+            <label for="booking-name">
+              Full name
+              <input id="booking-name" name="Name" autocomplete="name" required />
+            </label>
+            <label for="booking-phone">
+              Phone number
+              <input id="booking-phone" name="Phone" type="tel" autocomplete="tel" required />
+            </label>
+            <label for="booking-email">
+              Email address
+              <input id="booking-email" name="email" type="email" autocomplete="email" required />
+            </label>
+            <label class="full" for="booking-message">
+              Additional information (optional)
+              <textarea id="booking-message" name="Additional information" rows="4"></textarea>
+            </label>
+            <section class="checkout-policy" aria-labelledby="checkout-policy-title">
+              <h3 id="checkout-policy-title">Before you send</h3>
+              <p class="notice">
+                A 50% deposit is required before your booking is confirmed.
+                Submitting this inquiry will not charge you or reserve the date.
+                I’ll email you to confirm availability and arrange the deposit.
+              </p>
+            </section>
+            <button class="button" type="submit">
+              Send Christmas session inquiry <span aria-hidden="true">→</span>
+            </button>
+            <p class="booking-note">
+              Sending this form sends an inquiry, not a confirmed booking.
+            </p>
+          </form>
+        </section>
+        <p class="booking-confirmation" id="inquiry-confirmation" role="status" hidden>
+          Your Christmas session inquiry was sent. I’ll email you to confirm
+          availability and next steps. Check your spam folder if you don’t see a reply.
+        </p>
+        <a class="back-link" href="christmas-booking.html">← All Christmas packages</a>
+      </section>
     </main>
+
+    <script>
+      const packages = {
+        mini: {
+          name: "Mini",
+          duration: 30,
+          durationLabel: "30 minutes",
+          price: 200,
+          images: "5–10 edited images",
+          photo: "images/christmas-mini.jpg",
+          photoAlt: "A child enjoying a cozy Christmas portrait setup"
+        },
+        "standard-60": {
+          name: "Standard · 1 hour",
+          duration: 60,
+          durationLabel: "1 hour",
+          price: 350,
+          images: "15–25 edited images",
+          photo: "images/christmas-standard-one-hour.jpg",
+          photoAlt: "Parents and their baby sharing a Christmas family portrait"
+        },
+        "standard-90": {
+          name: "Standard · 1.5 hours",
+          duration: 90,
+          durationLabel: "1.5 hours",
+          price: 450,
+          images: "15–25 edited images",
+          photo: "images/christmas-standard-one-and-half-hours.jpg",
+          photoAlt: "Parents with their son in front of a Christmas tree"
+        },
+        extended: {
+          name: "Extended",
+          duration: 120,
+          durationLabel: "2 hours",
+          price: 650,
+          images: "30–50 edited images",
+          photo: "images/christmas-extended.jpg",
+          photoAlt: "Two children sharing a Christmas storybook portrait"
+        }
+      };
+
+      const selectedPackage = packages[new URLSearchParams(window.location.search).get("package")];
+      const vancouverToday = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Vancouver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+      const dateInput = document.getElementById("booking-date");
+      if (dateInput) dateInput.min = vancouverToday;
+
+      if (selectedPackage) {
+        const packageId = new URLSearchParams(window.location.search).get("package");
+        const formNext = new URL("https://zako-studio.netlify.app/christmas-booking.html");
+        formNext.searchParams.set("package", packageId);
+        formNext.searchParams.set("inquiry", "sent");
+        document.getElementById("inquiry-package").value =
+          `${selectedPackage.name} — $${selectedPackage.price} CAD, ${selectedPackage.durationLabel}`;
+        document.getElementById("inquiry-next").value = formNext.toString();
+        document.getElementById("package-list").hidden = true;
+        document.getElementById("package-detail").hidden = false;
+        document.title = `${selectedPackage.name} Christmas Session — Zako Studio`;
+        document.getElementById("detail-package-name").textContent = selectedPackage.name;
+        document.getElementById("detail-price").textContent =
+          `$${selectedPackage.price} CAD · ${selectedPackage.durationLabel}`;
+        document.getElementById("detail-images").textContent = `Includes ${selectedPackage.images}.`;
+        document.getElementById("detail-photo-image").src = selectedPackage.photo;
+        document.getElementById("detail-photo-image").alt = selectedPackage.photoAlt;
+      }
+
+      if (new URLSearchParams(window.location.search).get("inquiry") === "sent") {
+        document.getElementById("inquiry-confirmation").hidden = false;
+      }
+    </script>
   </body>
 </html>
