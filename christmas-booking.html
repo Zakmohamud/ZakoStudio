@@ -636,7 +636,7 @@
         const isWeekend = weekday === 0 || weekday === 6;
         const openingMinute = isWeekend ? 10 * 60 : 19 * 60;
         const closingMinute = isWeekend ? 19 * 60 : 22 * 60;
-        let earliestStartMinute = openingMinute;
+        let earliestAllowedMinute = openingMinute;
         if (dateValue === vancouverToday) {
           const currentParts = new Intl.DateTimeFormat("en-CA", {
             timeZone: "America/Vancouver",
@@ -646,12 +646,10 @@
           }).formatToParts(new Date());
           const currentHour = Number(currentParts.find((part) => part.type === "hour").value);
           const currentMinute = Number(currentParts.find((part) => part.type === "minute").value);
-          earliestStartMinute = Math.max(
-            openingMinute,
-            Math.ceil((currentHour * 60 + currentMinute) / 15) * 15
-          );
+          earliestAllowedMinute = Math.max(openingMinute, currentHour * 60 + currentMinute);
         }
         const latestStartMinute = closingMinute - selectedPackage.duration;
+        const startTimeInterval = selectedPackage.duration + 10;
         const timeFormatter = new Intl.DateTimeFormat("en-CA", {
           timeZone: "UTC",
           hour: "numeric",
@@ -659,7 +657,9 @@
           hourCycle: "h12"
         });
 
-        for (let minute = earliestStartMinute; minute <= latestStartMinute; minute += 15) {
+        for (let minute = openingMinute; minute <= latestStartMinute; minute += startTimeInterval) {
+          if (minute < earliestAllowedMinute) continue;
+
           const hour = Math.floor(minute / 60);
           const minuteOfHour = minute % 60;
           const label = timeFormatter.format(new Date(Date.UTC(2026, 0, 1, hour, minuteOfHour)));
@@ -684,8 +684,8 @@
           return;
         }
         timeHelp.textContent = isWeekend
-          ? "Weekend hours: 10:00 a.m.–7:00 p.m. Choose a preferred start time; I’ll confirm availability by email."
-          : "Weekday hours: 7:00–10:00 p.m. Choose a preferred start time; I’ll confirm availability by email.";
+          ? "Weekend hours: 10:00 a.m.–7:00 p.m. Start times include a 10-minute break after each session. I’ll confirm availability by email."
+          : "Weekday hours: 7:00–10:00 p.m. Start times include a 10-minute break after each session. I’ll confirm availability by email.";
       }
 
       if (selectedPackage) {

@@ -20,7 +20,7 @@ The Christmas page currently accepts email inquiries through FormSubmit; the req
 
 1. Create a Supabase project and run [`supabase/schema.sql`](./supabase/schema.sql) in its SQL editor.
 2. In Netlify site environment variables, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Keep the service-role key server-side; never put it in site HTML or public variables.
-3. Deploy the site and wire the date/availability UI to the endpoint. The schedule uses Vancouver time, weekdays 7–10 p.m., weekends 10 a.m.–7 p.m., 15-minute start increments, and runs through November 30, 2026.
+3. Deploy the site and wire the date/availability UI to the endpoint. The schedule uses Vancouver time, weekdays 7–10 p.m., weekends 10 a.m.–7 p.m., and start times spaced by the selected package duration plus a 10-minute break. It runs through November 30, 2026.
 
 The database schema stores 15-minute pending-payment holds, expires them after 15 minutes, and prevents overlapping active bookings. Automatic scheduling and payment are separate future integrations; inquiries currently go to the studio by email. Stripe and Square use different APIs, so accepting deposits online requires a server-side adapter, provider secrets, webhook verification, and a confirmed-booking email flow. The package inquiry form does not charge clients.
 
