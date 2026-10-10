@@ -301,6 +301,14 @@
         line-height: 1.7;
       }
 
+      .custom-time-field {
+        display: grid;
+        max-width: 320px;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
       .date-field {
         display: grid;
         max-width: 320px;
@@ -522,7 +530,14 @@
             <fieldset class="time-picker" aria-describedby="time-help">
               <legend>Choose a preferred start time · Vancouver time</legend>
               <div class="time-slots" id="time-slots" role="group" aria-label="Session start time choices"></div>
+              <button class="time-slot" id="custom-time-button" type="button" aria-pressed="false" hidden>
+                Request a custom time
+              </button>
             </fieldset>
+            <label class="custom-time-field" id="custom-time-field" for="custom-time" hidden>
+              Requested custom time · Vancouver time
+              <input id="custom-time" type="time" />
+            </label>
             <input type="hidden" name="Preferred time" id="booking-time" />
             <p class="time-help" id="time-help" role="status" aria-live="polite">
               Choose a date to see the available time choices.
@@ -619,73 +634,92 @@
       const timeInput = document.getElementById("booking-time");
       const timeSlots = document.getElementById("time-slots");
       const timeHelp = document.getElementById("time-help");
+      const customTimeButton = document.getElementById("custom-time-button");
+      const customTimeField = document.getElementById("custom-time-field");
+      const customTimeInput = document.getElementById("custom-time");
       const inquiryForm = document.getElementById("christmas-inquiry");
+      const timeFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Vancouver",
+        hour: "numeric",
+        minute: "2-digit",
+        hourCycle: "h12"
+      });
+      const customTimeFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "UTC",
+        hour: "numeric",
+        minute: "2-digit",
+        hourCycle: "h12"
+      });
+      let availabilityRequest = 0;
 
-      function renderTimeChoices(dateValue) {
-        timeSlots.replaceChildren();
+      function clearTimeChoice() {
         timeInput.value = "";
+        customTimeInput.value = "";
+        customTimeInput.setCustomValidity("");
+        customTimeField.hidden = true;
+        customTimeInput.required = false;
+        customTimeButton.setAttribute("aria-pressed", "false");
+        timeSlots.querySelectorAll(".time-slot").forEach((slot) => {
+          slot.setAttribute("aria-pressed", "false");
+        });
+      }
+
+      function formatCustomTime(value) {
+        const [hour, minute] = value.split(":").map(Number);
+        return customTimeFormatter.format(new Date(Date.UTC(2026, 0, 1, hour, minute)));
+      }
+
+      async function renderTimeChoices(dateValue) {
+        const requestId = ++availabilityRequest;
+        timeSlots.replaceChildren();
+        clearTimeChoice();
         dateInput.setCustomValidity("");
+        customTimeButton.hidden = !dateValue;
 
         if (!dateValue) {
           timeHelp.textContent = "Choose a date to see the available time choices.";
           return;
         }
 
-        const [year, month, day] = dateValue.split("-").map(Number);
-        const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-        const isWeekend = weekday === 0 || weekday === 6;
-        const openingMinute = isWeekend ? 10 * 60 : 19 * 60;
-        const closingMinute = isWeekend ? 19 * 60 : 22 * 60;
-        let earliestAllowedMinute = openingMinute;
-        if (dateValue === vancouverToday) {
-          const currentParts = new Intl.DateTimeFormat("en-CA", {
-            timeZone: "America/Vancouver",
-            hour: "2-digit",
-            minute: "2-digit",
-            hourCycle: "h23"
-          }).formatToParts(new Date());
-          const currentHour = Number(currentParts.find((part) => part.type === "hour").value);
-          const currentMinute = Number(currentParts.find((part) => part.type === "minute").value);
-          earliestAllowedMinute = Math.max(openingMinute, currentHour * 60 + currentMinute);
-        }
-        const latestStartMinute = closingMinute - selectedPackage.duration;
-        const startTimeInterval = selectedPackage.duration + 10;
-        const timeFormatter = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "UTC",
-          hour: "numeric",
-          minute: "2-digit",
-          hourCycle: "h12"
-        });
-
-        for (let minute = openingMinute; minute <= latestStartMinute; minute += startTimeInterval) {
-          if (minute < earliestAllowedMinute) continue;
-
-          const hour = Math.floor(minute / 60);
-          const minuteOfHour = minute % 60;
-          const label = timeFormatter.format(new Date(Date.UTC(2026, 0, 1, hour, minuteOfHour)));
-          const button = document.createElement("button");
-          button.className = "time-slot";
-          button.type = "button";
-          button.textContent = label;
-          button.setAttribute("aria-pressed", "false");
-          button.addEventListener("click", () => {
-            timeSlots.querySelectorAll(".time-slot").forEach((slot) => {
-              slot.setAttribute("aria-pressed", "false");
-            });
-            button.setAttribute("aria-pressed", "true");
-            timeInput.value = `${label} (Vancouver time)`;
-            dateInput.setCustomValidity("");
+        timeHelp.textContent = "";
+        try {
+          const query = new URLSearchParams({ package: selectedPackage && new URLSearchParams(window.location.search).get("package"), date: dateValue });
+          const response = await fetch(`/.netlify/functions/christmas-availability?${query}`, {
+            headers: { accept: "application/json" }
           });
-          timeSlots.append(button);
-        }
+          const result = await response.json().catch(() => null);
+          if (requestId !== availabilityRequest) return;
+          if (!response.ok) {
+            throw new Error(result?.message || "Availability could not be checked. Please request a custom time.");
+          }
+          if (!Array.isArray(result?.slots) || result.slots.some((slot) => typeof slot !== "string")) {
+            throw new Error("Availability could not be checked. Please request a custom time.");
+          }
 
-        if (timeSlots.childElementCount === 0) {
-          timeHelp.textContent = "There are no start times left in the available session window for this date. Choose another date.";
-          return;
+          for (const slotStart of result.slots) {
+            const label = timeFormatter.format(new Date(slotStart));
+            const button = document.createElement("button");
+            button.className = "time-slot";
+            button.type = "button";
+            button.textContent = label;
+            button.setAttribute("aria-pressed", "false");
+            button.addEventListener("click", () => {
+              clearTimeChoice();
+              button.setAttribute("aria-pressed", "true");
+              timeInput.value = `${label} (Vancouver time)`;
+              dateInput.setCustomValidity("");
+            });
+            timeSlots.append(button);
+          }
+
+          if (timeSlots.childElementCount === 0) {
+            timeHelp.textContent = "No listed times are available for this date. You can request a custom time.";
+          }
+        } catch (error) {
+          if (requestId === availabilityRequest) {
+            timeHelp.textContent = error.message;
+          }
         }
-        timeHelp.textContent = isWeekend
-          ? "Weekend hours: 10:00 a.m.–7:00 p.m. Start times include a 10-minute break after each session. I’ll confirm availability by email."
-          : "Weekday hours: 7:00–10:00 p.m. Start times include a 10-minute break after each session. I’ll confirm availability by email.";
       }
 
       if (selectedPackage) {
@@ -708,11 +742,31 @@
       }
 
       dateInput?.addEventListener("change", () => renderTimeChoices(dateInput.value));
+      customTimeButton.addEventListener("click", () => {
+        clearTimeChoice();
+        dateInput.setCustomValidity("");
+        customTimeButton.setAttribute("aria-pressed", "true");
+        customTimeField.hidden = false;
+        customTimeInput.required = true;
+        customTimeInput.focus();
+      });
+      customTimeInput.addEventListener("change", () => {
+        dateInput.setCustomValidity("");
+        customTimeInput.setCustomValidity("");
+        timeInput.value = customTimeInput.value
+          ? `${formatCustomTime(customTimeInput.value)} (custom request, Vancouver time)`
+          : "";
+      });
 
       inquiryForm?.addEventListener("submit", (event) => {
         if (!timeInput.value) {
-          dateInput.setCustomValidity("Please select one of the available time choices.");
-          dateInput.reportValidity();
+          if (customTimeButton.getAttribute("aria-pressed") === "true" && !customTimeInput.value) {
+            customTimeInput.setCustomValidity("Enter the custom time you would like to request.");
+            customTimeInput.reportValidity();
+          } else {
+            dateInput.setCustomValidity("Choose a listed time or request a custom time.");
+            dateInput.reportValidity();
+          }
           event.preventDefault();
         }
       });

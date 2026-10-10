@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Christmas Booking Manager — Zako Studio</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #25221f;
+        background: #f7f5f1;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 32px 18px;
+      }
+
+      main {
+        width: min(100%, 780px);
+        margin: 0 auto;
+      }
+
+      header,
+      .panel {
+        padding: 24px;
+        border: 1px solid #dedad3;
+        background: #fff;
+      }
+
+      header { margin-bottom: 18px; }
+      .panel + .panel { margin-top: 18px; }
+
+      h1,
+      h2,
+      p { margin-top: 0; }
+
+      h1 { margin-bottom: 8px; font-size: clamp(24px, 5vw, 34px); }
+      h2 { font-size: 19px; }
+      .muted { color: #6c6862; line-height: 1.6; }
+
+      form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      label.full,
+      button.full,
+      .full { grid-column: 1 / -1; }
+
+      input,
+      select,
+      button {
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid #c9c4bc;
+        border-radius: 0;
+        font: inherit;
+      }
+
+      button {
+        border-color: #25221f;
+        background: #25221f;
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button:disabled { cursor: wait; opacity: 0.65; }
+
+      button.secondary {
+        min-height: 36px;
+        padding: 7px 10px;
+        border-color: #dedad3;
+        background: white;
+        color: #25221f;
+        font-size: 12px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .booking-list {
+        display: grid;
+        gap: 10px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .booking {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px;
+        border: 1px solid #dedad3;
+      }
+
+      .booking p { margin: 0 0 5px; }
+      .booking p:last-child { margin-bottom: 0; }
+      .message { min-height: 1.5em; margin: 14px 0 0; font-size: 13px; }
+      [hidden] { display: none !important; }
+
+      @media (max-width: 560px) {
+        body { padding: 16px 12px; }
+        header,
+        .panel { padding: 18px; }
+        form { grid-template-columns: 1fr; }
+        label.full,
+        button.full,
+        .full { grid-column: auto; }
+        .booking { align-items: flex-start; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Christmas booking manager</h1>
+        <p class="muted">Add sessions after confirming them with a client. Confirmed sessions automatically block overlapping public time choices.</p>
+      </header>
+
+      <section class="panel" id="login-panel" aria-labelledby="login-title">
+        <h2 id="login-title">Admin sign in</h2>
+        <form id="login-form">
+          <label class="full" for="admin-email">
+            Admin email
+            <input id="admin-email" type="email" autocomplete="username" required />
+          </label>
+          <label class="full" for="admin-password">
+            Password
+            <input id="admin-password" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="full" type="submit">Sign in</button>
+        </form>
+      </section>
+
+      <div id="manager" hidden>
+        <section class="panel" aria-labelledby="create-title">
+          <h2 id="create-title">Add a confirmed session</h2>
+          <p class="muted">Use this after confirming the date and time with the client. Custom start times are allowed within the session hours.</p>
+          <form id="booking-form">
+            <label for="booking-date">
+              Date
+              <input id="booking-date" type="date" max="2026-11-30" required />
+            </label>
+            <label for="booking-time">
+              Start time · Vancouver
+              <input id="booking-time" type="time" required />
+            </label>
+            <label for="booking-package">
+              Package
+              <select id="booking-package" required>
+                <option value="mini">Mini · 30 minutes</option>
+                <option value="standard-60">Standard · 1 hour</option>
+                <option value="standard-90">Standard · 1.5 hours</option>
+                <option value="extended">Extended · 2 hours</option>
+              </select>
+            </label>
+            <label for="booking-name">
+              Client name
+              <input id="booking-name" autocomplete="name" required />
+            </label>
+            <label for="booking-email">
+              Client email
+              <input id="booking-email" type="email" autocomplete="email" required />
+            </label>
+            <label for="booking-phone">
+              Client phone
+              <input id="booking-phone" type="tel" autocomplete="tel" required />
+            </label>
+            <button class="full" type="submit">Add confirmed session</button>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="sessions-title">
+          <div class="toolbar">
+            <h2 id="sessions-title">Upcoming confirmed sessions</h2>
+            <button class="secondary" id="sign-out" type="button">Sign out</button>
+          </div>
+          <ul class="booking-list" id="booking-list"></ul>
+        </section>
+      </div>
+      <p class="message" id="admin-message" role="status" aria-live="polite"></p>
+    </main>
+    <script>
+      const endpoint = "/.netlify/functions/christmas-admin";
+      const loginPanel = document.getElementById("login-panel");
+      const loginForm = document.getElementById("login-form");
+      const manager = document.getElementById("manager");
+      const bookingForm = document.getElementById("booking-form");
+      const bookingList = document.getElementById("booking-list");
+      const message = document.getElementById("admin-message");
+      const packageNames = {
+        mini: "Mini · 30 minutes",
+        "standard-60": "Standard · 1 hour",
+        "standard-90": "Standard · 1.5 hours",
+        extended: "Extended · 2 hours"
+      };
+      let accessToken = "";
+
+      async function adminRequest(body) {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {})
+          },
+          body: JSON.stringify(body)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 401 && accessToken) signOut();
+          throw new Error(result.message || "The request could not be completed.");
+        }
+        return result;
+      }
+
+      function signOut() {
+        accessToken = "";
+        loginForm.reset();
+        bookingList.replaceChildren();
+        loginPanel.hidden = false;
+        manager.hidden = true;
+      }
+
+      function formatDateTime(value) {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Vancouver",
+          dateStyle: "medium",
+          timeStyle: "short"
+        }).format(new Date(value));
+      }
+
+      async function loadBookings() {
+        const { bookings } = await adminRequest({ action: "list" });
+        bookingList.replaceChildren();
+        if (bookings.length === 0) {
+          const empty = document.createElement("li");
+          empty.className = "muted";
+          empty.textContent = "No upcoming confirmed sessions.";
+          bookingList.append(empty);
+          return;
+        }
+
+        for (const booking of bookings) {
+          const item = document.createElement("li");
+          item.className = "booking";
+          const details = document.createElement("div");
+          const date = document.createElement("p");
+          const client = document.createElement("p");
+          const contact = document.createElement("p");
+          date.textContent = `${formatDateTime(booking.start_at)} · ${packageNames[booking.package_id] || booking.package_id}`;
+          client.textContent = booking.full_name;
+          contact.textContent = `${booking.email} · ${booking.phone}`;
+          details.append(date, client, contact);
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "secondary";
+          cancel.textContent = "Cancel session";
+          cancel.addEventListener("click", async () => {
+            if (!confirm(`Cancel ${booking.full_name}'s confirmed session?`)) return;
+            cancel.disabled = true;
+            try {
+              await adminRequest({ action: "cancel", id: booking.id });
+              message.textContent = "Confirmed session cancelled.";
+              await loadBookings();
+            } catch (error) {
+              message.textContent = error.message;
+              cancel.disabled = false;
+            }
+          });
+          item.append(details, cancel);
+          bookingList.append(item);
+        }
+      }
+
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submit = loginForm.querySelector("button[type='submit']");
+        submit.disabled = true;
+        message.textContent = "";
+        try {
+          const result = await adminRequest({
+            action: "login",
+            email: document.getElementById("admin-email").value,
+            password: document.getElementById("admin-password").value
+          });
+          accessToken = result.accessToken;
+          loginPanel.hidden = true;
+          manager.hidden = false;
+          await loadBookings();
+          message.textContent = "";
+        } catch (error) {
+          signOut();
+          message.textContent = error.message;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      bookingForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submit = bookingForm.querySelector("button[type='submit']");
+        submit.disabled = true;
+        message.textContent = "";
+        try {
+          await adminRequest({
+            action: "create",
+            date: document.getElementById("booking-date").value,
+            time: document.getElementById("booking-time").value,
+            packageId: document.getElementById("booking-package").value,
+            fullName: document.getElementById("booking-name").value,
+            email: document.getElementById("booking-email").value,
+            phone: document.getElementById("booking-phone").value
+          });
+          bookingForm.reset();
+          message.textContent = "Confirmed session added. Its overlapping times are now blocked.";
+          await loadBookings();
+        } catch (error) {
+          message.textContent = error.message;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      document.getElementById("sign-out").addEventListener("click", () => {
+        signOut();
+        message.textContent = "Signed out.";
+      });
+
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Vancouver",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+      document.getElementById("booking-date").min = today;
+    </script>
+  </body>
+</html>

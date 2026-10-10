@@ -78,7 +78,7 @@ begin
 
   return query
   select (candidate.local_start at time zone 'America/Vancouver')
-  from generate_series(v_first_start, v_last_start, interval '15 minutes') as candidate(local_start)
+  from generate_series(v_first_start, v_last_start, interval '45 minutes') as candidate(local_start)
   where (candidate.local_start at time zone 'America/Vancouver') > now()
     and not exists (
     select 1
@@ -90,6 +90,117 @@ begin
       and booking.end_at > (candidate.local_start at time zone 'America/Vancouver')
   )
   order by candidate.local_start;
+end;
+$$;
+
+create or replace function public.admin_create_christmas_booking(
+  p_service_date date,
+  p_start_time time,
+  p_package_id text,
+  p_full_name text,
+  p_email text,
+  p_phone text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_duration_minutes integer;
+  v_price_cents integer;
+  v_deposit_cents integer;
+  v_open_time time;
+  v_close_time time;
+  v_local_start timestamp;
+  v_start_at timestamptz;
+  v_booking_id uuid;
+begin
+  v_duration_minutes := case p_package_id
+    when 'mini' then 30
+    when 'standard-60' then 60
+    when 'standard-90' then 90
+    when 'extended' then 120
+    else null
+  end;
+
+  if v_duration_minutes is null then
+    raise exception 'Choose a valid session package.';
+  end if;
+
+  if p_service_date < (now() at time zone 'America/Vancouver')::date
+    or p_service_date > date '2026-11-30' then
+    raise exception 'Choose a date within the session season.';
+  end if;
+
+  if nullif(trim(p_full_name), '') is null
+    or nullif(trim(p_email), '') is null
+    or nullif(trim(p_phone), '') is null then
+    raise exception 'Name, email, and phone are required.';
+  end if;
+
+  if extract(isodow from p_service_date) in (6, 7) then
+    v_open_time := time '10:00';
+    v_close_time := time '19:00';
+  else
+    v_open_time := time '19:00';
+    v_close_time := time '22:00';
+  end if;
+
+  if p_start_time < v_open_time
+    or p_start_time + make_interval(mins => v_duration_minutes) > v_close_time then
+    raise exception 'The session must fit within the available hours.';
+  end if;
+
+  v_local_start := p_service_date + p_start_time;
+  v_start_at := v_local_start at time zone 'America/Vancouver';
+  if v_start_at <= now() then
+    raise exception 'Choose a future session time.';
+  end if;
+
+  select package_price, deposit
+  into v_price_cents, v_deposit_cents
+  from (values
+    ('mini', 20000, 10000),
+    ('standard-60', 35000, 17500),
+    ('standard-90', 45000, 22500),
+    ('extended', 65000, 32500)
+  ) as prices(package_id, package_price, deposit)
+  where prices.package_id = p_package_id;
+
+  update public.christmas_bookings
+  set status = 'expired'
+  where status = 'pending_payment'
+    and hold_expires_at <= now();
+
+  insert into public.christmas_bookings (
+    package_id,
+    package_price_cents,
+    deposit_cents,
+    start_at,
+    end_at,
+    full_name,
+    email,
+    phone,
+    status
+  )
+  values (
+    p_package_id,
+    v_price_cents,
+    v_deposit_cents,
+    v_start_at,
+    v_start_at + make_interval(mins => v_duration_minutes),
+    trim(p_full_name),
+    trim(p_email),
+    trim(p_phone),
+    'confirmed'
+  )
+  returning id into v_booking_id;
+
+  return v_booking_id;
+exception
+  when exclusion_violation then
+    raise exception 'That time overlaps another confirmed session.';
 end;
 $$;
 
@@ -186,6 +297,8 @@ $$;
 
 revoke all on public.christmas_bookings from anon, authenticated;
 revoke all on function public.christmas_available_slots(date, text) from public, anon, authenticated;
+revoke all on function public.admin_create_christmas_booking(date, time, text, text, text, text) from public, anon, authenticated;
 revoke all on function public.create_christmas_booking_hold(text, timestamptz, text, text, text) from public, anon, authenticated;
 grant execute on function public.christmas_available_slots(date, text) to service_role;
+grant execute on function public.admin_create_christmas_booking(date, time, text, text, text, text) to service_role;
 grant execute on function public.create_christmas_booking_hold(text, timestamptz, text, text, text) to service_role;
