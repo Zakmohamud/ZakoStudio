@@ -92,16 +92,27 @@ test("lists upcoming confirmed bookings after validating the admin token", async
       assert.equal(options.headers.authorization, "Bearer valid-token");
       return new Response(JSON.stringify({ email: "studio@example.com" }), { status: 200 });
     }
-    assert.match(url, /\/rest\/v1\/christmas_bookings\?/);
-    assert.match(url, /status=eq\.confirmed/);
+    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/admin_list_christmas_bookings");
+    assert.equal(options.method, "POST");
+    assert.deepEqual(JSON.parse(options.body), {});
     assert.equal(options.headers.apikey, "test-service-role-key");
-    return new Response(JSON.stringify([{ id: "booking-id" }]), { status: 200 });
+    return new Response(JSON.stringify([{
+      id: "booking-id",
+      local_date: "2026-11-07",
+      local_time: "10:00 AM"
+    }]), { status: 200 });
   });
 
   const response = await handler(request({ action: "list" }, "valid-token"));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { bookings: [{ id: "booking-id" }] });
+  assert.deepEqual(await response.json(), {
+    bookings: [{
+      id: "booking-id",
+      local_date: "2026-11-07",
+      local_time: "10:00 AM"
+    }]
+  });
 });
 
 test("records a confirmed session through the conflict-safe database function", async (context) => {

@@ -241,12 +241,14 @@
         manager.hidden = true;
       }
 
-      function formatDateTime(value) {
-        return new Intl.DateTimeFormat("en-CA", {
-          timeZone: "America/Vancouver",
-          dateStyle: "medium",
-          timeStyle: "short"
-        }).format(new Date(value));
+      function formatDateTime(dateValue, timeValue) {
+        const [year, month, day] = dateValue.split("-").map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        const formattedDate = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "UTC",
+          dateStyle: "medium"
+        }).format(date);
+        return `${formattedDate} · ${timeValue}`;
       }
 
       async function loadBookings() {
@@ -267,7 +269,7 @@
           const date = document.createElement("p");
           const client = document.createElement("p");
           const contact = document.createElement("p");
-          date.textContent = `${formatDateTime(booking.start_at)} · ${packageNames[booking.package_id] || booking.package_id}`;
+          date.textContent = `${formatDateTime(booking.local_date, booking.local_time)} · ${packageNames[booking.package_id] || booking.package_id}`;
           client.textContent = booking.full_name;
           contact.textContent = `${booking.email} · ${booking.phone}`;
           details.append(date, client, contact);

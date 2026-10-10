@@ -20,7 +20,7 @@ The Christmas page accepts email inquiries through FormSubmit. Listed times use 
 
 To enable live availability and the private booking manager:
 
-1. Create a Supabase project and run [`supabase/schema.sql`](./supabase/schema.sql) in its SQL editor. If the project already has the earlier booking schema, rerun the updated script to add the admin booking function and replace the available-time function.
+1. Create a Supabase project and run [`supabase/schema.sql`](./supabase/schema.sql) in its SQL editor. If the project already has the earlier booking schema, rerun the updated script to add the admin booking functions and the Vancouver-local time labels used by the booking page.
 2. In Netlify environment variables, set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CHRISTMAS_ADMIN_EMAIL`. `CHRISTMAS_ADMIN_EMAIL` must be the email of the Supabase Auth user you create for the studio administrator. Keep the service-role key server-side; never put it in site HTML or public variables.
 3. Create and confirm that administrator user in Supabase Auth, then use its email and password to sign in at `/christmas-admin.html`. The page lists upcoming confirmed sessions and lets the administrator add or cancel sessions. The server checks overlaps again when adding a session.
 4. Deploy the site. The schedule uses Vancouver time, weekdays 7–10 p.m., weekends 10 a.m.–7 p.m., and runs through November 30, 2026.

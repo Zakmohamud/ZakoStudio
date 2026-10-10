@@ -93,6 +93,53 @@ begin
 end;
 $$;
 
+create or replace function public.christmas_available_slot_details(
+  p_service_date date,
+  p_package_id text
+)
+returns table (slot_start timestamptz, local_time text)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    available.slot_start,
+    to_char(available.slot_start at time zone 'America/Vancouver', 'FMHH12:MI AM')
+  from public.christmas_available_slots(p_service_date, p_package_id) available
+  order by available.slot_start;
+$$;
+
+create or replace function public.admin_list_christmas_bookings()
+returns table (
+  id uuid,
+  package_id text,
+  start_at timestamptz,
+  local_date date,
+  local_time text,
+  full_name text,
+  email text,
+  phone text
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    booking.id,
+    booking.package_id,
+    booking.start_at,
+    (booking.start_at at time zone 'America/Vancouver')::date,
+    to_char(booking.start_at at time zone 'America/Vancouver', 'FMHH12:MI AM'),
+    booking.full_name,
+    booking.email,
+    booking.phone
+  from public.christmas_bookings booking
+  where booking.status = 'confirmed'
+    and booking.start_at >= now()
+  order by booking.start_at asc
+  limit 200;
+$$;
+
 create or replace function public.admin_create_christmas_booking(
   p_service_date date,
   p_start_time time,
@@ -297,8 +344,12 @@ $$;
 
 revoke all on public.christmas_bookings from anon, authenticated;
 revoke all on function public.christmas_available_slots(date, text) from public, anon, authenticated;
+revoke all on function public.christmas_available_slot_details(date, text) from public, anon, authenticated;
+revoke all on function public.admin_list_christmas_bookings() from public, anon, authenticated;
 revoke all on function public.admin_create_christmas_booking(date, time, text, text, text, text) from public, anon, authenticated;
 revoke all on function public.create_christmas_booking_hold(text, timestamptz, text, text, text) from public, anon, authenticated;
 grant execute on function public.christmas_available_slots(date, text) to service_role;
+grant execute on function public.christmas_available_slot_details(date, text) to service_role;
+grant execute on function public.admin_list_christmas_bookings() to service_role;
 grant execute on function public.admin_create_christmas_booking(date, time, text, text, text, text) to service_role;
 grant execute on function public.create_christmas_booking_hold(text, timestamptz, text, text, text) to service_role;

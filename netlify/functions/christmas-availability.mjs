@@ -42,7 +42,7 @@ export default async function handler(request) {
   }
 
   try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/christmas_available_slots`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/christmas_available_slot_details`, {
       method: "POST",
       headers: {
         apikey: serviceRoleKey,
@@ -63,12 +63,16 @@ export default async function handler(request) {
     }
 
     const rows = await response.json();
-    if (!Array.isArray(rows) || rows.some((row) => typeof row.slot_start !== "string")) {
+    if (!Array.isArray(rows) || rows.some((row) =>
+      typeof row.slot_start !== "string" || typeof row.local_time !== "string"
+    )) {
       console.error("Supabase returned an invalid availability response.");
       return jsonResponse(502, { message: "Availability could not be checked. Please try again later." });
     }
 
-    return jsonResponse(200, { slots: rows.map((row) => row.slot_start) });
+    return jsonResponse(200, {
+      slots: rows.map((row) => ({ startAt: row.slot_start, localTime: row.local_time }))
+    });
   } catch (error) {
     console.error("Unable to reach Supabase for Christmas availability.", error);
     return jsonResponse(502, { message: "Availability could not be checked. Please try again later." });

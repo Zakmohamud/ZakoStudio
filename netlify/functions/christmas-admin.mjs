@@ -97,17 +97,15 @@ export default async function handler(request) {
   }
 
   if (body.action === "list") {
-    const query = new URLSearchParams({
-      select: "id,package_id,start_at,end_at,full_name,email,phone",
-      status: "eq.confirmed",
-      start_at: `gte.${new Date().toISOString()}`,
-      order: "start_at.asc",
-      limit: "200"
-    });
-
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/christmas_bookings?${query}`, {
-        headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}` },
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/admin_list_christmas_bookings`, {
+        method: "POST",
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({}),
         signal: AbortSignal.timeout(8000)
       });
       const bookings = await readResponse(response);
