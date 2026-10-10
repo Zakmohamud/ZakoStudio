@@ -4,7 +4,7 @@
 
 ## Booking inquiries
 
-The portfolio inquiry form submits to the studio inbox through FormSubmit. Christmas package inquiries use the same service, include the selected package, preferred date/time, and contact details, and return to the package page after submission. FormSubmit sends an automatic receipt email. An inquiry is not a reserved session.
+The portfolio inquiry form submits to the studio inbox through FormSubmit. Christmas package inquiries are emailed directly to `zakotarastudio@gmail.com`, include the selected package and requested date/time, and return to the package page after submission. Christmas inquiries do not send an automatic reply to the client. An inquiry is not a reserved session.
 
 The studio inbox must approve FormSubmit's one-time activation email before submissions are delivered. Keep FormSubmit's reCAPTCHA enabled; autoresponse emails are not supported for AJAX submissions or when reCAPTCHA is disabled.
 
