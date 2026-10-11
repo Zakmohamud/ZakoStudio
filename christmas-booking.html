@@ -638,6 +638,12 @@
       const customTimeField = document.getElementById("custom-time-field");
       const customTimeInput = document.getElementById("custom-time");
       const inquiryForm = document.getElementById("christmas-inquiry");
+      const timeFormatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Vancouver",
+        hour: "numeric",
+        minute: "2-digit",
+        hourCycle: "h12"
+      });
       const customTimeFormatter = new Intl.DateTimeFormat("en-CA", {
         timeZone: "UTC",
         hour: "numeric",
@@ -686,16 +692,12 @@
           if (!response.ok) {
             throw new Error(result?.message || "Availability could not be checked. Please request a custom time.");
           }
-          if (!Array.isArray(result?.slots) || result.slots.some((slot) =>
-            !slot ||
-            typeof slot.startAt !== "string" ||
-            typeof slot.localTime !== "string"
-          )) {
+          if (!Array.isArray(result?.slots) || result.slots.some((slot) => typeof slot !== "string")) {
             throw new Error("Availability could not be checked. Please request a custom time.");
           }
 
-          for (const slot of result.slots) {
-            const label = slot.localTime;
+          for (const slotStart of result.slots) {
+            const label = timeFormatter.format(new Date(slotStart));
             const button = document.createElement("button");
             button.className = "time-slot";
             button.type = "button";

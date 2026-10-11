@@ -47,16 +47,13 @@ test("returns validated slot data from Supabase", async (context) => {
   process.env.SUPABASE_URL = "https://project.supabase.co/";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
   globalThis.fetch = async (url, options) => {
-    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/christmas_available_slot_details");
+    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/christmas_available_slots");
     assert.equal(options.headers.apikey, "test-service-role-key");
     assert.deepEqual(JSON.parse(options.body), {
       p_service_date: "2026-10-10",
       p_package_id: "mini"
     });
-    return new Response(JSON.stringify([{
-      slot_start: "2026-10-10T17:00:00+00:00",
-      local_time: "10:00 AM"
-    }]), {
+    return new Response(JSON.stringify([{ slot_start: "2026-10-10T17:00:00+00:00" }]), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -72,7 +69,5 @@ test("returns validated slot data from Supabase", async (context) => {
   const response = await handler(request("GET", "?package=mini&date=2026-10-10"));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    slots: [{ startAt: "2026-10-10T17:00:00+00:00", localTime: "10:00 AM" }]
-  });
+  assert.deepEqual(await response.json(), { slots: ["2026-10-10T17:00:00+00:00"] });
 });
