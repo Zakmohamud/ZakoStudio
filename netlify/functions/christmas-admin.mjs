@@ -263,7 +263,8 @@ export default async function handler(request) {
           return jsonResponse(409, { message: "That time overlaps another confirmed session." });
         }
         console.error("Supabase could not create confirmed booking.", response.status, created);
-        return jsonResponse(502, { message: "The session could not be added. Please try again." });
+        const detail = created?.message || created?.hint || `status ${response.status}`;
+        return jsonResponse(502, { message: `The session could not be added (${detail}).` });
       }
       const emailSent = await sendConfirmationEmail({
         ownerEmail: adminEmail,
@@ -276,7 +277,7 @@ export default async function handler(request) {
       return jsonResponse(201, { id: created?.[0]?.id, emailSent });
     } catch (error) {
       console.error("Unable to create confirmed Christmas booking.", error);
-      return jsonResponse(502, { message: "The session could not be added. Please try again." });
+      return jsonResponse(502, { message: `The session could not be added (${error?.message || "unexpected error"}).` });
     }
   }
 
