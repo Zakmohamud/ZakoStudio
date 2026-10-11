@@ -257,6 +257,39 @@
         manager.hidden = true;
       }
 
+      const packageLabels = {
+        mini: "Mini · 30 minutes",
+        "standard-60": "Standard · 1 hour",
+        "standard-90": "Standard · 1.5 hours",
+        extended: "Extended · 2 hours"
+      };
+
+      async function sendConfirmationEmail(details) {
+        try {
+          const response = await fetch("https://formsubmit.co/ajax/zakotarastudio@gmail.com", {
+            method: "POST",
+            headers: { "content-type": "application/json", accept: "application/json" },
+            body: JSON.stringify({
+              _subject: `Christmas session confirmed: ${details.name}`,
+              _template: "table",
+              _cc: details.email,
+              _captcha: "false",
+              Message: `Hi ${details.name}, your Zako Studio Christmas session is confirmed. I will email the exact meeting location before your session.`,
+              Date: details.date,
+              "Start time (Vancouver)": details.time,
+              Package: packageLabels[details.packageId],
+              Client: details.name,
+              "Client email": details.email,
+              "Client phone": details.phone
+            })
+          });
+          const result = await response.json().catch(() => ({}));
+          return response.ok && String(result.success) !== "false";
+        } catch {
+          return false;
+        }
+      }
+
       function formatDateTime(value) {
         return new Intl.DateTimeFormat("en-CA", {
           timeZone: "America/Vancouver",
@@ -369,18 +402,28 @@
         message.textContent = "";
         try {
           submit.textContent = "Saving…";
-          const created = await adminRequest({
-            action: "create",
+          const details = {
             date: document.getElementById("booking-date").value,
             time: document.getElementById("booking-time").value,
             packageId: document.getElementById("booking-package").value,
-            fullName: document.getElementById("booking-name").value,
-            email: document.getElementById("booking-email").value,
-            phone: document.getElementById("booking-phone").value
+            name: document.getElementById("booking-name").value.trim(),
+            email: document.getElementById("booking-email").value.trim(),
+            phone: document.getElementById("booking-phone").value.trim()
+          };
+          await adminRequest({
+            action: "create",
+            date: details.date,
+            time: details.time,
+            packageId: details.packageId,
+            fullName: details.name,
+            email: details.email,
+            phone: details.phone
           });
+          submit.textContent = "Sending confirmation…";
+          const emailSent = await sendConfirmationEmail(details);
           bookingForm.reset();
           await loadBookings();
-          message.textContent = created.emailSent
+          message.textContent = emailSent
             ? "Session confirmed and blocked on the booking page. A confirmation email was sent to the client and copied to you."
             : "Session confirmed and blocked on the booking page, but the confirmation email could not be sent. Please email the client yourself.";
           message.scrollIntoView({ block: "center", behavior: "smooth" });

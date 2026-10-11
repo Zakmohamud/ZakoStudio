@@ -32,50 +32,6 @@ function vancouverToUtc(date, time) {
   return new Date(utc);
 }
 
-const packageNames = {
-  mini: "Mini · 30 minutes",
-  "standard-60": "Standard · 1 hour",
-  "standard-90": "Standard · 1.5 hours",
-  extended: "Extended · 2 hours"
-};
-
-async function sendConfirmationEmail({ ownerEmail, startAt, packageId, fullName, email, phone }) {
-  const when = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Vancouver",
-    dateStyle: "full",
-    timeStyle: "short"
-  }).format(startAt);
-  try {
-    const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(ownerEmail)}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json",
-        origin: "https://zako-studio.netlify.app",
-        referer: "https://zako-studio.netlify.app/christmas-admin.html"
-      },
-      body: JSON.stringify({
-        _subject: `Christmas session confirmed: ${fullName} · ${when}`,
-        _template: "table",
-        _cc: email,
-        _captcha: "false",
-        Message: `Hi ${fullName}, your Zako Studio Christmas session is confirmed. I'll email the exact meeting location before your session.`,
-        Date: when + " (Vancouver time)",
-        Package: packageNames[packageId],
-        Client: fullName,
-        "Client email": email,
-        "Client phone": phone
-      }),
-      signal: AbortSignal.timeout(8000)
-    });
-    const result = await readResponse(response);
-    return response.ok && String(result?.success) !== "false";
-  } catch (error) {
-    console.error("Unable to send confirmation email.", error);
-    return false;
-  }
-}
-
 function validDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
@@ -266,15 +222,7 @@ export default async function handler(request) {
         const detail = created?.message || created?.hint || `status ${response.status}`;
         return jsonResponse(502, { message: `The session could not be added (${detail}).` });
       }
-      const emailSent = await sendConfirmationEmail({
-        ownerEmail: adminEmail,
-        startAt,
-        packageId,
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim()
-      });
-      return jsonResponse(201, { id: created?.[0]?.id, emailSent });
+      return jsonResponse(201, { id: created?.[0]?.id });
     } catch (error) {
       console.error("Unable to create confirmed Christmas booking.", error);
       return jsonResponse(502, { message: `The session could not be added (${error?.message || "unexpected error"}).` });

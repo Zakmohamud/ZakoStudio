@@ -622,6 +622,7 @@
         }
       };
 
+      let busyRanges = [];
       const selectedPackage = packages[new URLSearchParams(window.location.search).get("package")];
       const vancouverToday = new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Vancouver",
@@ -696,6 +697,7 @@
             throw new Error("Availability could not be checked. Please request a custom time.");
           }
 
+          busyRanges = Array.isArray(result.busy) ? result.busy : [];
           for (const slotStart of result.slots) {
             const label = timeFormatter.format(new Date(slotStart));
             const button = document.createElement("button");
@@ -752,6 +754,18 @@
       customTimeInput.addEventListener("change", () => {
         dateInput.setCustomValidity("");
         customTimeInput.setCustomValidity("");
+        if (customTimeInput.value) {
+          const [hours, minutes] = customTimeInput.value.split(":").map(Number);
+          const start = hours * 60 + minutes;
+          const end = start + selectedPackage.duration;
+          if (busyRanges.some((range) => start < range.end && end > range.start)) {
+            customTimeInput.value = "";
+            timeInput.value = "";
+            customTimeInput.setCustomValidity("That time is already booked. Please choose another time.");
+            customTimeInput.reportValidity();
+            return;
+          }
+        }
         timeInput.value = customTimeInput.value
           ? `${formatCustomTime(customTimeInput.value)} (custom request, Vancouver time)`
           : "";
