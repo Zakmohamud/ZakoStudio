@@ -434,6 +434,10 @@
 
       <section id="package-list">
         <p class="eyebrow">Christmas family sessions · Vancouver</p>
+        <p class="booking-confirmation" id="inquiry-banner" role="status" hidden>
+          Thank you! Your Christmas session inquiry was sent. I’ll email you to confirm
+          availability and next steps. Check your spam folder if you don’t see a reply.
+        </p>
         <h1>Make a little holiday magic.</h1>
         <p class="intro">
           Choose the session that feels right for your family. Each package opens
@@ -490,7 +494,7 @@
 
       <section id="package-detail" hidden>
         <p class="eyebrow">Christmas family sessions · Vancouver</p>
-        <h1 id="detail-title">Choose your session time.</h1>
+        <h1 id="detail-title">Great choice! Now pick your time.</h1>
         <div class="detail">
           <div class="detail-photo">
             <img id="detail-photo-image" class="mini-photo" src="images/christmas-mini.jpg" alt="" />
@@ -574,10 +578,6 @@
             </p>
           </form>
         </section>
-        <p class="booking-confirmation" id="inquiry-confirmation" role="status" hidden>
-          Your Christmas session inquiry was sent. I’ll email you to confirm
-          availability and next steps. Check your spam folder if you don’t see a reply.
-        </p>
         <a class="back-link" href="christmas-booking.html">← All Christmas packages</a>
       </section>
     </main>
@@ -725,9 +725,8 @@
       if (selectedPackage) {
         const packageId = new URLSearchParams(window.location.search).get("package");
         const formNext = new URL("https://zako-studio.netlify.app/christmas-booking.html");
-        formNext.searchParams.set("package", packageId);
         formNext.searchParams.set("inquiry", "sent");
-        document.getElementById("inquiry-package").value =
+                document.getElementById("inquiry-package").value =
           `${selectedPackage.name} — $${selectedPackage.price} CAD, ${selectedPackage.durationLabel}`;
         document.getElementById("inquiry-next").value = formNext.toString();
         document.getElementById("package-list").hidden = true;
@@ -772,7 +771,7 @@
       });
 
       if (new URLSearchParams(window.location.search).get("inquiry") === "sent") {
-        document.getElementById("inquiry-confirmation").hidden = false;
+        document.getElementById("inquiry-banner").hidden = false;
       }
     </script>
   </body>

@@ -124,6 +124,10 @@ test("records a confirmed session through the conflict-safe database function", 
     if (url.endsWith("/auth/v1/user")) {
       return new Response(JSON.stringify({ email: "studio@example.com" }), { status: 200 });
     }
+    if (url.startsWith("https://formsubmit.co/ajax/")) {
+      assert.equal(JSON.parse(options.body)._cc, "client@example.com");
+      return new Response(JSON.stringify({ success: "true" }), { status: 200 });
+    }
     assert.equal(url, "https://project.supabase.co/rest/v1/christmas_bookings");
     const row = JSON.parse(options.body);
     assert.equal(row.start_at, "2026-11-03T18:00:00.000Z");
@@ -144,7 +148,7 @@ test("records a confirmed session through the conflict-safe database function", 
   }, "valid-token"));
 
   assert.equal(response.status, 201);
-  assert.deepEqual(await response.json(), { id: "booking-id" });
+  assert.deepEqual(await response.json(), { id: "booking-id", emailSent: true });
 });
 
 test("returns a conflict when another confirmed session overlaps", async (context) => {

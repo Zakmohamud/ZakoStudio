@@ -122,6 +122,7 @@
       .booking p { margin: 0 0 5px; }
       .booking p:last-child { margin-bottom: 0; }
       .message { min-height: 1.5em; margin: 14px 0 0; font-size: 13px; }
+      .status-banner:not(:empty) { padding: 12px 14px; border: 1px solid currentColor; border-radius: 6px; font-size: 15px; font-weight: 600; }
       [hidden] { display: none !important; }
 
       @media (max-width: 560px) {
@@ -160,10 +161,11 @@
         </form>
       </section>
 
+      <p class="message status-banner" id="admin-message" role="status" aria-live="polite"></p>
       <div id="manager" hidden>
         <section class="panel" aria-labelledby="create-title">
           <h2 id="create-title">Add a confirmed session</h2>
-          <p class="muted">Use this after confirming the date and time with the client. Custom start times are allowed within the session hours.</p>
+          <p class="muted">Use this after agreeing a date and time with the client. Saving blocks that time on the public booking page and emails the client a confirmation (copied to you).</p>
           <form id="booking-form">
             <label for="booking-date">
               Date
@@ -209,7 +211,6 @@
           <ul class="booking-list" id="booking-list"></ul>
         </section>
       </div>
-      <p class="message" id="admin-message" role="status" aria-live="polite"></p>
     </main>
     <script>
       const endpoint = "/.netlify/functions/christmas-admin";
@@ -367,7 +368,8 @@
         submit.disabled = true;
         message.textContent = "";
         try {
-          await adminRequest({
+          submit.textContent = "Saving…";
+          const created = await adminRequest({
             action: "create",
             date: document.getElementById("booking-date").value,
             time: document.getElementById("booking-time").value,
@@ -377,14 +379,17 @@
             phone: document.getElementById("booking-phone").value
           });
           bookingForm.reset();
-          message.textContent = "Confirmed session added. Its overlapping times are now blocked.";
           await loadBookings();
+          message.textContent = created.emailSent
+            ? "Session confirmed and blocked on the booking page. A confirmation email was sent to the client and copied to you."
+            : "Session confirmed and blocked on the booking page, but the confirmation email could not be sent. Please email the client yourself.";
           message.scrollIntoView({ block: "center", behavior: "smooth" });
         } catch (error) {
           message.textContent = error.message;
           message.scrollIntoView({ block: "center", behavior: "smooth" });
         } finally {
           submit.disabled = false;
+          submit.textContent = "Add confirmed session";
         }
       });
 
