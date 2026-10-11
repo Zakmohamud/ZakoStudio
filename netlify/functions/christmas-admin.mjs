@@ -58,7 +58,7 @@ export default async function handler(request) {
       const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: "POST",
         headers: { apikey: anonKey, "content-type": "application/json" },
-        body: JSON.stringify({ email: body.email, password: body.password }),
+        body: JSON.stringify({ email: body.email.trim(), password: body.password }),
         signal: AbortSignal.timeout(8000)
       });
       const result = await readResponse(response);
@@ -69,6 +69,33 @@ export default async function handler(request) {
     } catch (error) {
       console.error("Unable to authenticate Christmas booking admin.", error);
       return jsonResponse(502, { message: "Admin sign-in is temporarily unavailable. Please try again." });
+    }
+  }
+
+  if (body?.action === "resetPassword") {
+    const resetRedirectUrl = new URL("/christmas-admin.html", request.url).toString();
+
+    try {
+      const response = await fetch(
+        `${supabaseUrl}/auth/v1/recover?redirect_to=${encodeURIComponent(resetRedirectUrl)}`,
+        {
+          method: "POST",
+          headers: { apikey: anonKey, "content-type": "application/json" },
+          body: JSON.stringify({ email: adminEmail }),
+          signal: AbortSignal.timeout(8000)
+        }
+      );
+      const result = await readResponse(response);
+      if (!response.ok) {
+        console.error("Unable to request Christmas booking admin password reset.", response.status, result);
+        return jsonResponse(502, { message: "The password reset email could not be sent. Please try again." });
+      }
+      return jsonResponse(200, {
+        message: "If the configured studio admin email can receive messages, a password reset link was sent there."
+      });
+    } catch (error) {
+      console.error("Unable to send Christmas booking admin password reset.", error);
+      return jsonResponse(502, { message: "The password reset email could not be sent. Please try again." });
     }
   }
 
@@ -97,15 +124,17 @@ export default async function handler(request) {
   }
 
   if (body.action === "list") {
+    const query = new URLSearchParams({
+      select: "id,package_id,start_at,end_at,full_name,email,phone",
+      status: "eq.confirmed",
+      start_at: `gte.${new Date().toISOString()}`,
+      order: "start_at.asc",
+      limit: "200"
+    });
+
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/admin_list_christmas_bookings`, {
-        method: "POST",
-        headers: {
-          apikey: serviceRoleKey,
-          authorization: `Bearer ${serviceRoleKey}`,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({}),
+      const response = await fetch(`${supabaseUrl}/rest/v1/christmas_bookings?${query}`, {
+        headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}` },
         signal: AbortSignal.timeout(8000)
       });
       const bookings = await readResponse(response);

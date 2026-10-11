@@ -97,6 +97,12 @@
         gap: 12px;
       }
 
+      .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
       .booking-list {
         display: grid;
         gap: 10px;
@@ -149,6 +155,8 @@
             <input id="admin-password" type="password" autocomplete="current-password" required />
           </label>
           <button class="full" type="submit">Sign in</button>
+          <button class="full secondary" id="reset-password" type="button">Email password reset link</button>
+          <p class="muted full">Password resets are sent to the configured studio admin email.</p>
         </form>
       </section>
 
@@ -193,7 +201,10 @@
         <section class="panel" aria-labelledby="sessions-title">
           <div class="toolbar">
             <h2 id="sessions-title">Upcoming confirmed sessions</h2>
-            <button class="secondary" id="sign-out" type="button">Sign out</button>
+            <div class="toolbar-actions">
+              <button class="secondary" id="refresh-bookings" type="button">Refresh</button>
+              <button class="secondary" id="sign-out" type="button">Sign out</button>
+            </div>
           </div>
           <ul class="booking-list" id="booking-list"></ul>
         </section>
@@ -208,6 +219,10 @@
       const bookingForm = document.getElementById("booking-form");
       const bookingList = document.getElementById("booking-list");
       const message = document.getElementById("admin-message");
+      const adminEmailInput = document.getElementById("admin-email");
+      const adminPasswordInput = document.getElementById("admin-password");
+      const resetPasswordButton = document.getElementById("reset-password");
+      const refreshBookingsButton = document.getElementById("refresh-bookings");
       const packageNames = {
         mini: "Mini · 30 minutes",
         "standard-60": "Standard · 1 hour",
@@ -235,20 +250,18 @@
 
       function signOut() {
         accessToken = "";
-        loginForm.reset();
+        adminPasswordInput.value = "";
         bookingList.replaceChildren();
         loginPanel.hidden = false;
         manager.hidden = true;
       }
 
-      function formatDateTime(dateValue, timeValue) {
-        const [year, month, day] = dateValue.split("-").map(Number);
-        const date = new Date(Date.UTC(year, month - 1, day));
-        const formattedDate = new Intl.DateTimeFormat("en-CA", {
-          timeZone: "UTC",
-          dateStyle: "medium"
-        }).format(date);
-        return `${formattedDate} · ${timeValue}`;
+      function formatDateTime(value) {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Vancouver",
+          dateStyle: "medium",
+          timeStyle: "short"
+        }).format(new Date(value));
       }
 
       async function loadBookings() {
@@ -269,7 +282,7 @@
           const date = document.createElement("p");
           const client = document.createElement("p");
           const contact = document.createElement("p");
-          date.textContent = `${formatDateTime(booking.local_date, booking.local_time)} · ${packageNames[booking.package_id] || booking.package_id}`;
+          date.textContent = `${formatDateTime(booking.start_at)} · ${packageNames[booking.package_id] || booking.package_id}`;
           client.textContent = booking.full_name;
           contact.textContent = `${booking.email} · ${booking.phone}`;
           details.append(date, client, contact);
@@ -302,19 +315,49 @@
         try {
           const result = await adminRequest({
             action: "login",
-            email: document.getElementById("admin-email").value,
-            password: document.getElementById("admin-password").value
+            email: adminEmailInput.value.trim(),
+            password: adminPasswordInput.value
           });
           accessToken = result.accessToken;
           loginPanel.hidden = true;
           manager.hidden = false;
-          await loadBookings();
-          message.textContent = "";
+          try {
+            await loadBookings();
+            message.textContent = "";
+          } catch (error) {
+            message.textContent = accessToken
+              ? `${error.message} You are still signed in. Use Refresh to try again.`
+              : error.message;
+          }
         } catch (error) {
-          signOut();
           message.textContent = error.message;
         } finally {
           submit.disabled = false;
+        }
+      });
+
+      resetPasswordButton.addEventListener("click", async () => {
+        resetPasswordButton.disabled = true;
+        message.textContent = "";
+        try {
+          const result = await adminRequest({ action: "resetPassword" });
+          message.textContent = result.message;
+        } catch (error) {
+          message.textContent = error.message;
+        } finally {
+          resetPasswordButton.disabled = false;
+        }
+      });
+
+      refreshBookingsButton.addEventListener("click", async () => {
+        refreshBookingsButton.disabled = true;
+        message.textContent = "";
+        try {
+          await loadBookings();
+        } catch (error) {
+          message.textContent = accessToken ? error.message : "Sign in again to refresh confirmed sessions.";
+        } finally {
+          refreshBookingsButton.disabled = false;
         }
       });
 

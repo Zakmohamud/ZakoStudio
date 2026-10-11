@@ -86,33 +86,37 @@ test("denies authenticated Supabase users outside the admin email", async (conte
   assert.equal(response.status, 403);
 });
 
+test("requests a password reset email for the configured admin address", async (context) => {
+  configure(context, async (url, options) => {
+    assert.match(url, /\/auth\/v1\/recover\?redirect_to=/);
+    assert.equal(options.method, "POST");
+    assert.equal(options.headers.apikey, "test-anon-key");
+    assert.deepEqual(JSON.parse(options.body), { email: "studio@example.com" });
+    return new Response(JSON.stringify({}), { status: 200 });
+  });
+
+  const response = await handler(request({ action: "resetPassword" }));
+
+  assert.equal(response.status, 200);
+  assert.match((await response.json()).message, /password reset link was sent/i);
+});
+
 test("lists upcoming confirmed bookings after validating the admin token", async (context) => {
   configure(context, async (url, options) => {
     if (url.endsWith("/auth/v1/user")) {
       assert.equal(options.headers.authorization, "Bearer valid-token");
       return new Response(JSON.stringify({ email: "studio@example.com" }), { status: 200 });
     }
-    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/admin_list_christmas_bookings");
-    assert.equal(options.method, "POST");
-    assert.deepEqual(JSON.parse(options.body), {});
+    assert.match(url, /\/rest\/v1\/christmas_bookings\?/);
+    assert.match(url, /status=eq\.confirmed/);
     assert.equal(options.headers.apikey, "test-service-role-key");
-    return new Response(JSON.stringify([{
-      id: "booking-id",
-      local_date: "2026-11-07",
-      local_time: "10:00 AM"
-    }]), { status: 200 });
+    return new Response(JSON.stringify([{ id: "booking-id", start_at: "2026-11-07T18:00:00+00:00" }]), { status: 200 });
   });
 
   const response = await handler(request({ action: "list" }, "valid-token"));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), {
-    bookings: [{
-      id: "booking-id",
-      local_date: "2026-11-07",
-      local_time: "10:00 AM"
-    }]
-  });
+  assert.deepEqual(await response.json(), { bookings: [{ id: "booking-id", start_at: "2026-11-07T18:00:00+00:00" }] });
 });
 
 test("records a confirmed session through the conflict-safe database function", async (context) => {
