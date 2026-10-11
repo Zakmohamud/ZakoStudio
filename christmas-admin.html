@@ -379,8 +379,10 @@
           bookingForm.reset();
           message.textContent = "Confirmed session added. Its overlapping times are now blocked.";
           await loadBookings();
+          message.scrollIntoView({ block: "center", behavior: "smooth" });
         } catch (error) {
           message.textContent = error.message;
+          message.scrollIntoView({ block: "center", behavior: "smooth" });
         } finally {
           submit.disabled = false;
         }

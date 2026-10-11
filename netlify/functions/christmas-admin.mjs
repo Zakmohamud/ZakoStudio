@@ -10,6 +10,28 @@ function jsonResponse(statusCode, body) {
   });
 }
 
+const packageDetails = {
+  mini: { minutes: 30, price: 20000, deposit: 10000 },
+  "standard-60": { minutes: 60, price: 35000, deposit: 17500 },
+  "standard-90": { minutes: 90, price: 45000, deposit: 22500 },
+  extended: { minutes: 120, price: 65000, deposit: 32500 }
+};
+
+function vancouverToUtc(date, time) {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Vancouver",
+    hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"
+  }).formatToParts(new Date(guess));
+  const get = (t) => Number(parts.find((part) => part.type === t).value);
+  const asLocal = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
+  const utc = guess - (asLocal - guess);
+  return new Date(utc);
+}
+
 function validDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
@@ -167,32 +189,39 @@ export default async function handler(request) {
     }
 
     try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/admin_create_christmas_booking`, {
+      const details = packageDetails[packageId];
+      const startAt = vancouverToUtc(date, time);
+      const endAt = new Date(startAt.getTime() + details.minutes * 60000);
+      const response = await fetch(`${supabaseUrl}/rest/v1/christmas_bookings`, {
         method: "POST",
         headers: {
           apikey: serviceRoleKey,
           authorization: `Bearer ${serviceRoleKey}`,
-          "content-type": "application/json"
+          "content-type": "application/json",
+          prefer: "return=representation"
         },
         body: JSON.stringify({
-          p_service_date: date,
-          p_start_time: time,
-          p_package_id: packageId,
-          p_full_name: fullName.trim(),
-          p_email: email.trim(),
-          p_phone: phone.trim()
+          package_id: packageId,
+          package_price_cents: details.price,
+          deposit_cents: details.deposit,
+          start_at: startAt.toISOString(),
+          end_at: endAt.toISOString(),
+          full_name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          status: "confirmed"
         }),
         signal: AbortSignal.timeout(8000)
       });
-      const bookingId = await readResponse(response);
+      const created = await readResponse(response);
       if (!response.ok) {
-        if (typeof bookingId?.message === "string" && bookingId.message.includes("overlaps another confirmed session")) {
+        if (created?.code === "23P01" || String(created?.message || "").includes("conflicting key")) {
           return jsonResponse(409, { message: "That time overlaps another confirmed session." });
         }
-        console.error("Supabase could not create confirmed booking.", response.status, bookingId);
-        return jsonResponse(502, { message: "The session could not be added. Check the date and time and try again." });
+        console.error("Supabase could not create confirmed booking.", response.status, created);
+        return jsonResponse(502, { message: "The session could not be added. Please try again." });
       }
-      return jsonResponse(201, { id: bookingId });
+      return jsonResponse(201, { id: created?.[0]?.id });
     } catch (error) {
       console.error("Unable to create confirmed Christmas booking.", error);
       return jsonResponse(502, { message: "The session could not be added. Please try again." });

@@ -124,16 +124,13 @@ test("records a confirmed session through the conflict-safe database function", 
     if (url.endsWith("/auth/v1/user")) {
       return new Response(JSON.stringify({ email: "studio@example.com" }), { status: 200 });
     }
-    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/admin_create_christmas_booking");
-    assert.deepEqual(JSON.parse(options.body), {
-      p_service_date: "2026-11-03",
-      p_start_time: "10:00",
-      p_package_id: "standard-90",
-      p_full_name: "Test Client",
-      p_email: "client@example.com",
-      p_phone: "555-0100"
-    });
-    return new Response(JSON.stringify("booking-id"), { status: 200 });
+    assert.equal(url, "https://project.supabase.co/rest/v1/christmas_bookings");
+    const row = JSON.parse(options.body);
+    assert.equal(row.start_at, "2026-11-03T18:00:00.000Z");
+    assert.equal(row.end_at, "2026-11-03T19:30:00.000Z");
+    assert.equal(row.status, "confirmed");
+    assert.equal(row.full_name, "Test Client");
+    return new Response(JSON.stringify([{ id: "booking-id" }]), { status: 201 });
   });
 
   const response = await handler(request({
@@ -155,8 +152,8 @@ test("returns a conflict when another confirmed session overlaps", async (contex
     if (url.endsWith("/auth/v1/user")) {
       return new Response(JSON.stringify({ email: "studio@example.com" }), { status: 200 });
     }
-    return new Response(JSON.stringify({ message: "That time overlaps another confirmed session." }), {
-      status: 400
+    return new Response(JSON.stringify({ code: "23P01", message: "conflicting key value violates exclusion constraint" }), {
+      status: 409
     });
   });
 
