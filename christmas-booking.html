@@ -565,6 +565,7 @@
         mini: {
           name: "Mini",
           duration: 30,
+          starts: ["10:00", "10:45", "11:30", "13:15", "14:00", "14:45", "15:30"],
           durationLabel: "30 minutes",
           price: 300,
           images: "20+ edited images · up to 6 people",
@@ -574,6 +575,7 @@
         extended: {
           name: "Extended",
           duration: 60,
+          starts: ["10:00", "11:15", "13:15", "14:30", "15:45"],
           durationLabel: "1 hour",
           price: 600,
           images: "40+ edited images · up to 8 people",
@@ -644,22 +646,34 @@
 
         timeHelp.textContent = "";
         try {
-          const query = new URLSearchParams({ package: selectedPackage && new URLSearchParams(window.location.search).get("package"), date: dateValue });
-          const response = await fetch(`/.netlify/functions/christmas-availability?${query}`, {
-            headers: { accept: "application/json" }
-          });
-          const result = await response.json().catch(() => null);
-          if (requestId !== availabilityRequest) return;
-          if (!response.ok) {
-            throw new Error(result?.message || "Availability could not be checked. Please request a custom time.");
+          const packageId = new URLSearchParams(window.location.search).get("package");
+          const query = new URLSearchParams({ package: packageId, date: dateValue });
+          busyRanges = [];
+          try {
+            const response = await fetch(`/.netlify/functions/christmas-availability?${query}`, {
+              headers: { accept: "application/json" }
+            });
+            const result = await response.json().catch(() => null);
+            if (response.ok && Array.isArray(result?.busy)) busyRanges = result.busy;
+          } catch (error) {
+            busyRanges = [];
           }
-          if (!Array.isArray(result?.slots) || result.slots.some((slot) => typeof slot !== "string")) {
-            throw new Error("Availability could not be checked. Please request a custom time.");
+          if (requestId !== availabilityRequest) return;
+
+          const [year, month, day] = dateValue.split("-").map(Number);
+          const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+          if (weekday !== 0 && weekday !== 6) {
+            timeHelp.textContent = "Sessions run on Saturdays and Sundays. Please pick a weekend date, or request a custom time.";
+            return;
           }
 
-          busyRanges = Array.isArray(result.busy) ? result.busy : [];
-          for (const slotStart of result.slots) {
-            const label = timeFormatter.format(new Date(slotStart));
+          const buffer = 15;
+          for (const start of selectedPackage.starts) {
+            const [hours, minutes] = start.split(":").map(Number);
+            const startMinutes = hours * 60 + minutes;
+            const endMinutes = startMinutes + selectedPackage.duration;
+            if (busyRanges.some((range) => startMinutes < range.end + buffer && endMinutes + buffer > range.start)) continue;
+            const label = formatCustomTime(start);
             const button = document.createElement("button");
             button.className = "time-slot";
             button.type = "button";
@@ -675,11 +689,11 @@
           }
 
           if (timeSlots.childElementCount === 0) {
-            timeHelp.textContent = "No listed times are available for this date. You can request a custom time.";
+            timeHelp.textContent = "All times on this date are booked. Please pick another weekend date.";
           }
         } catch (error) {
           if (requestId === availabilityRequest) {
-            timeHelp.textContent = error.message;
+            timeHelp.textContent = "Times could not be loaded. Please request a custom time.";
           }
         }
       }
