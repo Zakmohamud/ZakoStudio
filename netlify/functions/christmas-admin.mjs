@@ -12,7 +12,7 @@ function jsonResponse(statusCode, body) {
 
 const packageDetails = {
   mini: { minutes: 30, price: 30000, deposit: 15000 },
-  extended: { minutes: 40, price: 50000, deposit: 25000 }
+  extended: { minutes: 60, price: 60000, deposit: 30000 }
 };
 
 function vancouverToUtc(date, time) {

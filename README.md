@@ -12,7 +12,7 @@ The studio inbox must approve FormSubmit's one-time activation email before subm
 
 Share the Christmas package page in Instagram and Facebook ads: <https://zako-studio.netlify.app/christmas-booking.html>. The floating “Christmas family sessions” button on the portfolio opens this page. Each package has its own detail URL through a `package` query parameter.
 
-Packages: 30-minute Mini, $300 CAD, 20+ edited images, up to 6 people; and 40-minute Extended, $500 CAD, 40+ edited images, up to 8 people. A 50% deposit is required before a booking is confirmed; its amount is explained at the end of the inquiry form. The photographer follows up by email to confirm availability and arrange the deposit. Submitting an inquiry does not reserve a date or charge the client.
+Packages: 30-minute Mini, $300 CAD, 20+ edited images, up to 6 people; and 1-hour Extended, $600 CAD, 40+ edited images, up to 8 people. A 50% deposit is required before a booking is confirmed; its amount is explained at the end of the inquiry form. The photographer follows up by email to confirm availability and arrange the deposit. Submitting an inquiry does not reserve a date or charge the client.
 
 ### Booking-system setup
 

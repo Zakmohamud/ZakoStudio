@@ -127,7 +127,7 @@ test("records a confirmed session through the conflict-safe database function", 
     assert.equal(url, "https://project.supabase.co/rest/v1/christmas_bookings");
     const row = JSON.parse(options.body);
     assert.equal(row.start_at, "2026-11-03T18:00:00.000Z");
-    assert.equal(row.end_at, "2026-11-03T18:40:00.000Z");
+    assert.equal(row.end_at, "2026-11-03T19:00:00.000Z");
     assert.equal(row.status, "confirmed");
     assert.equal(row.full_name, "Test Client");
     return new Response(JSON.stringify([{ id: "booking-id" }]), { status: 201 });
