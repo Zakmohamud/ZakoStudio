@@ -178,10 +178,8 @@
             <label for="booking-package">
               Package
               <select id="booking-package" required>
-                <option value="mini">Mini · 30 minutes</option>
-                <option value="standard-60">Standard · 1 hour</option>
-                <option value="standard-90">Standard · 1.5 hours</option>
-                <option value="extended">Extended · 2 hours</option>
+                <option value="mini">Mini · 20 minutes</option>
+                <option value="extended">Extended · 40 minutes</option>
               </select>
             </label>
             <label for="booking-name">
@@ -225,10 +223,10 @@
       const resetPasswordButton = document.getElementById("reset-password");
       const refreshBookingsButton = document.getElementById("refresh-bookings");
       const packageNames = {
-        mini: "Mini · 30 minutes",
+        mini: "Mini · 20 minutes",
         "standard-60": "Standard · 1 hour",
         "standard-90": "Standard · 1.5 hours",
-        extended: "Extended · 2 hours"
+        extended: "Extended · 40 minutes"
       };
       let accessToken = "";
 
@@ -258,10 +256,10 @@
       }
 
       const packageLabels = {
-        mini: "Mini · 30 minutes",
+        mini: "Mini · 20 minutes",
         "standard-60": "Standard · 1 hour",
         "standard-90": "Standard · 1.5 hours",
-        extended: "Extended · 2 hours"
+        extended: "Extended · 40 minutes"
       };
 
       async function sendConfirmationEmail(details) {

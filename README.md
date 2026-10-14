@@ -12,7 +12,7 @@ The studio inbox must approve FormSubmit's one-time activation email before subm
 
 Share the Christmas package page in Instagram and Facebook ads: <https://zako-studio.netlify.app/christmas-booking.html>. The floating “Christmas family sessions” button on the portfolio opens this page. Each package has its own detail URL through a `package` query parameter.
 
-Packages: 30-minute Mini, $200 CAD, 5–10 edited images; 1-hour Standard, $350 CAD, 15–25 edited images; 1.5-hour Standard, $450 CAD, 15–25 edited images; and 2-hour Extended, $650 CAD, 30–50 edited images. A 50% deposit is required before a booking is confirmed; its amount is explained at the end of the inquiry form. The photographer follows up by email to confirm availability and arrange the deposit. Submitting an inquiry does not reserve a date or charge the client.
+Packages: 20-minute Mini, $300 CAD, 20+ edited images, up to 6 people; and 40-minute Extended, $500 CAD, 40+ edited images, up to 8 people. A 50% deposit is required before a booking is confirmed; its amount is explained at the end of the inquiry form. The photographer follows up by email to confirm availability and arrange the deposit. Submitting an inquiry does not reserve a date or charge the client.
 
 ### Booking-system setup
 
@@ -29,7 +29,7 @@ After confirming an inquiry with a client, add it in the private manager so over
 
 The database also supports 15-minute pending-payment holds for a future online payment integration. Stripe and Square require a server-side adapter, provider secrets, webhook verification, and a confirmed-booking email flow before deposits can be charged online.
 
-Package photos are in `images/christmas-mini.jpg`, `images/christmas-standard-one-hour.jpg`, `images/christmas-standard-one-and-half-hours.jpg`, and `images/christmas-extended.jpg`.
+Package photos are in `images/christmas-extended.jpg` (Mini) and `images/christmas-standard-one-hour.jpg` (Extended).
 
 ## Updating portfolio galleries
 

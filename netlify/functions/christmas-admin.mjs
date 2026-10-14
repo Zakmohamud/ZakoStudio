@@ -1,4 +1,4 @@
-const allowedPackages = new Set(["mini", "standard-60", "standard-90", "extended"]);
+const allowedPackages = new Set(["mini", "extended"]);
 
 function jsonResponse(statusCode, body) {
   return new Response(JSON.stringify(body), {
@@ -11,10 +11,8 @@ function jsonResponse(statusCode, body) {
 }
 
 const packageDetails = {
-  mini: { minutes: 30, price: 20000, deposit: 10000 },
-  "standard-60": { minutes: 60, price: 35000, deposit: 17500 },
-  "standard-90": { minutes: 90, price: 45000, deposit: 22500 },
-  extended: { minutes: 120, price: 65000, deposit: 32500 }
+  mini: { minutes: 20, price: 30000, deposit: 15000 },
+  extended: { minutes: 40, price: 50000, deposit: 25000 }
 };
 
 function vancouverToUtc(date, time) {

@@ -1,4 +1,4 @@
-const allowedPackages = new Set(["mini", "standard-60", "standard-90", "extended"]);
+const allowedPackages = new Set(["mini", "extended"]);
 
 function jsonResponse(statusCode, body) {
   return new Response(JSON.stringify(body), {
