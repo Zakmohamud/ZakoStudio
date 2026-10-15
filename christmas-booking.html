@@ -445,6 +445,17 @@
         </p>
 
         <div class="packages" aria-label="Christmas family photography packages">
+          <a class="package-card" href="?package=quick">
+            <div class="package-photo">
+              <img src="images/christmas-quick.jpg" alt="Parents and their son sharing a Christmas portrait by the fireplace" loading="lazy" />
+            </div>
+            <div class="package-card-content">
+              <h2>Quick</h2>
+              <p class="price">$175 CAD · 15 minutes</p>
+              <p class="package-summary">10+ edited images · up to 3 people</p>
+              <span class="card-action">View session details →</span>
+            </div>
+          </a>
           <a class="package-card" href="?package=mini">
             <div class="package-photo">
               <img src="images/christmas-extended.jpg" alt="Two children sharing a Christmas storybook portrait" loading="lazy" />
@@ -452,7 +463,7 @@
             <div class="package-card-content">
               <h2>Mini</h2>
               <p class="price">$300 CAD · 30 minutes</p>
-              <p class="package-summary">20+ edited images · up to 6 people</p>
+              <p class="package-summary">20+ edited images · up to 5 people</p>
               <span class="card-action">View session details →</span>
             </div>
           </a>
@@ -463,7 +474,7 @@
             <div class="package-card-content">
               <h2>Extended</h2>
               <p class="price">$600 CAD · 1 hour</p>
-              <p class="package-summary">40+ edited images · up to 8 people</p>
+              <p class="package-summary">40+ edited images · up to 7 people</p>
               <span class="card-action">View session details →</span>
             </div>
           </a>
@@ -562,13 +573,23 @@
 
     <script>
       const packages = {
+        quick: {
+          name: "Quick",
+          duration: 15,
+          starts: ["10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"],
+          durationLabel: "15 minutes",
+          price: 175,
+          images: "10+ edited images · up to 3 people",
+          photo: "images/christmas-quick.jpg",
+          photoAlt: "Parents and their son sharing a Christmas portrait by the fireplace"
+        },
         mini: {
           name: "Mini",
           duration: 30,
           starts: ["10:00", "10:45", "11:30", "13:15", "14:00", "14:45", "15:30"],
           durationLabel: "30 minutes",
           price: 300,
-          images: "20+ edited images · up to 6 people",
+          images: "20+ edited images · up to 5 people",
           photo: "images/christmas-extended.jpg",
           photoAlt: "Two children sharing a Christmas storybook portrait"
         },
@@ -578,7 +599,7 @@
           starts: ["10:00", "11:15", "13:15", "14:30", "15:45"],
           durationLabel: "1 hour",
           price: 600,
-          images: "40+ edited images · up to 8 people",
+          images: "40+ edited images · up to 7 people",
           photo: "images/christmas-standard-one-hour.jpg",
           photoAlt: "Parents and their baby sharing a Christmas family portrait"
         }

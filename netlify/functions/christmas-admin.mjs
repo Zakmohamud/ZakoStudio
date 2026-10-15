@@ -1,4 +1,4 @@
-const allowedPackages = new Set(["mini", "extended"]);
+const allowedPackages = new Set(["quick", "mini", "extended"]);
 
 function jsonResponse(statusCode, body) {
   return new Response(JSON.stringify(body), {
@@ -11,6 +11,7 @@ function jsonResponse(statusCode, body) {
 }
 
 const packageDetails = {
+  quick: { minutes: 15, price: 17500, deposit: 8750 },
   mini: { minutes: 30, price: 30000, deposit: 15000 },
   extended: { minutes: 60, price: 60000, deposit: 30000 }
 };

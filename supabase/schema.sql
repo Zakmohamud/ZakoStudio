@@ -3,7 +3,7 @@ create extension if not exists btree_gist;
 create table if not exists public.christmas_bookings (
   id uuid primary key default gen_random_uuid(),
   package_id text not null check (
-    package_id in ('mini', 'standard-60', 'standard-90', 'extended')
+    package_id in ('quick', 'mini', 'standard-60', 'standard-90', 'extended')
   ),
   package_price_cents integer not null check (package_price_cents > 0),
   deposit_cents integer not null check (deposit_cents > 0),

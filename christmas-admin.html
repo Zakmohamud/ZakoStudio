@@ -178,6 +178,7 @@
             <label for="booking-package">
               Package
               <select id="booking-package" required>
+                <option value="quick">Quick · 15 minutes</option>
                 <option value="mini">Mini · 30 minutes</option>
                 <option value="extended">Extended · 1 hour</option>
               </select>
@@ -223,6 +224,7 @@
       const resetPasswordButton = document.getElementById("reset-password");
       const refreshBookingsButton = document.getElementById("refresh-bookings");
       const packageNames = {
+        quick: "Quick · 15 minutes",
         mini: "Mini · 30 minutes",
         "standard-60": "Standard · 1 hour",
         "standard-90": "Standard · 1.5 hours",
@@ -256,6 +258,7 @@
       }
 
       const packageLabels = {
+        quick: "Quick · 15 minutes",
         mini: "Mini · 30 minutes",
         "standard-60": "Standard · 1 hour",
         "standard-90": "Standard · 1.5 hours",
