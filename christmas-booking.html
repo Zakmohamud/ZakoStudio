@@ -614,7 +614,14 @@
         day: "2-digit"
       }).format(new Date());
       const dateInput = document.getElementById("booking-date");
-      if (dateInput) dateInput.min = vancouverToday;
+      // Temporary launch window: only Oct 24-25 (after 12:30) until those dates pass.
+      const launchDates = ["2026-10-24", "2026-10-25"];
+      const launchEarliest = 12 * 60 + 30;
+      const launchActive = vancouverToday <= launchDates[1];
+      if (dateInput) {
+        dateInput.min = launchActive ? launchDates[0] : vancouverToday;
+        if (launchActive) dateInput.max = launchDates[1];
+      }
       const timeInput = document.getElementById("booking-time");
       const timeSlots = document.getElementById("time-slots");
       const timeHelp = document.getElementById("time-help");
@@ -683,6 +690,10 @@
 
           const [year, month, day] = dateValue.split("-").map(Number);
           const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+          if (launchActive && !launchDates.includes(dateValue)) {
+            timeHelp.textContent = "Right now we are booking October 24 and 25 only. Please pick one of those dates.";
+            return;
+          }
           if (weekday !== 0 && weekday !== 6) {
             timeHelp.textContent = "Sessions run on Saturdays and Sundays. Please pick a weekend date, or request a custom time.";
             return;
@@ -692,6 +703,7 @@
           for (const start of selectedPackage.starts) {
             const [hours, minutes] = start.split(":").map(Number);
             const startMinutes = hours * 60 + minutes;
+            if (launchActive && startMinutes < launchEarliest) continue;
             const endMinutes = startMinutes + selectedPackage.duration;
             if (busyRanges.some((range) => startMinutes < range.end + buffer && endMinutes + buffer > range.start)) continue;
             const label = formatCustomTime(start);
@@ -753,6 +765,13 @@
           const [hours, minutes] = customTimeInput.value.split(":").map(Number);
           const start = hours * 60 + minutes;
           const end = start + selectedPackage.duration;
+          if (launchActive && start < launchEarliest) {
+            customTimeInput.value = "";
+            timeInput.value = "";
+            customTimeInput.setCustomValidity("Sessions on October 24 and 25 start at 12:30 PM or later.");
+            customTimeInput.reportValidity();
+            return;
+          }
           if (busyRanges.some((range) => start < range.end && end > range.start)) {
             customTimeInput.value = "";
             timeInput.value = "";
