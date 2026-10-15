@@ -40,20 +40,16 @@ test("returns an explicit setup message when Supabase is not configured", async 
   assert.match((await response.json()).message, /not connected yet/);
 });
 
-test("returns validated slot data from Supabase", async (context) => {
+test("returns busy ranges from confirmed bookings", async (context) => {
   const originalUrl = process.env.SUPABASE_URL;
   const originalKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const originalFetch = globalThis.fetch;
   process.env.SUPABASE_URL = "https://project.supabase.co/";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
   globalThis.fetch = async (url, options) => {
-    assert.equal(url, "https://project.supabase.co/rest/v1/rpc/christmas_available_slots");
+    assert.match(url, /^https:\/\/project\.supabase\.co\/rest\/v1\/christmas_bookings\?/);
     assert.equal(options.headers.apikey, "test-service-role-key");
-    assert.deepEqual(JSON.parse(options.body), {
-      p_service_date: "2026-10-10",
-      p_package_id: "mini"
-    });
-    return new Response(JSON.stringify([{ slot_start: "2026-10-10T17:00:00+00:00" }]), {
+    return new Response(JSON.stringify([{ start_at: "2026-10-10T18:00:00+00:00", end_at: "2026-10-10T18:30:00+00:00" }]), {
       status: 200,
       headers: { "content-type": "application/json" }
     });
@@ -69,5 +65,5 @@ test("returns validated slot data from Supabase", async (context) => {
   const response = await handler(request("GET", "?package=mini&date=2026-10-10"));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { slots: ["2026-10-10T17:00:00+00:00"] });
+  assert.deepEqual(await response.json(), { slots: [], busy: [{ start: 660, end: 690 }] });
 });

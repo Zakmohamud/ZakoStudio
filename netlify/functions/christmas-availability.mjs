@@ -34,9 +34,9 @@ async function busyRanges(supabaseUrl, serviceRoleKey, serviceDate) {
     headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}` },
     signal: AbortSignal.timeout(8000)
   });
-  if (!response.ok) return [];
+  if (!response.ok) throw new Error(`Supabase returned ${response.status}`);
   const rows = await response.json();
-  if (!Array.isArray(rows)) return [];
+  if (!Array.isArray(rows)) throw new Error("Invalid bookings response");
   return rows
     .map((row) => ({ start: localMinutes(row.start_at), end: localMinutes(row.end_at) }))
     .filter((row) => row.start.date === serviceDate)
@@ -75,34 +75,8 @@ export default async function handler(request) {
   }
 
   try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/christmas_available_slots`, {
-      method: "POST",
-      headers: {
-        apikey: serviceRoleKey,
-        authorization: `Bearer ${serviceRoleKey}`,
-        "content-type": "application/json"
-      },
-      body: JSON.stringify({
-        p_service_date: serviceDate,
-        p_package_id: packageId
-      }),
-      signal: AbortSignal.timeout(8000)
-    });
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error("Supabase availability request failed.", response.status, responseText);
-      return jsonResponse(502, { message: "Availability could not be checked. Please try again later." });
-    }
-
-    const rows = await response.json();
-    if (!Array.isArray(rows) || rows.some((row) => typeof row.slot_start !== "string")) {
-      console.error("Supabase returned an invalid availability response.");
-      return jsonResponse(502, { message: "Availability could not be checked. Please try again later." });
-    }
-
-    const busy = await busyRanges(supabaseUrl, serviceRoleKey, serviceDate).catch(() => []);
-    return jsonResponse(200, { slots: rows.map((row) => row.slot_start), busy });
+    const busy = await busyRanges(supabaseUrl, serviceRoleKey, serviceDate);
+    return jsonResponse(200, { slots: [], busy });
   } catch (error) {
     console.error("Unable to reach Supabase for Christmas availability.", error);
     return jsonResponse(502, { message: "Availability could not be checked. Please try again later." });
