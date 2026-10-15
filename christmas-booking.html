@@ -700,9 +700,9 @@
 
       if (selectedPackage) {
         const packageId = new URLSearchParams(window.location.search).get("package");
-        const formNext = new URL("https://zako-studio.netlify.app/christmas-booking.html");
+        const formNext = new URL(window.location.pathname, window.location.origin);
         formNext.searchParams.set("inquiry", "sent");
-                document.getElementById("inquiry-package").value =
+        document.getElementById("inquiry-package").value =
           `${selectedPackage.name} — $${selectedPackage.price} CAD, ${selectedPackage.durationLabel}`;
         document.getElementById("inquiry-next").value = formNext.toString();
         document.getElementById("package-list").hidden = true;
