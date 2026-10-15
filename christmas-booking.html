@@ -650,7 +650,7 @@
           const query = new URLSearchParams({ package: packageId, date: dateValue });
           busyRanges = [];
           try {
-            const response = await fetch(`/.netlify/functions/christmas-availability?${query}`, {
+            const response = await fetch(`/api/christmas-availability?${query}`, {
               headers: { accept: "application/json" }
             });
             const result = await response.json().catch(() => null);
