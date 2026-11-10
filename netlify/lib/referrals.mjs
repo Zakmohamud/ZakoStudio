@@ -2,7 +2,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export const PACKAGE_PRICES = {
-  quick: { name: "Quick session", price: 175, minutes: 15 },
+  quick: { name: "Quick session", price: 190, minutes: 15 },
   mini: { name: "Mini session", price: 300, minutes: 30 },
   extended: { name: "Extended session", price: 600, minutes: 60 }
 };

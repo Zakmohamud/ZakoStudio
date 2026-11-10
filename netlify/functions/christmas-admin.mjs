@@ -11,7 +11,7 @@ function jsonResponse(statusCode, body) {
 }
 
 const packageDetails = {
-  quick: { minutes: 15, price: 17500, deposit: 8750 },
+  quick: { minutes: 15, price: 19000, deposit: 9500 },
   mini: { minutes: 30, price: 30000, deposit: 15000 },
   extended: { minutes: 60, price: 60000, deposit: 30000 }
 };

@@ -60,7 +60,7 @@ test("create a code, check it, record an inquiry, see stats", async () => {
     method: "POST",
     body: JSON.stringify({ package: "quick", name: "Bo", email: "bo@example.com", heardFrom: "Instagram" })
   }));
-  assert.equal((await res.json()).finalPrice, 175);
+  assert.equal((await res.json()).finalPrice, 190);
 
   const list = await (await adminCall({ action: "list" })).json();
   assert.equal(list.inquiries.length, 2);
