@@ -9,6 +9,8 @@ import {
   findCode,
   inquiriesStore,
   isCodeUsable,
+  isISODate,
+  isMinute,
   jsonResponse,
   normalizeCode
 } from "../lib/referrals.mjs";
@@ -70,6 +72,9 @@ export default async function handler(request) {
         heardFrom: cleanText(body.heardFrom, 80),
         date: cleanText(body.date, 80),
         time: cleanText(body.time, 80),
+        packageId: body.package,
+        dateISO: isISODate(body.dateISO) ? body.dateISO : null,
+        startMin: isMinute(body.startMin) ? body.startMin : null,
         booked: false
       };
       const store = await inquiriesStore();

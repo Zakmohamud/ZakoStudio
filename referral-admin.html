@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Referral codes — Zako Studio</title>
+    <title>Bookings & referral codes — Zako Studio</title>
     <link rel="icon" type="image/png" href="images/zako-studio-logo-trim.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -60,10 +60,24 @@
       .stat b { display: block; font-family: var(--serif); font-size: 28px; font-weight: 400; }
       .filter { display: flex; gap: 10px; align-items: end; margin-bottom: 12px; flex-wrap: wrap; }
       input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color: var(--green); }
+      .book-form { display: grid; grid-template-columns: 1fr; gap: 6px; min-width: 150px; }
+      .book-form input { min-height: 36px; padding: 5px 8px; font-size: 14px; }
+      .booked-tag { display: inline-block; color: var(--green); font-weight: 500; }
+      .block-form { display: grid; grid-template-columns: 1fr 0.8fr 0.8fr auto 1.4fr auto; gap: 12px; align-items: end; padding: 18px; border: 1px solid var(--line); background: var(--card); }
+      .check { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; }
+      .day-group { margin-top: 14px; border: 1px solid var(--line); background: var(--card); }
+      .day-group h3 { margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--line); font-family: var(--serif); font-weight: 400; font-size: 21px; }
+      .slot { display: grid; grid-template-columns: 170px 1fr auto; gap: 12px; align-items: center; padding: 9px 14px; border-bottom: 1px solid var(--line); }
+      .slot:last-child { border-bottom: 0; }
+      .slot .kind { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+      .slot.block { background: #f1ebe2; }
       [hidden] { display: none !important; }
       @media (max-width: 760px) {
         .new-code { grid-template-columns: 1fr 1fr; }
         .new-code .btn { grid-column: 1 / -1; }
+        .block-form { grid-template-columns: 1fr 1fr; }
+        .block-form .btn, .block-form .note { grid-column: 1 / -1; }
+        .slot { grid-template-columns: 1fr; gap: 4px; }
       }
     </style>
   </head>
@@ -71,8 +85,8 @@
     <main>
       <header>
         <div>
-          <h1>Referral codes</h1>
-          <p>Create codes for partners, set their discount, and see who sent you clients.</p>
+          <h1>Bookings &amp; codes</h1>
+          <p>Book confirmed clients, block off time, and manage partner referral codes.</p>
         </div>
         <button class="btn ghost small" id="sign-out" hidden>Sign out</button>
       </header>
@@ -87,7 +101,58 @@
 
       <div id="app" hidden>
         <section>
-          <h2>New code</h2>
+          <h2>Inquiries</h2>
+          <div class="stats" id="stats"></div>
+          <div class="filter">
+            <label>Show
+              <select id="filter">
+                <option value="open">Not booked yet</option>
+                <option value="all">All inquiries</option>
+                <option value="booked">Booked</option>
+                <option value="code">With a referral code</option>
+              </select>
+            </label>
+          </div>
+          <p class="message" id="inquiry-message" role="status"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Received</th><th>Client</th><th>Package</th><th>Requested</th><th>Code / partner</th><th>Heard from</th><th>Price</th><th>Booking</th><th></th></tr>
+              </thead>
+              <tbody id="inquiries-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section>
+          <h2>Block off time</h2>
+          <form class="block-form" id="block-form">
+            <label>Date
+              <input type="date" id="bl-date" required />
+            </label>
+            <label>From
+              <input type="time" id="bl-from" value="08:00" />
+            </label>
+            <label>To
+              <input type="time" id="bl-to" value="12:00" />
+            </label>
+            <label class="check"><input type="checkbox" id="bl-whole" /> Whole day</label>
+            <label class="note">Note (optional)
+              <input id="bl-note" placeholder="e.g. Away, or a client booked by phone" />
+            </label>
+            <button class="btn red" type="submit">Block</button>
+          </form>
+          <p class="message" id="block-message" role="status"></p>
+        </section>
+
+        <section>
+          <h2>Upcoming schedule</h2>
+          <p class="muted">Booked sessions include your 10-minute break afterwards on the booking page.</p>
+          <div id="schedule"></div>
+        </section>
+
+        <section>
+          <h2>New referral code</h2>
           <form class="new-code" id="new-code">
             <label>Code
               <input id="nc-code" placeholder="SARAH15" required autocapitalize="characters" style="text-transform:uppercase" />
@@ -117,27 +182,6 @@
             </table>
           </div>
         </section>
-
-        <section>
-          <h2>Inquiries</h2>
-          <div class="stats" id="stats"></div>
-          <div class="filter">
-            <label>Show
-              <select id="filter">
-                <option value="all">All inquiries</option>
-                <option value="code">With a referral code</option>
-              </select>
-            </label>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr><th>Received</th><th>Client</th><th>Package</th><th>Requested</th><th>Code / partner</th><th>Heard from</th><th>Price</th><th>Booked</th><th></th></tr>
-              </thead>
-              <tbody id="inquiries-body"></tbody>
-            </table>
-          </div>
-        </section>
       </div>
     </main>
 
@@ -149,6 +193,10 @@
 
       const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
       const money = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
+      const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+      const fromHHMM = (v) => { const [h, m] = String(v).split(":").map(Number); return Number.isInteger(h) && Number.isInteger(m) ? h * 60 + m : null; };
+      const clock = (m) => { if (m >= 1440) return "midnight"; const h = Math.floor(m / 60), mm = m % 60; return `${h % 12 === 0 ? 12 : h % 12}:${String(mm).padStart(2, "0")} ${h >= 12 ? "p.m." : "a.m."}`; };
+      const dayLabel = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString("en-CA", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
       const when = (iso) => new Date(iso).toLocaleString("en-CA", { timeZone: "America/Vancouver", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
       async function api(body) {
@@ -201,7 +249,10 @@
             </tr>`).join("")
           : '<tr><td colspan="8" class="muted">No codes yet. Create one above.</td></tr>';
 
-        const list = $("filter").value === "code" ? data.inquiries.filter((i) => i.code) : data.inquiries;
+        const f = $("filter").value;
+        const list = data.inquiries.filter((i) =>
+          f === "all" ? true : f === "code" ? i.code : f === "booked" ? i.booked : !i.booked
+        );
         const withCode = data.inquiries.filter((i) => i.code);
         $("stats").innerHTML = `
           <div class="stat"><b>${data.inquiries.length}</b>Inquiries</div>
@@ -218,10 +269,44 @@
               <td>${i.code ? `<span class="code">${esc(i.code)}</span><br><span class="muted">${esc(i.partner)}</span>` : '<span class="muted">—</span>'}</td>
               <td>${i.heardFrom ? esc(i.heardFrom) : '<span class="muted">—</span>'}</td>
               <td>${i.percent ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> −${i.percent}%</span>` : money(i.price)}</td>
-              <td><input type="checkbox" aria-label="Booked" data-act="booked" data-id="${esc(i.id)}" ${i.booked ? "checked" : ""}></td>
+              <td>${bookingCell(i)}</td>
               <td><button class="linkish" data-act="remove" data-id="${esc(i.id)}">Remove</button></td>
             </tr>`).join("")
-          : '<tr><td colspan="9" class="muted">No inquiries yet.</td></tr>';
+          : '<tr><td colspan="9" class="muted">Nothing here.</td></tr>';
+
+        renderSchedule();
+      }
+
+      function bookingCell(i) {
+        if (i.booked && i.bookedDate) {
+          return `<span class="booked-tag">✓ ${esc(dayLabel(i.bookedDate))}<br>${clock(i.bookedStart)}–${clock(i.bookedEnd)}</span><br>
+            <button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo</button>`;
+        }
+        const date = i.bookedDate || i.dateISO || "";
+        const time = Number.isInteger(i.startMin) ? toHHMM(i.startMin) : "";
+        return `<div class="book-form">
+            <input type="date" aria-label="Session date" id="bd-${esc(i.id)}" value="${esc(date)}">
+            <input type="time" aria-label="Start time" id="bt-${esc(i.id)}" value="${esc(time)}" step="300">
+            <button class="btn small" data-act="book" data-id="${esc(i.id)}">Mark booked</button>
+          </div>`;
+      }
+
+      function renderSchedule() {
+        const byDay = {};
+        for (const e of data.schedule || []) (byDay[e.date] ||= []).push(e);
+        const days = Object.keys(byDay).sort();
+        $("schedule").innerHTML = days.length
+          ? days.map((d) => `
+            <div class="day-group">
+              <h3>${esc(dayLabel(d))}</h3>
+              ${byDay[d].map((e) => `
+                <div class="slot ${e.kind}">
+                  <span>${e.start === 0 && e.end >= 1440 ? "Whole day" : `${clock(e.start)} – ${clock(e.end)}`}</span>
+                  <span>${esc(e.label)} <span class="kind">· ${e.kind === "block" ? "blocked" : "session"}</span></span>
+                  ${e.kind === "block" ? `<button class="linkish" data-act="unblock" data-id="${esc(e.id)}">Remove</button>` : "<span></span>"}
+                </div>`).join("")}
+            </div>`).join("")
+          : '<p class="muted">Nothing booked or blocked yet.</p>';
       }
 
       function note(text, kind) {
@@ -270,7 +355,7 @@
 
       document.addEventListener("click", async (event) => {
         const el = event.target.closest("[data-act]");
-        if (!el || el.dataset.act === "booked") return;
+        if (!el) return;
         const code = data.codes.find((c) => c.code === el.dataset.code);
         try {
           if (el.dataset.act === "toggle" && code) {
@@ -283,6 +368,26 @@
           } else if (el.dataset.act === "delete" && code) {
             if (!confirm(`Delete ${code.code}? Past inquiries keep their record, but the code will stop working.`)) return;
             await api({ action: "deleteCode", code: code.code });
+          } else if (el.dataset.act === "book") {
+            const date = $(`bd-${el.dataset.id}`).value;
+            const start = fromHHMM($(`bt-${el.dataset.id}`).value);
+            if (!date || start === null) {
+              inquiryNote("Enter the date and start time first.", "bad");
+              return;
+            }
+            try {
+              await api({ action: "book", id: el.dataset.id, date, start });
+              inquiryNote("Booked — that time is now blocked on your booking page.", "ok");
+            } catch (error) {
+              inquiryNote(error.message, "bad");
+              return;
+            }
+          } else if (el.dataset.act === "unbook") {
+            if (!confirm("Undo this booking? The time will open up again on the booking page.")) return;
+            await api({ action: "unbook", id: el.dataset.id });
+            inquiryNote("Booking removed — that time is open again.", "ok");
+          } else if (el.dataset.act === "unblock") {
+            await api({ action: "unblock", id: el.dataset.id });
           } else if (el.dataset.act === "remove") {
             if (!confirm("Remove this inquiry from the list?")) return;
             await api({ action: "deleteInquiry", id: el.dataset.id });
@@ -295,15 +400,34 @@
         }
       });
 
-      document.addEventListener("change", async (event) => {
-        const el = event.target;
-        if (el.dataset?.act !== "booked") return;
+      function inquiryNote(text, kind) {
+        $("inquiry-message").textContent = text;
+        $("inquiry-message").className = `message ${kind || ""}`;
+      }
+
+      $("bl-whole").addEventListener("change", (event) => {
+        $("bl-from").disabled = $("bl-to").disabled = event.target.checked;
+      });
+
+      $("block-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("block-message");
         try {
-          await api({ action: "setBooked", id: el.dataset.id, booked: el.checked });
+          await api({
+            action: "block",
+            date: $("bl-date").value,
+            wholeDay: $("bl-whole").checked,
+            start: fromHHMM($("bl-from").value),
+            end: fromHHMM($("bl-to").value),
+            note: $("bl-note").value
+          });
+          msg.textContent = "Blocked — clients can’t pick that time.";
+          msg.className = "message ok";
+          $("bl-note").value = "";
           await load();
         } catch (error) {
-          el.checked = !el.checked;
-          note(error.message, "bad");
+          msg.textContent = error.message;
+          msg.className = "message bad";
         }
       });
 

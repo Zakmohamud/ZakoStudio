@@ -324,7 +324,7 @@
         gap: 10px;
       }
 
-      .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .chips.times { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
 
       .chip {
         display: inline-flex;
@@ -344,6 +344,18 @@
       }
 
       .chip:hover { border-color: var(--red); }
+
+      .chip:disabled {
+        border-style: dashed;
+        background: transparent;
+        color: var(--muted);
+        cursor: not-allowed;
+      }
+
+      .chip:disabled .chip-text { text-decoration: line-through; text-decoration-thickness: 1px; }
+      .chip:disabled small { display: inline-block; width: 100%; }
+
+      .start-picker { margin-top: 14px; max-width: 360px; }
 
       .chip[aria-pressed="true"] {
         border: 2px solid var(--red);
@@ -558,7 +570,7 @@
         .text-link { font-size: 15px; }
         .choice-area { padding-top: 22px; }
         .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .chips.times { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
         .chip { min-height: 50px; font-size: 18px; }
         .chips.times .chip { font-size: 17px; padding: 8px 4px; }
         .form-grid { grid-template-columns: 1fr; }
@@ -629,6 +641,7 @@
       >
         <input type="hidden" name="_subject" value="New Christmas family session request" />
         <input type="hidden" name="_template" value="table" />
+        <input type="hidden" name="_captcha" value="false" />
         <input type="hidden" name="_next" id="form-next" />
         <input type="hidden" name="Package" id="form-package" />
         <input type="hidden" name="Preferred date" id="form-date" />
@@ -671,6 +684,10 @@
             <div id="time-block" hidden>
               <h3 class="time-heading" id="time-title">Preferred time</h3>
               <div class="chips times" id="time-options" role="group" aria-labelledby="time-title"></div>
+              <label class="field start-picker" id="start-picker" for="start-time" hidden>
+                Start time · Vancouver time
+                <select id="start-time"></select>
+              </label>
             </div>
 
             <div class="other-day" id="other-day" hidden>
@@ -684,7 +701,7 @@
               </label>
             </div>
 
-            <p class="hint">Availability is confirmed by email.</p>
+            <p class="hint">Only open times are shown. I’ll confirm your time by email.</p>
             <p class="error" id="step-2-error" role="alert" hidden></p>
 
             <button class="primary" type="button" id="to-details">
@@ -766,6 +783,7 @@
           short: "Quick",
           price: 175,
           duration: "15 minutes",
+          minutes: 15,
           meta: "15 minutes · 10+ edited images · up to 3 people",
           photo: "images/christmas-quick.jpg",
           alt: "Parents and their son sharing a Christmas portrait by the fireplace"
@@ -775,6 +793,7 @@
           short: "Mini",
           price: 300,
           duration: "30 minutes",
+          minutes: 30,
           meta: "30 minutes · 20+ edited images · up to 5 people",
           photo: "images/christmas-extended.jpg",
           alt: "Two children sharing a Christmas storybook portrait"
@@ -784,18 +803,27 @@
           short: "Extended",
           price: 600,
           duration: "1 hour",
+          minutes: 60,
           meta: "1 hour · 40+ edited images · up to 7 people",
           photo: "images/christmas-standard-one-hour.jpg",
           alt: "Parents and their baby sharing a Christmas family portrait"
         }
       };
 
-      const timeChoices = {
-        weekend: ["Morning", "Afternoon", "Flexible"],
-        evening: ["4–6 p.m.", "After 6 p.m.", "Flexible"]
+      // Working hours in minutes after midnight (Vancouver time).
+      const DAY_PARTS = {
+        weekend: [
+          { name: "Morning", from: 8 * 60, to: 12 * 60, hours: "8 a.m.–12 p.m." },
+          { name: "Afternoon", from: 12 * 60, to: 17 * 60, hours: "12–5 p.m." }
+        ],
+        evening: [
+          { name: "Evening", from: 16 * 60, to: 19 * 60, hours: "4–7 p.m." }
+        ]
       };
+      const BREAK_MINUTES = 10;   // kept free after every session
 
-      const state = { step: 1, packageId: null, date: null, dayType: null, time: null, otherDay: false, showAll: false };
+      const state = { step: 1, packageId: null, date: null, dayType: null, part: null, start: null, otherDay: false, showAll: false };
+      let busy = {};              // { "2026-11-14": [[480, 510], ...] } from /api/schedule
 
       const $ = (id) => document.getElementById(id);
       const params = new URLSearchParams(location.search);
@@ -858,6 +886,8 @@
         $("summary-meta").textContent = pkg.meta;
         $("form-package").value = `${pkg.name} — $${pkg.price} CAD, ${pkg.duration}`;
         updatePrice();
+        renderDates();
+        renderTimes();
         const url = new URL(location.href);
         url.searchParams.set("package", id);
         url.searchParams.delete("inquiry");
@@ -875,23 +905,61 @@
         return chip;
       }
 
+      function formatMinutes(total) {
+        const h = Math.floor(total / 60);
+        const m = total % 60;
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        return `${h12}:${String(m).padStart(2, "0")} ${h >= 12 ? "p.m." : "a.m."}`;
+      }
+
+      // Start times still free in one part of the day, packed back to back with a break after each.
+      function freeStarts(date, part) {
+        const minutes = packages[state.packageId]?.minutes || 30;
+        const taken = busy[date] || [];
+        const starts = [];
+        let s = part.from;
+        while (s + minutes <= part.to) {
+          const clash = taken.find(([bs, be]) => s < be + BREAK_MINUTES && bs < s + minutes + BREAK_MINUTES);
+          if (clash) {
+            s = clash[1] + BREAK_MINUTES;
+            continue;
+          }
+          starts.push(s);
+          s += minutes + BREAK_MINUTES;
+        }
+        return starts;
+      }
+
+      const dayIsFull = (date, type) => DAY_PARTS[type].every((part) => freeStarts(date, part).length === 0);
+
       function renderDates() {
         const limit = state.showAll ? Infinity : INITIAL_DATES_SHOWN;
+        if (state.date && dayIsFull(state.date, state.dayType)) {
+          state.date = null;
+          state.part = null;
+          state.start = null;
+        }
         const fill = (container, days, type) => {
           container.replaceChildren(
-            ...days.slice(0, limit).map((iso) =>
-              makeChip(shortLabel(iso), "", state.date === iso && !state.otherDay, () => {
+            ...days.slice(0, limit).map((iso) => {
+              const full = dayIsFull(iso, type);
+              const chip = makeChip(shortLabel(iso), full ? "Fully booked" : "", state.date === iso && !state.otherDay, () => {
+                if (state.date !== iso) {
+                  state.part = null;
+                  state.start = null;
+                }
                 state.date = iso;
                 state.dayType = type;
                 state.otherDay = false;
-                if (!timeChoices[type].includes(state.time)) state.time = null;
                 $("other-day").hidden = true;
                 $("other-date").value = "";
                 renderDates();
                 renderTimes();
                 hideError(2);
-              })
-            )
+              });
+              chip.disabled = full;
+              return chip;
+            })
           );
           return days.length;
         };
@@ -910,16 +978,47 @@
           return;
         }
         block.hidden = false;
-        $("time-options").replaceChildren(
-          ...timeChoices[state.dayType].map((label) =>
-            makeChip(label, "", state.time === label, () => {
-              state.time = label;
-              renderTimes();
-              hideError(2);
-            })
-          )
+        const parts = DAY_PARTS[state.dayType];
+        const chips = parts.map((part) => {
+          const open = freeStarts(state.date, part).length > 0;
+          const chip = makeChip(part.name, open ? part.hours : "Booked", state.part === part.name, () => {
+            state.part = part.name;
+            state.start = null;
+            renderTimes();
+            hideError(2);
+            $("start-time").focus();
+          });
+          chip.disabled = !open;
+          return chip;
+        });
+        chips.push(makeChip("Flexible", "any time", state.part === "Flexible", () => {
+          state.part = "Flexible";
+          state.start = null;
+          renderTimes();
+          hideError(2);
+        }));
+        $("time-options").replaceChildren(...chips);
+
+        const picker = $("start-picker");
+        const part = parts.find((p) => p.name === state.part);
+        if (!part) {
+          picker.hidden = true;
+          return;
+        }
+        picker.hidden = false;
+        const minutes = packages[state.packageId]?.minutes || 30;
+        const starts = freeStarts(state.date, part);
+        if (!starts.includes(state.start)) state.start = null;
+        $("start-time").replaceChildren(
+          new Option(`Choose a ${state.part.toLowerCase()} start time`, ""),
+          ...starts.map((m) => new Option(`${formatMinutes(m)} – ${formatMinutes(m + minutes)}`, String(m), false, m === state.start))
         );
       }
+
+      $("start-time").addEventListener("change", (event) => {
+        state.start = event.target.value === "" ? null : Number(event.target.value);
+        hideError(2);
+      });
 
       $("show-more-dates").addEventListener("click", () => {
         state.showAll = true;
@@ -931,7 +1030,8 @@
         $("other-day").hidden = !state.otherDay;
         if (state.otherDay) {
           state.date = null;
-          state.time = null;
+          state.part = null;
+          state.start = null;
           $("other-date").focus();
         }
         renderDates();
@@ -963,9 +1063,14 @@
           return true;
         }
         if (!state.date) return showError(2, "Choose a preferred day."), false;
-        if (!state.time) return showError(2, "Choose a preferred time."), false;
+        if (!state.part) return showError(2, "Choose a time of day."), false;
+        if (state.part !== "Flexible" && state.start === null) {
+          return showError(2, "Choose a start time from the list."), false;
+        }
         $("form-date").value = longLabel(state.date);
-        $("form-time").value = state.time;
+        $("form-time").value = state.part === "Flexible"
+          ? "Flexible (any open time that day)"
+          : `${state.part} · ${formatMinutes(state.start)}`;
         return true;
       }
 
@@ -1105,7 +1210,9 @@
               code: state.discount?.code || "",
               heardFrom: $("heard-from").value,
               date: $("form-date").value,
-              time: $("form-time").value
+              time: $("form-time").value,
+              dateISO: state.otherDay ? $("other-date").value : state.date,
+              startMin: state.otherDay ? null : state.start
             }),
             keepalive: true,
             signal: controller.signal
@@ -1160,6 +1267,16 @@
 
       renderDates();
       renderTimes();
+      fetch("/api/schedule", { headers: { accept: "application/json" } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((result) => {
+          if (result?.busy) {
+            busy = result.busy;
+            renderDates();
+            renderTimes();
+          }
+        })
+        .catch(() => {});
       if (packages[params.get("package")]) {
         selectPackage(params.get("package"));
         goTo(2);
