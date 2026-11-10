@@ -51,3 +51,12 @@ Use descriptive alt text, and add the image file to GitHub with the code change 
 # ZakoSudio
 # ZakoSudio
 # ZakoStudio
+
+## Referral and discount codes
+
+Partners get their own code (for example `SARAH15`). Anyone who enters it on the Christmas booking page sees the discounted price and deposit right away, and the inquiry email shows the code, discount, and final price.
+
+- Manage codes at `/referral-admin.html`: create a code, set its % off (1–90), add an optional expiry date, turn it on/off, or delete it. Changes take effect immediately — no redeploy.
+- The same page lists every inquiry sent from the booking page, with the code/partner and "How did you hear about me?" answer. Tick **Booked** when a client confirms to see each partner's booked count.
+- The page is protected by the `REFERRAL_ADMIN_PASSWORD` environment variable in Netlify (Site configuration → Environment variables). Mark it as a secret and give it the Functions scope.
+- Codes and inquiries are stored in Netlify Blobs (stores `referral-codes` and `referral-inquiries`). Codes are checked server-side, so the list is never visible in the page source.

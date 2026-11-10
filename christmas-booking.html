@@ -3,224 +3,509 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f1eee9" />
-    <meta name="description" content="Explore Christmas family photo packages in Vancouver, review the details, and choose a session." />
+    <meta name="theme-color" content="#f7f2ea" />
+    <meta name="description" content="Christmas family photo sessions in Vancouver. Choose a package, pick a preferred day, and request your session." />
     <title>Christmas Family Sessions — Zako Studio</title>
     <link rel="icon" type="image/png" href="images/zako-studio-logo-trim.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --paper: #f1eee9;
-        --panel: #f8f5f0;
-        --ink: #171311;
-        --muted: #716a63;
-        --red: #d94335;
-        --line: rgba(23, 19, 18, 0.18);
+        --paper: #f7f2ea;
+        --card: #fbf8f3;
+        --ink: #1f1a17;
+        --muted: #5f5750;
+        --red: #a3201c;
+        --red-dark: #861a17;
+        --line: rgba(31, 26, 23, 0.22);
+        --line-strong: rgba(31, 26, 23, 0.55);
+        --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+        --sans: "Jost", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
       }
 
       * { box-sizing: border-box; }
 
       body {
         margin: 0;
-        padding: 24px;
-        background: #d9d5d0;
+        padding: 32px 20px;
+        background: #ece5da;
         color: var(--ink);
-        font-family: "Montserrat", sans-serif;
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.5;
       }
 
       main {
-        width: min(1040px, 100%);
-        min-height: calc(100vh - 48px);
+        width: min(1120px, 100%);
         margin: 0 auto;
-        padding: clamp(24px, 6vw, 64px);
+        padding: clamp(22px, 4vw, 44px);
         background: var(--paper);
-        border: 2px solid rgba(21, 18, 16, 0.82);
-        box-shadow: 0 18px 30px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--line-strong);
       }
 
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--ink);
-        font-family: "Cormorant Garamond", serif;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-decoration: none;
-      }
+      a { color: inherit; }
 
-      .brand img {
-        width: 54px;
-        height: 36px;
-        object-fit: contain;
-      }
+      button { font: inherit; color: inherit; }
 
-      .eyebrow {
-        margin: 44px 0 12px;
-        color: var(--red);
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-      }
-
-      h1, h2, h3 {
-        font-family: "Cormorant Garamond", serif;
-        font-weight: 500;
-      }
-
-      h1 {
-        max-width: 760px;
-        margin: 0;
-        font-size: clamp(46px, 9vw, 82px);
-        line-height: 0.95;
-      }
-
-      .intro {
-        max-width: 650px;
-        margin: 18px 0 32px;
-        color: var(--muted);
-        font-size: 14px;
-        line-height: 1.8;
-      }
-
-      .packages {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
-      }
-
-      .package-card {
-        display: grid;
-        grid-template-rows: 300px 1fr;
-        overflow: hidden;
-        background: var(--panel);
-        border: 1px solid var(--line);
-        color: inherit;
-        text-decoration: none;
-        transition: transform 180ms ease, box-shadow 180ms ease;
-      }
-
-      .package-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 24px rgba(23, 19, 18, 0.12);
-      }
-
-      .package-card:focus-visible,
-      .button:focus-visible,
-      .brand:focus-visible,
-      input:focus-visible {
-        outline: 3px solid var(--red);
+      :focus-visible {
+        outline: 2px solid var(--red);
         outline-offset: 3px;
       }
 
-      .package-photo,
-      .detail-photo {
-        display: grid;
-        place-items: center;
-        overflow: hidden;
-        background:
-          radial-gradient(ellipse at 50% 110%, rgba(217, 67, 53, 0.36), transparent 46%),
-          linear-gradient(135deg, #c5b8aa, #e9e1d7 48%, #aaa092);
-        color: rgba(23, 19, 18, 0.72);
+      [hidden] { display: none !important; }
+
+      /* Header */
+      .site-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--ink);
       }
 
-      .package-photo img,
-      .detail-photo img {
+      .wordmark {
+        font-family: var(--serif);
+        font-size: clamp(24px, 3vw, 32px);
+        text-decoration: none;
+        letter-spacing: -0.01em;
+      }
+
+      .back-portfolio {
+        font-size: 15px;
+        text-decoration: none;
+      }
+
+      .back-portfolio:hover { text-decoration: underline; }
+
+      /* Hero */
+      .hero { padding: clamp(22px, 4vw, 36px) 0 0; }
+
+      h1, h2, h3 {
+        margin: 0;
+        font-family: var(--serif);
+        font-weight: 400;
+        letter-spacing: -0.015em;
+      }
+
+      h1 {
+        font-size: clamp(46px, 8vw, 92px);
+        line-height: 0.98;
+      }
+
+      h1 em { font-style: italic; }
+
+      .subtitle {
+        margin: 12px 0 0;
+        font-size: clamp(17px, 2vw, 22px);
+        letter-spacing: 0.01em;
+      }
+
+      .sent-banner {
+        margin: 22px 0 0;
+        padding: 14px 18px;
+        border: 1px solid #2f6b4f;
+        background: #eef4ee;
+        font-size: 15px;
+      }
+
+      /* Stepper */
+      .stepper {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: clamp(22px, 3.5vw, 34px) 0 0;
+        padding: 0 0 clamp(18px, 3vw, 26px);
+        list-style: none;
+        border-bottom: 1px solid var(--ink);
+      }
+
+      .stepper li {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex: 0 0 auto;
+      }
+
+      .stepper .rule {
+        flex: 1 1 auto;
+        height: 1px;
+        background: var(--ink);
+        opacity: 0.6;
+      }
+
+      .step-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 4px 0;
+        border: 0;
+        background: none;
+        font-size: 17px;
+        cursor: default;
+      }
+
+      .step-button[data-reachable="true"] { cursor: pointer; }
+      .step-button[data-reachable="true"]:hover .step-label { text-decoration: underline; }
+
+      .step-number {
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--ink);
+        border-radius: 50%;
+        font-size: 14px;
+      }
+
+      .step-button[aria-current="step"] { color: var(--red); font-weight: 500; }
+      .step-button[aria-current="step"] .step-number {
+        border-color: var(--red);
+        background: var(--red);
+        color: #fff;
+      }
+
+      /* Panels */
+      .panel { padding-top: clamp(24px, 3.5vw, 36px); }
+
+      .panel-title {
+        font-size: clamp(30px, 3.6vw, 44px);
+        line-height: 1.1;
+      }
+
+      .panel-lead {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+      }
+
+      /* Step 1: packages */
+      .packages {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+        margin-top: 26px;
+      }
+
+      .package-option {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        border: 1px solid var(--line-strong);
+        background: var(--card);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .package-option:hover { border-color: var(--red); box-shadow: 0 10px 22px rgba(31, 26, 23, 0.08); }
+
+      .package-option img {
+        display: block;
         width: 100%;
-        height: 100%;
+        aspect-ratio: 4 / 3;
         object-fit: cover;
       }
 
-      .mini-photo {
-        object-position: center 62%;
-      }
-
-      .package-card-content {
+      .package-option-body {
         display: flex;
+        flex: 1;
         flex-direction: column;
-        align-items: flex-start;
-        padding: 20px;
+        padding: 18px 18px 20px;
       }
 
-      .package-card h2,
-      .detail-copy h2 {
-        margin: 0;
-        font-size: 32px;
-      }
+      .package-option h3 { font-size: 30px; }
 
       .price {
-        margin: 6px 0;
+        margin: 2px 0 0;
+        color: var(--red);
+        font-family: var(--serif);
+        font-size: 24px;
+      }
+
+      .package-meta {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .choose-label {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      .package-option:hover .choose-label { color: var(--red); }
+
+      /* Step 2 + 3 layout */
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+        gap: clamp(24px, 4vw, 40px);
+        padding-top: clamp(24px, 3.5vw, 36px);
+      }
+
+      .summary {
+        padding-right: clamp(0px, 3vw, 36px);
+        border-right: 1px solid var(--ink);
+      }
+
+      .summary img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 0.9;
+        object-fit: cover;
+      }
+
+      .summary-text {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--ink);
+      }
+
+      .overline {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .summary h2 {
+        margin-top: 6px;
+        font-size: clamp(30px, 3.2vw, 40px);
+        line-height: 1.05;
+      }
+
+      .summary .price { font-size: clamp(24px, 2.6vw, 30px); }
+
+      .summary .package-meta { color: var(--ink); font-size: 16px; }
+
+      .summary-choice {
+        margin: 12px 0 0;
+        font-size: 16px;
+      }
+
+      .text-link {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 0 0 2px;
+        border: 0;
+        border-bottom: 1px solid currentColor;
+        background: none;
         color: var(--red);
         font-size: 16px;
-        font-weight: 700;
+        cursor: pointer;
       }
 
-      .package-summary {
-        margin: 6px 0 18px;
-        color: var(--muted);
-        font-size: 12px;
-        line-height: 1.7;
-      }
+      .text-link.ink { color: var(--ink); }
 
-      .card-action {
-        margin-top: auto;
-        color: var(--ink);
-        font-size: 10px;
-        font-weight: 700;
+      .group-label {
+        margin: 24px 0 10px;
+        font-size: 13px;
+        font-weight: 500;
         letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
-      .detail {
+      .group-label span {
+        color: var(--muted);
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        text-transform: none;
+      }
+
+      .chips {
         display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
-        gap: 28px;
-        margin-top: 28px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      .detail-photo {
-        aspect-ratio: 3 / 2;
-      }
+      .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-      .detail-copy {
-        align-self: center;
-      }
-
-      .detail-copy .price {
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 54px;
+        padding: 8px 10px;
+        border: 1px solid var(--line-strong);
+        background: var(--card);
+        font-family: var(--serif);
         font-size: 20px;
+        line-height: 1.15;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 120ms ease;
       }
 
-      .detail-copy p,
-      .detail-copy li {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.8;
+      .chip:hover { border-color: var(--red); }
+
+      .chip[aria-pressed="true"] {
+        border: 2px solid var(--red);
+        color: var(--red);
       }
 
-      .detail-copy ul {
-        padding-left: 20px;
+      .chip[aria-pressed="true"]::after {
+        content: "";
+        width: 14px;
+        height: 8px;
+        margin-top: -4px;
+        border-left: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(-45deg);
+        flex: 0 0 auto;
       }
 
-      .availability {
-        margin-top: 30px;
-        padding-top: 24px;
-        border-top: 1px solid var(--line);
-      }
-
-      .availability h2 {
-        margin: 0 0 8px;
-        font-size: 34px;
-      }
-
-      .availability > p {
-        max-width: 700px;
-        color: var(--muted);
+      .chip small {
+        display: block;
+        font-family: var(--sans);
         font-size: 12px;
-        line-height: 1.8;
+        color: var(--muted);
+      }
+
+      .chip .chip-text { display: block; }
+
+      .more-dates {
+        margin-top: 10px;
+      }
+
+      .time-heading {
+        margin-top: 30px;
+        font-size: clamp(26px, 2.8vw, 34px);
+      }
+
+      .hint {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .other-day {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        background: var(--card);
+      }
+
+      .other-day p { margin: 0 0 12px; font-size: 15px; }
+
+      label.field {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      input, textarea {
+        width: 100%;
+        min-height: 50px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 0;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 16px;
+      }
+
+      textarea { min-height: 110px; resize: vertical; }
+
+      select {
+        width: 100%;
+        min-height: 50px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 0;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 16px;
+      }
+
+      .optional { font-weight: 400; color: var(--muted); }
+
+      .code-field { display: grid; gap: 6px; font-size: 14px; font-weight: 500; }
+
+      .code-row { display: flex; gap: 10px; }
+
+      .code-row input { text-transform: uppercase; }
+
+      .apply-button {
+        flex: 0 0 auto;
+        min-width: 100px;
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .apply-button:disabled { opacity: 0.6; cursor: wait; }
+
+      .code-status { margin: 0; min-height: 1.4em; font-size: 15px; font-weight: 400; }
+      .code-status.ok { color: #2f6b4f; }
+      .code-status.bad { color: var(--red); }
+
+      .was-price {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .was-price s { margin-right: 6px; }
+
+      .other-day input { max-width: 260px; }
+
+      .error {
+        margin: 12px 0 0;
+        color: var(--red);
+        font-size: 15px;
+      }
+
+      .primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        width: 100%;
+        min-height: 60px;
+        margin-top: 26px;
+        border: 0;
+        background: var(--red);
+        color: #fff;
+        font-family: var(--serif);
+        font-size: clamp(21px, 2.3vw, 27px);
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+
+      .primary:hover { background: var(--red-dark); }
+
+      .primary .arrow { font-family: var(--sans); font-size: 0.9em; }
+
+      .center { text-align: center; }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+
+      .form-grid .full { grid-column: 1 / -1; }
+
+      .deposit-note {
+        margin: 22px 0 0;
+        padding: 14px 16px;
+        border-left: 3px solid var(--red);
+        background: var(--card);
+        font-size: 15px;
       }
 
       .form-trap {
@@ -231,575 +516,655 @@
         overflow: hidden;
       }
 
-      .booking-form {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-        margin-top: 22px;
+      .footer-note {
+        margin: clamp(26px, 4vw, 40px) 0 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--ink);
+        font-size: 15px;
+        letter-spacing: 0.03em;
+        text-align: center;
       }
 
-      .booking-form label {
-        display: grid;
-        gap: 7px;
-        font-size: 11px;
-        font-weight: 700;
-      }
-
-      .booking-form .full {
-        grid-column: 1 / -1;
-      }
-
-      .time-picker {
-        grid-column: 1 / -1;
-        min-width: 0;
-        margin: 0;
-        padding: 0;
-        border: 0;
-      }
-
-      .time-picker legend {
-        margin-bottom: 8px;
-        font-size: 11px;
-        font-weight: 700;
-      }
-
-      .time-slots {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .time-slot {
-        min-width: 88px;
-        min-height: 42px;
-        padding: 9px 12px;
-        border: 1px solid var(--line);
-        background: white;
-        color: var(--ink);
-        cursor: pointer;
-        font: inherit;
-        font-size: 11px;
-      }
-
-      .time-slot:hover,
-      .time-slot[aria-pressed="true"] {
-        border-color: var(--ink);
-        background: var(--ink);
-        color: white;
-      }
-
-      .time-slot:focus-visible {
-        outline: 3px solid var(--red);
-        outline-offset: 2px;
-      }
-
-      .time-help {
-        grid-column: 1 / -1;
-        margin: 0;
-        color: var(--muted);
-        font-size: 11px;
-        line-height: 1.7;
-      }
-
-      .custom-time-field {
-        display: grid;
-        max-width: 320px;
-        gap: 8px;
-        font-size: 11px;
-        font-weight: 700;
-      }
-
-      .date-field {
-        display: grid;
-        max-width: 320px;
-        gap: 8px;
-        margin: 18px 0;
-        font-size: 11px;
-        font-weight: 700;
-      }
-
-      input {
-        min-height: 46px;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        border-radius: 0;
-        background: white;
-        color: var(--ink);
-        font: inherit;
-      }
-
-      textarea {
-        width: 100%;
-        min-height: 110px;
-        padding: 10px 12px;
-        border: 1px solid var(--line);
-        background: white;
-        color: var(--ink);
-        font: inherit;
-        resize: vertical;
-      }
-
-      .notice {
-        padding: 14px 16px;
-        border-left: 3px solid var(--red);
-        background: #e9e1d7;
-        color: #514a44;
-        font-size: 12px;
-        line-height: 1.7;
-      }
-
-      .checkout-policy {
-        margin-top: 22px;
-        grid-column: 1 / -1;
-      }
-
-      .checkout-policy h3 {
-        margin: 0 0 8px;
-        font-size: 27px;
-      }
-
-      .booking-note {
-        grid-column: 1 / -1;
-        margin: 0;
-        color: var(--muted);
-        font-size: 11px;
-        line-height: 1.8;
-      }
-
-      .button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 50px;
-        justify-self: start;
-        padding: 0 20px;
-        border: 0;
-        background: var(--ink);
-        color: white;
-        font: inherit;
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-decoration: none;
-        text-transform: uppercase;
-      }
-
-      .booking-confirmation {
-        margin: 0;
-        padding: 14px 16px;
-        border-left: 3px solid #1c9a6d;
-        background: rgba(28, 154, 109, 0.1);
-        font-size: 12px;
-        line-height: 1.7;
-      }
-
-      .back-link {
-        display: inline-block;
-        margin-top: 22px;
-        color: var(--ink);
-        font-size: 11px;
-        font-weight: 700;
-      }
-
-      [hidden] { display: none !important; }
-
-      @media (max-width: 700px) {
-        body { padding: 10px; }
-        main { min-height: calc(100vh - 20px); padding: 24px 18px; }
-        .eyebrow { margin-top: 34px; }
+      /* Tablet */
+      @media (max-width: 900px) {
         .packages { grid-template-columns: 1fr; }
-        .package-card { grid-template-rows: auto 1fr; }
-        .package-photo { aspect-ratio: 3 / 2; }
-        .detail { grid-template-columns: 1fr; }
-        .detail-photo { min-height: 0; }
+        .package-option { flex-direction: row; }
+        .package-option img { width: 38%; aspect-ratio: auto; min-height: 100%; }
+        .chips { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       }
 
-      @media (max-width: 460px) {
-        .booking-form { grid-template-columns: 1fr; }
-        .booking-form .full,
-        .time-picker,
-        .time-help,
-        .checkout-policy,
-        .booking-note { grid-column: auto; }
-        .booking-form .button { width: 100%; }
+      /* Mobile */
+      @media (max-width: 680px) {
+        body { padding: 0; background: var(--paper); }
+        main { border: 0; padding: 20px 18px 28px; }
+        .stepper { gap: 8px; }
+        .stepper li { gap: 8px; }
+        .step-button { gap: 6px; font-size: 13px; }
+        .step-number { width: 24px; height: 24px; font-size: 12px; }
+        .split { grid-template-columns: 1fr; gap: 0; padding-top: 20px; }
+        .summary {
+          display: grid;
+          grid-template-columns: 42% 1fr;
+          gap: 16px;
+          padding: 0 0 20px;
+          border-right: 0;
+          border-bottom: 1px solid var(--ink);
+        }
+        .summary img { aspect-ratio: 1 / 1; height: 100%; }
+        .summary-text { margin: 0; padding: 0; border: 0; }
+        .summary h2 { font-size: 26px; }
+        .summary .price { font-size: 22px; }
+        .summary .package-meta, .summary-choice { font-size: 14px; }
+        .text-link { font-size: 15px; }
+        .choice-area { padding-top: 22px; }
+        .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .chips.times { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .chip { min-height: 50px; font-size: 18px; }
+        .chips.times .chip { font-size: 17px; padding: 8px 4px; }
+        .form-grid { grid-template-columns: 1fr; }
+        .package-option img { width: 40%; }
+        .package-option h3 { font-size: 26px; }
+        .package-option .price { font-size: 21px; }
+        .package-meta { font-size: 14px; }
+        .package-option-body { padding: 14px; }
+        .choose-label { margin-top: 10px; padding-top: 10px; }
+      }
+
+      @media (max-width: 380px) {
+        .step-label { display: none; }
+        .step-button[aria-current="step"] .step-label { display: inline; }
       }
     </style>
   </head>
   <body>
     <main>
-      <a class="brand" href="index.html">
-        <img src="images/zako-studio-logo-trim.png" alt="" />
-        <span>Zako Studio</span>
-      </a>
+      <header class="site-header">
+        <a class="wordmark" href="index.html">Zako Studio</a>
+        <a class="back-portfolio" href="index.html">Back to portfolio</a>
+      </header>
 
-      <section id="package-list">
-        <p class="eyebrow">Christmas family sessions · Vancouver</p>
-        <p class="booking-confirmation" id="inquiry-banner" role="status" hidden>
-          Thank you! Your Christmas session inquiry was sent. I’ll email you to confirm
-          availability and next steps. Check your spam folder if you don’t see a reply.
+      <section class="hero">
+        <h1>Christmas, <em>together.</em></h1>
+        <p class="subtitle">Family sessions · Vancouver</p>
+        <p class="sent-banner" id="sent-banner" role="status" hidden>
+          Thank you! Your session request was sent. I’ll email you to confirm availability
+          and next steps. If you don’t see a reply, check your spam folder.
         </p>
-        <h1>Make a little holiday magic.</h1>
-        <p class="intro">
-          Choose the session that feels right for your family. Each package opens
-          with its details, availability, and booking steps.
-        </p>
-
-        <div class="packages" aria-label="Christmas family photography packages">
-          <a class="package-card" href="?package=quick">
-            <div class="package-photo">
-              <img src="images/christmas-quick.jpg" alt="Parents and their son sharing a Christmas portrait by the fireplace" loading="lazy" />
-            </div>
-            <div class="package-card-content">
-              <h2>Quick</h2>
-              <p class="price">$175 CAD · 15 minutes</p>
-              <p class="package-summary">10+ edited images · up to 3 people</p>
-              <span class="card-action">View session details →</span>
-            </div>
-          </a>
-          <a class="package-card" href="?package=mini">
-            <div class="package-photo">
-              <img src="images/christmas-extended.jpg" alt="Two children sharing a Christmas storybook portrait" loading="lazy" />
-            </div>
-            <div class="package-card-content">
-              <h2>Mini</h2>
-              <p class="price">$300 CAD · 30 minutes</p>
-              <p class="package-summary">20+ edited images · up to 5 people</p>
-              <span class="card-action">View session details →</span>
-            </div>
-          </a>
-          <a class="package-card" href="?package=extended">
-            <div class="package-photo">
-              <img src="images/christmas-standard-one-hour.jpg" alt="Parents and their baby sharing a Christmas family portrait" loading="lazy" />
-            </div>
-            <div class="package-card-content">
-              <h2>Extended</h2>
-              <p class="price">$600 CAD · 1 hour</p>
-              <p class="package-summary">40+ edited images · up to 7 people</p>
-              <span class="card-action">View session details →</span>
-            </div>
-          </a>
-        </div>
       </section>
 
-      <section id="package-detail" hidden>
-        <p class="eyebrow">Christmas family sessions · Vancouver</p>
-        <h1 id="detail-title">Great choice! Now pick your time.</h1>
-        <div class="detail">
-          <div class="detail-photo">
-            <img id="detail-photo-image" class="mini-photo" src="images/christmas-mini.jpg" alt="" />
-          </div>
-          <div class="detail-copy">
-            <h2 id="detail-package-name"></h2>
-            <p class="price" id="detail-price"></p>
-            <p id="detail-images"></p>
-            <p>Sessions are in Vancouver, with the exact meeting location confirmed after booking.</p>
-          </div>
+      <ol class="stepper" aria-label="Booking steps">
+        <li>
+          <button class="step-button" type="button" data-step="1">
+            <span class="step-number">1</span><span class="step-label">Package</span>
+          </button>
+        </li>
+        <li class="rule" aria-hidden="true"></li>
+        <li>
+          <button class="step-button" type="button" data-step="2">
+            <span class="step-number">2</span><span class="step-label">Preferred date</span>
+          </button>
+        </li>
+        <li class="rule" aria-hidden="true"></li>
+        <li>
+          <button class="step-button" type="button" data-step="3">
+            <span class="step-number">3</span><span class="step-label">Your details</span>
+          </button>
+        </li>
+      </ol>
+
+      <!-- Step 1: package -->
+      <section class="panel" id="step-1" aria-labelledby="step-1-title">
+        <h2 class="panel-title" id="step-1-title">Choose your session</h2>
+        <p class="panel-lead">Every package includes a relaxed family session in Vancouver and professionally edited images.</p>
+        <div class="packages" id="package-options"></div>
+      </section>
+
+      <!-- Steps 2 and 3 share the package summary -->
+      <form
+        id="booking-form"
+        action="https://formsubmit.co/zakotarastudio@gmail.com"
+        method="POST"
+        novalidate
+        hidden
+      >
+        <input type="hidden" name="_subject" value="New Christmas family session request" />
+        <input type="hidden" name="_template" value="table" />
+        <input type="hidden" name="_next" id="form-next" />
+        <input type="hidden" name="Package" id="form-package" />
+        <input type="hidden" name="Preferred date" id="form-date" />
+        <input type="hidden" name="Preferred time" id="form-time" />
+        <input type="hidden" name="Referral code" id="form-code" value="None" />
+        <input type="hidden" name="Discount" id="form-discount" value="None" />
+        <input type="hidden" name="Price after discount" id="form-final-price" />
+        <div class="form-trap" aria-hidden="true">
+          <label for="form-honey">Leave this blank</label>
+          <input id="form-honey" name="_honey" tabindex="-1" autocomplete="off" />
         </div>
 
-        <section class="availability" aria-labelledby="availability-title">
-          <h2 id="availability-title">Request your session</h2>
-          <p>
-            Tell me which date works for you and I’ll get back to you to confirm
-            availability and arrange your session.
-          </p>
-          <form
-            class="booking-form"
-            id="christmas-inquiry"
-            action="https://formsubmit.co/zakotarastudio@gmail.com"
-            method="POST"
-          >
-            <input type="hidden" name="_subject" value="New Christmas family session inquiry" />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_next" id="inquiry-next" />
-            <input type="hidden" name="Package" id="inquiry-package" />
-            <div class="form-trap" aria-hidden="true">
-              <label for="inquiry-company">Leave this blank</label>
-              <input id="inquiry-company" name="_honey" tabindex="-1" autocomplete="off" />
+        <div class="split">
+          <aside class="summary" aria-label="Selected package">
+            <img id="summary-photo" src="images/christmas-extended.jpg" alt="" />
+            <div class="summary-text">
+              <p class="overline">Selected package</p>
+              <h2 id="summary-name"></h2>
+              <p class="price" id="summary-price"></p>
+              <p class="was-price" id="summary-was" hidden></p>
+              <p class="package-meta" id="summary-meta"></p>
+              <p class="summary-choice" id="summary-choice" hidden></p>
+              <button class="text-link" type="button" id="change-package">Change package</button>
             </div>
-            <label class="full date-field" for="booking-date">
-              Preferred date
-              <input id="booking-date" name="Preferred date" type="date" max="2026-11-30" required />
-            </label>
-            <fieldset class="time-picker" aria-describedby="time-help">
-              <legend>Choose a preferred start time · Vancouver time</legend>
-              <div class="time-slots" id="time-slots" role="group" aria-label="Session start time choices"></div>
-              <button class="time-slot" id="custom-time-button" type="button" aria-pressed="false" hidden>
-                Request a custom time
-              </button>
-            </fieldset>
-            <label class="custom-time-field" id="custom-time-field" for="custom-time" hidden>
-              Requested custom time · Vancouver time
-              <input id="custom-time" type="time" />
-            </label>
-            <input type="hidden" name="Preferred time" id="booking-time" />
-            <p class="time-help" id="time-help" role="status" aria-live="polite">
-              Choose a date to see the available time choices.
-            </p>
-            <label for="booking-name">
-              Full name
-              <input id="booking-name" name="Name" autocomplete="name" required />
-            </label>
-            <label for="booking-phone">
-              Phone number
-              <input id="booking-phone" name="Phone" type="tel" autocomplete="tel" required />
-            </label>
-            <label for="booking-email">
-              Email address
-              <input id="booking-email" name="email" type="email" autocomplete="email" required />
-            </label>
-            <label class="full" for="booking-message">
-              Additional information (optional)
-              <textarea id="booking-message" name="Additional information" rows="4"></textarea>
-            </label>
-            <section class="checkout-policy" aria-labelledby="checkout-policy-title">
-              <h3 id="checkout-policy-title">Before you send</h3>
-              <p class="notice">
-                A 50% deposit is required before your booking is confirmed.
-                Submitting this inquiry will not charge you or reserve the date.
-                I’ll email you to confirm availability and arrange the deposit.
+          </aside>
+
+          <!-- Step 2: date and time -->
+          <section class="choice-area" id="step-2" aria-labelledby="step-2-title">
+            <h2 class="panel-title" id="step-2-title">Choose your preferred day</h2>
+            <p class="panel-lead">Weekends are best for family sessions. Wednesday and Friday evenings are open too.</p>
+
+            <p class="group-label" id="weekend-label">Weekends <span>· morning or afternoon</span></p>
+            <div class="chips" id="weekend-dates" role="group" aria-labelledby="weekend-label"></div>
+
+            <p class="group-label" id="evening-label">Wednesday &amp; Friday <span>· from 4 p.m.</span></p>
+            <div class="chips" id="evening-dates" role="group" aria-labelledby="evening-label"></div>
+
+            <button class="text-link ink more-dates" type="button" id="show-more-dates" hidden>Show later dates</button>
+
+            <div id="time-block" hidden>
+              <h3 class="time-heading" id="time-title">Preferred time</h3>
+              <div class="chips times" id="time-options" role="group" aria-labelledby="time-title"></div>
+            </div>
+
+            <div class="other-day" id="other-day" hidden>
+              <p>
+                Other weekdays are available <strong>after 7 p.m.</strong> by request.
+                Pick a date and I’ll confirm by email.
               </p>
-            </section>
-            <button class="button" type="submit">
-              Send Christmas session inquiry <span aria-hidden="true">→</span>
+              <label class="field" for="other-date">
+                Requested weekday
+                <input type="date" id="other-date" />
+              </label>
+            </div>
+
+            <p class="hint">Availability is confirmed by email.</p>
+            <p class="error" id="step-2-error" role="alert" hidden></p>
+
+            <button class="primary" type="button" id="to-details">
+              Continue to your details <span class="arrow" aria-hidden="true">→</span>
             </button>
-            <p class="booking-note">
-              Sending this form sends an inquiry, not a confirmed booking.
+            <p class="center">
+              <button class="text-link ink" type="button" id="toggle-other-day">Need a different weekday evening? Ask here</button>
             </p>
-          </form>
-        </section>
-        <a class="back-link" href="christmas-booking.html">← All Christmas packages</a>
-      </section>
+          </section>
+
+          <!-- Step 3: details -->
+          <section class="choice-area" id="step-3" aria-labelledby="step-3-title" hidden>
+            <h2 class="panel-title" id="step-3-title">Your details</h2>
+            <p class="panel-lead">I’ll reply by email to confirm the time and arrange your deposit.</p>
+
+            <div class="form-grid">
+              <label class="field" for="name">
+                Full name
+                <input id="name" name="Name" autocomplete="name" required />
+              </label>
+              <label class="field" for="phone">
+                Phone number
+                <input id="phone" name="Phone" type="tel" autocomplete="tel" required />
+              </label>
+              <label class="field full" for="email">
+                Email address
+                <input id="email" name="email" type="email" autocomplete="email" required />
+              </label>
+              <label class="field full" for="heard-from">
+                <span>How did you hear about me? <span class="optional">(optional)</span></span>
+                <select id="heard-from" name="Heard about us">
+                  <option value="">Choose one</option>
+                  <option>Instagram</option>
+                  <option>Facebook</option>
+                  <option>Google</option>
+                  <option>A friend or family member</option>
+                  <option>Referred by a partner</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <div class="field full code-field">
+                <label for="promo-code">Referral or discount code <span class="optional">(optional)</span></label>
+                <div class="code-row">
+                  <input id="promo-code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. SARAH15" />
+                  <button class="apply-button" type="button" id="apply-code">Apply</button>
+                </div>
+                <p class="code-status" id="code-status" role="status" aria-live="polite"></p>
+              </div>
+              <label class="field full" for="message">
+                <span>Anything I should know? <span class="optional">(optional)</span></span>
+                <textarea id="message" name="Additional information" rows="4" placeholder="Number of people, ages of kids, location ideas…"></textarea>
+              </label>
+            </div>
+
+            <p class="deposit-note" id="deposit-note"></p>
+            <p class="error" id="step-3-error" role="alert" hidden></p>
+
+            <button class="primary" type="submit">
+              Send session request <span class="arrow" aria-hidden="true">→</span>
+            </button>
+            <p class="center">
+              <button class="text-link ink" type="button" id="back-to-date">Back to date</button>
+            </p>
+          </section>
+        </div>
+      </form>
+
+      <p class="footer-note">Request your session. Receive availability by email. Pay a 50% deposit to secure your date.</p>
     </main>
 
     <script>
+      // ---- Settings you may want to change ----
+      const SEASON_END = "2026-12-20";      // last bookable date (YYYY-MM-DD)
+      const INITIAL_DATES_SHOWN = 8;         // per group, before "Show later dates"
+
       const packages = {
         quick: {
-          name: "Quick",
-          duration: 15,
-          starts: ["10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"],
-          durationLabel: "15 minutes",
+          name: "Quick session",
+          short: "Quick",
           price: 175,
-          images: "10+ edited images · up to 3 people",
+          duration: "15 minutes",
+          meta: "15 minutes · 10+ edited images · up to 3 people",
           photo: "images/christmas-quick.jpg",
-          photoAlt: "Parents and their son sharing a Christmas portrait by the fireplace"
+          alt: "Parents and their son sharing a Christmas portrait by the fireplace"
         },
         mini: {
-          name: "Mini",
-          duration: 30,
-          starts: ["10:00", "10:45", "11:30", "13:15", "14:00", "14:45", "15:30"],
-          durationLabel: "30 minutes",
+          name: "Mini session",
+          short: "Mini",
           price: 300,
-          images: "20+ edited images · up to 5 people",
+          duration: "30 minutes",
+          meta: "30 minutes · 20+ edited images · up to 5 people",
           photo: "images/christmas-extended.jpg",
-          photoAlt: "Two children sharing a Christmas storybook portrait"
+          alt: "Two children sharing a Christmas storybook portrait"
         },
         extended: {
-          name: "Extended",
-          duration: 60,
-          starts: ["10:00", "11:15", "13:15", "14:30", "15:45"],
-          durationLabel: "1 hour",
+          name: "Extended session",
+          short: "Extended",
           price: 600,
-          images: "40+ edited images · up to 7 people",
+          duration: "1 hour",
+          meta: "1 hour · 40+ edited images · up to 7 people",
           photo: "images/christmas-standard-one-hour.jpg",
-          photoAlt: "Parents and their baby sharing a Christmas family portrait"
+          alt: "Parents and their baby sharing a Christmas family portrait"
         }
       };
 
-      let busyRanges = [];
-      const selectedPackage = packages[new URLSearchParams(window.location.search).get("package")];
-      const vancouverToday = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Vancouver",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
+      const timeChoices = {
+        weekend: ["Morning", "Afternoon", "Flexible"],
+        evening: ["4–6 p.m.", "After 6 p.m.", "Flexible"]
+      };
+
+      const state = { step: 1, packageId: null, date: null, dayType: null, time: null, otherDay: false, showAll: false };
+
+      const $ = (id) => document.getElementById(id);
+      const params = new URLSearchParams(location.search);
+
+      // Today's date in Vancouver as YYYY-MM-DD
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Vancouver", year: "numeric", month: "2-digit", day: "2-digit"
       }).format(new Date());
-      const dateInput = document.getElementById("booking-date");
-      // Temporary launch window: only Oct 24-25 (after 12:30) until those dates pass.
-      const launchDates = ["2026-10-24", "2026-10-25"];
-      const launchEarliest = 12 * 60 + 30;
-      const launchActive = vancouverToday <= launchDates[1];
-      if (dateInput) {
-        dateInput.min = launchActive ? launchDates[0] : vancouverToday;
-        if (launchActive) dateInput.max = launchDates[1];
-      }
-      const timeInput = document.getElementById("booking-time");
-      const timeSlots = document.getElementById("time-slots");
-      const timeHelp = document.getElementById("time-help");
-      const customTimeButton = document.getElementById("custom-time-button");
-      const customTimeField = document.getElementById("custom-time-field");
-      const customTimeInput = document.getElementById("custom-time");
-      const inquiryForm = document.getElementById("christmas-inquiry");
-      const timeFormatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "America/Vancouver",
-        hour: "numeric",
-        minute: "2-digit",
-        hourCycle: "h12"
-      });
-      const customTimeFormatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "UTC",
-        hour: "numeric",
-        minute: "2-digit",
-        hourCycle: "h12"
-      });
-      let availabilityRequest = 0;
 
-      function clearTimeChoice() {
-        timeInput.value = "";
-        customTimeInput.value = "";
-        customTimeInput.setCustomValidity("");
-        customTimeField.hidden = true;
-        customTimeInput.required = false;
-        customTimeButton.setAttribute("aria-pressed", "false");
-        timeSlots.querySelectorAll(".time-slot").forEach((slot) => {
-          slot.setAttribute("aria-pressed", "false");
+      function parseISO(iso) {
+        const [y, m, d] = iso.split("-").map(Number);
+        return new Date(Date.UTC(y, m - 1, d));
+      }
+      function toISO(date) { return date.toISOString().slice(0, 10); }
+      const shortFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
+      const longFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      const shortLabel = (iso) => shortFmt.format(parseISO(iso)).replace(".", "").replace(".", "");
+      const longLabel = (iso) => longFmt.format(parseISO(iso));
+
+      // Build the list of bookable days: weekends + Wed/Fri, starting tomorrow
+      const weekendDays = [];
+      const eveningDays = [];
+      for (let d = parseISO(today), end = parseISO(SEASON_END); ; ) {
+        d.setUTCDate(d.getUTCDate() + 1);
+        if (d > end) break;
+        const day = d.getUTCDay();
+        if (day === 0 || day === 6) weekendDays.push(toISO(d));
+        else if (day === 3 || day === 5) eveningDays.push(toISO(d));
+      }
+
+      // ---- Step 1: package cards ----
+      const packageOptions = $("package-options");
+      for (const [id, pkg] of Object.entries(packages)) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "package-option";
+        button.innerHTML = `
+          <img src="${pkg.photo}" alt="${pkg.alt}" loading="lazy" />
+          <span class="package-option-body">
+            <h3>${pkg.short}</h3>
+            <span class="price">$${pkg.price} CAD</span>
+            <span class="package-meta">${pkg.meta}</span>
+            <span class="choose-label">Choose ${pkg.short} →</span>
+          </span>`;
+        button.addEventListener("click", () => {
+          selectPackage(id);
+          goTo(2);
         });
+        packageOptions.append(button);
       }
 
-      function formatCustomTime(value) {
-        const [hour, minute] = value.split(":").map(Number);
-        return customTimeFormatter.format(new Date(Date.UTC(2026, 0, 1, hour, minute)));
+      function selectPackage(id) {
+        const pkg = packages[id];
+        if (!pkg) return;
+        state.packageId = id;
+        $("summary-photo").src = pkg.photo;
+        $("summary-photo").alt = pkg.alt;
+        $("summary-name").textContent = pkg.name;
+        $("summary-price").textContent = `$${pkg.price} CAD`;
+        $("summary-meta").textContent = pkg.meta;
+        $("form-package").value = `${pkg.name} — $${pkg.price} CAD, ${pkg.duration}`;
+        updatePrice();
+        const url = new URL(location.href);
+        url.searchParams.set("package", id);
+        url.searchParams.delete("inquiry");
+        history.replaceState(null, "", url);
       }
 
-      async function renderTimeChoices(dateValue) {
-        const requestId = ++availabilityRequest;
-        timeSlots.replaceChildren();
-        clearTimeChoice();
-        dateInput.setCustomValidity("");
-        customTimeButton.hidden = !dateValue;
+      // ---- Step 2: dates and times ----
+      function makeChip(label, sub, pressed, onClick) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip";
+        chip.setAttribute("aria-pressed", String(pressed));
+        chip.innerHTML = `<span class="chip-text">${label}${sub ? `<small>${sub}</small>` : ""}</span>`;
+        chip.addEventListener("click", onClick);
+        return chip;
+      }
 
-        if (!dateValue) {
-          timeHelp.textContent = "Choose a date to see the available time choices.";
+      function renderDates() {
+        const limit = state.showAll ? Infinity : INITIAL_DATES_SHOWN;
+        const fill = (container, days, type) => {
+          container.replaceChildren(
+            ...days.slice(0, limit).map((iso) =>
+              makeChip(shortLabel(iso), "", state.date === iso && !state.otherDay, () => {
+                state.date = iso;
+                state.dayType = type;
+                state.otherDay = false;
+                if (!timeChoices[type].includes(state.time)) state.time = null;
+                $("other-day").hidden = true;
+                $("other-date").value = "";
+                renderDates();
+                renderTimes();
+                hideError(2);
+              })
+            )
+          );
+          return days.length;
+        };
+        const weekendCount = fill($("weekend-dates"), weekendDays, "weekend");
+        const eveningCount = fill($("evening-dates"), eveningDays, "evening");
+        $("weekend-label").hidden = $("weekend-dates").hidden = weekendCount === 0;
+        $("evening-label").hidden = $("evening-dates").hidden = eveningCount === 0;
+        $("show-more-dates").hidden =
+          state.showAll || (weekendCount <= INITIAL_DATES_SHOWN && eveningCount <= INITIAL_DATES_SHOWN);
+      }
+
+      function renderTimes() {
+        const block = $("time-block");
+        if (!state.date || state.otherDay) {
+          block.hidden = true;
           return;
         }
+        block.hidden = false;
+        $("time-options").replaceChildren(
+          ...timeChoices[state.dayType].map((label) =>
+            makeChip(label, "", state.time === label, () => {
+              state.time = label;
+              renderTimes();
+              hideError(2);
+            })
+          )
+        );
+      }
 
-        timeHelp.textContent = "";
+      $("show-more-dates").addEventListener("click", () => {
+        state.showAll = true;
+        renderDates();
+      });
+
+      $("toggle-other-day").addEventListener("click", () => {
+        state.otherDay = !$("other-day").hidden ? false : true;
+        $("other-day").hidden = !state.otherDay;
+        if (state.otherDay) {
+          state.date = null;
+          state.time = null;
+          $("other-date").focus();
+        }
+        renderDates();
+        renderTimes();
+      });
+
+      const otherDate = $("other-date");
+      otherDate.min = toISO(new Date(parseISO(today).getTime() + 86400000));
+      otherDate.max = SEASON_END;
+      otherDate.addEventListener("change", () => hideError(2));
+
+      function showError(step, text) {
+        const el = $(`step-${step}-error`);
+        el.textContent = text;
+        el.hidden = false;
+      }
+      function hideError(step) { $(`step-${step}-error`).hidden = true; }
+
+      function validateStep2() {
+        if (state.otherDay) {
+          const value = otherDate.value;
+          if (!value) return showError(2, "Choose the weekday you’d like to request."), false;
+          const day = parseISO(value).getUTCDay();
+          if (day === 0 || day === 6) return showError(2, "That’s a weekend — pick it from the weekend dates above."), false;
+          if (day === 3 || day === 5) return showError(2, "Wednesdays and Fridays are listed above — pick it there for times from 4 p.m."), false;
+          if (value <= today || value > SEASON_END) return showError(2, "Please choose an upcoming date this season."), false;
+          $("form-date").value = longLabel(value);
+          $("form-time").value = "After 7 p.m. (weekday evening request)";
+          return true;
+        }
+        if (!state.date) return showError(2, "Choose a preferred day."), false;
+        if (!state.time) return showError(2, "Choose a preferred time."), false;
+        $("form-date").value = longLabel(state.date);
+        $("form-time").value = state.time;
+        return true;
+      }
+
+      $("to-details").addEventListener("click", () => {
+        if (validateStep2()) goTo(3);
+      });
+
+      // ---- Step 3 ----
+      $("back-to-date").addEventListener("click", () => goTo(2));
+      $("change-package").addEventListener("click", () => goTo(1));
+
+      // ---- Referral / discount code ----
+      const money = (n) => `$${Number.isInteger(n) ? n : n.toFixed(2)} CAD`;
+      const codeInput = $("promo-code");
+      const codeStatus = $("code-status");
+
+      function updatePrice() {
+        const pkg = packages[state.packageId];
+        if (!pkg) return;
+        const percent = state.discount?.percent || 0;
+        const finalPrice = Math.round(pkg.price * (100 - percent)) / 100;
+        const deposit = Math.round(finalPrice * 50) / 100;
+        $("summary-price").textContent = money(finalPrice);
+        const was = $("summary-was");
+        if (percent) {
+          was.hidden = false;
+          was.innerHTML = `<s>${money(pkg.price)}</s>${percent}% off with ${state.discount.code}`;
+          $("form-code").value = state.discount.code;
+          $("form-discount").value = `${percent}% off`;
+        } else {
+          was.hidden = true;
+          $("form-code").value = "None";
+          $("form-discount").value = "None";
+        }
+        $("form-final-price").value = money(finalPrice);
+        $("deposit-note").textContent =
+          `A 50% deposit (${money(deposit)}) secures your date once I confirm availability. ` +
+          `Sending this request doesn’t charge you or reserve the time.`;
+      }
+
+      function setCodeStatus(text, kind) {
+        codeStatus.textContent = text;
+        codeStatus.className = `code-status ${kind || ""}`;
+      }
+
+      async function applyCode() {
+        const code = codeInput.value.trim().toUpperCase();
+        state.discount = null;
+        updatePrice();
+        if (!code) {
+          setCodeStatus("", "");
+          return true;
+        }
+        const button = $("apply-code");
+        button.disabled = true;
+        setCodeStatus("Checking…", "");
         try {
-          const packageId = new URLSearchParams(window.location.search).get("package");
-          const query = new URLSearchParams({ package: packageId, date: dateValue });
-          busyRanges = [];
-          try {
-            const response = await fetch(`/api/christmas-availability?${query}`, {
-              headers: { accept: "application/json" }
-            });
-            const result = await response.json().catch(() => null);
-            if (response.ok && Array.isArray(result?.busy)) busyRanges = result.busy;
-          } catch (error) {
-            busyRanges = [];
+          const res = await fetch(`/api/referral?code=${encodeURIComponent(code)}`, { headers: { accept: "application/json" } });
+          const result = await res.json();
+          if (result.valid) {
+            state.discount = { code: result.code, percent: result.percent };
+            codeInput.value = result.code;
+            updatePrice();
+            setCodeStatus(`✓ ${result.code} applied — ${result.percent}% off.`, "ok");
+            return true;
           }
-          if (requestId !== availabilityRequest) return;
-
-          const [year, month, day] = dateValue.split("-").map(Number);
-          const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-          if (launchActive && !launchDates.includes(dateValue)) {
-            timeHelp.textContent = "Right now we are booking October 24 and 25 only. Please pick one of those dates.";
-            return;
-          }
-          if (weekday !== 0 && weekday !== 6) {
-            timeHelp.textContent = "Sessions run on Saturdays and Sundays. Please pick a weekend date, or request a custom time.";
-            return;
-          }
-
-          const buffer = 15;
-          for (const start of selectedPackage.starts) {
-            const [hours, minutes] = start.split(":").map(Number);
-            const startMinutes = hours * 60 + minutes;
-            if (launchActive && startMinutes < launchEarliest) continue;
-            const endMinutes = startMinutes + selectedPackage.duration;
-            if (busyRanges.some((range) => startMinutes < range.end + buffer && endMinutes + buffer > range.start)) continue;
-            const label = formatCustomTime(start);
-            const button = document.createElement("button");
-            button.className = "time-slot";
-            button.type = "button";
-            button.textContent = label;
-            button.setAttribute("aria-pressed", "false");
-            button.addEventListener("click", () => {
-              clearTimeChoice();
-              button.setAttribute("aria-pressed", "true");
-              timeInput.value = `${label} (Vancouver time)`;
-              dateInput.setCustomValidity("");
-            });
-            timeSlots.append(button);
-          }
-
-          if (timeSlots.childElementCount === 0) {
-            timeHelp.textContent = "All times on this date are booked. Please pick another weekend date.";
-          }
-        } catch (error) {
-          if (requestId === availabilityRequest) {
-            timeHelp.textContent = "Times could not be loaded. Please request a custom time.";
-          }
+          setCodeStatus(result.message || "That code isn’t valid or has expired.", "bad");
+          return false;
+        } catch {
+          setCodeStatus("Codes can’t be checked right now. Please try again, or mention the code in your message.", "bad");
+          return false;
+        } finally {
+          button.disabled = false;
         }
       }
 
-      if (selectedPackage) {
-        const packageId = new URLSearchParams(window.location.search).get("package");
-        const formNext = new URL(window.location.pathname, window.location.origin);
-        formNext.searchParams.set("inquiry", "sent");
-        document.getElementById("inquiry-package").value =
-          `${selectedPackage.name} — $${selectedPackage.price} CAD, ${selectedPackage.durationLabel}`;
-        document.getElementById("inquiry-next").value = formNext.toString();
-        document.getElementById("package-list").hidden = true;
-        document.getElementById("package-detail").hidden = false;
-        document.title = `${selectedPackage.name} Christmas Session — Zako Studio`;
-        document.getElementById("detail-package-name").textContent = selectedPackage.name;
-        document.getElementById("detail-price").textContent =
-          `$${selectedPackage.price} CAD · ${selectedPackage.durationLabel}`;
-        document.getElementById("detail-images").textContent = `Includes ${selectedPackage.images}.`;
-        document.getElementById("detail-photo-image").src = selectedPackage.photo;
-        document.getElementById("detail-photo-image").alt = selectedPackage.photoAlt;
-      }
-
-      dateInput?.addEventListener("change", () => renderTimeChoices(dateInput.value));
-      customTimeButton.addEventListener("click", () => {
-        clearTimeChoice();
-        dateInput.setCustomValidity("");
-        customTimeButton.setAttribute("aria-pressed", "true");
-        customTimeField.hidden = false;
-        customTimeInput.required = true;
-        customTimeInput.focus();
-      });
-      customTimeInput.addEventListener("change", () => {
-        dateInput.setCustomValidity("");
-        customTimeInput.setCustomValidity("");
-        if (customTimeInput.value) {
-          const [hours, minutes] = customTimeInput.value.split(":").map(Number);
-          const start = hours * 60 + minutes;
-          const end = start + selectedPackage.duration;
-          if (launchActive && start < launchEarliest) {
-            customTimeInput.value = "";
-            timeInput.value = "";
-            customTimeInput.setCustomValidity("Sessions on October 24 and 25 start at 12:30 PM or later.");
-            customTimeInput.reportValidity();
-            return;
-          }
-          if (busyRanges.some((range) => start < range.end && end > range.start)) {
-            customTimeInput.value = "";
-            timeInput.value = "";
-            customTimeInput.setCustomValidity("That time is already booked. Please choose another time.");
-            customTimeInput.reportValidity();
-            return;
-          }
-        }
-        timeInput.value = customTimeInput.value
-          ? `${formatCustomTime(customTimeInput.value)} (custom request, Vancouver time)`
-          : "";
-      });
-
-      inquiryForm?.addEventListener("submit", (event) => {
-        if (!timeInput.value) {
-          if (customTimeButton.getAttribute("aria-pressed") === "true" && !customTimeInput.value) {
-            customTimeInput.setCustomValidity("Enter the custom time you would like to request.");
-            customTimeInput.reportValidity();
-          } else {
-            dateInput.setCustomValidity("Choose a listed time or request a custom time.");
-            dateInput.reportValidity();
-          }
+      $("apply-code").addEventListener("click", applyCode);
+      codeInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
           event.preventDefault();
+          applyCode();
+        }
+      });
+      codeInput.addEventListener("input", () => {
+        if (state.discount && codeInput.value.trim().toUpperCase() !== state.discount.code) {
+          state.discount = null;
+          updatePrice();
+          setCodeStatus("", "");
         }
       });
 
-      if (new URLSearchParams(window.location.search).get("inquiry") === "sent") {
-        document.getElementById("inquiry-banner").hidden = false;
+      // ---- Submit ----
+      let submitting = false;
+      $("booking-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (submitting) return;
+        hideError(3);
+        const fields = ["name", "phone", "email"].map($);
+        const firstInvalid = fields.find((f) => !f.checkValidity());
+        if (firstInvalid) {
+          showError(3, firstInvalid.id === "email" && firstInvalid.value
+            ? "Please enter a valid email address."
+            : "Please fill in your name, phone number, and email.");
+          firstInvalid.focus();
+          return;
+        }
+        if (!validateStep2()) {
+          goTo(2);
+          return;
+        }
+        const typed = codeInput.value.trim().toUpperCase();
+        if (typed && typed !== state.discount?.code) {
+          const ok = await applyCode();
+          if (!ok) {
+            showError(3, "Check your code, or clear the code box to send your request without it.");
+            codeInput.focus();
+            return;
+          }
+        }
+
+        submitting = true;
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+
+        // Keep a record for referral tracking; never block the request if this fails.
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 3000);
+          await fetch("/api/referral", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              package: state.packageId,
+              name: $("name").value,
+              email: $("email").value,
+              phone: $("phone").value,
+              code: state.discount?.code || "",
+              heardFrom: $("heard-from").value,
+              date: $("form-date").value,
+              time: $("form-time").value
+            }),
+            keepalive: true,
+            signal: controller.signal
+          });
+          clearTimeout(timer);
+        } catch {}
+
+        event.target.submit();
+      });
+
+      // ---- Navigation ----
+      function goTo(step) {
+        if (step >= 2 && !state.packageId) step = 1;
+        state.step = step;
+        $("step-1").hidden = step !== 1;
+        $("booking-form").hidden = step === 1;
+        $("step-2").hidden = step !== 2;
+        $("step-3").hidden = step !== 3;
+
+        const choice = $("summary-choice");
+        if (step === 3) {
+          choice.hidden = false;
+          choice.textContent = `${$("form-date").value} · ${$("form-time").value}`;
+        } else {
+          choice.hidden = true;
+        }
+
+        document.querySelectorAll(".step-button").forEach((btn) => {
+          const n = Number(btn.dataset.step);
+          if (n === step) btn.setAttribute("aria-current", "step");
+          else btn.removeAttribute("aria-current");
+          btn.dataset.reachable = String(n < step);
+        });
+
+        const stepper = document.querySelector(".stepper");
+        if (stepper.getBoundingClientRect().top < 0) stepper.scrollIntoView({ behavior: "smooth" });
+      }
+
+      document.querySelectorAll(".step-button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const n = Number(btn.dataset.step);
+          if (n < state.step) goTo(n);
+        });
+      });
+
+      // ---- Start ----
+      const next = new URL(location.pathname, location.origin);
+      next.searchParams.set("inquiry", "sent");
+      $("form-next").value = next.toString();
+
+      if (params.get("inquiry") === "sent") $("sent-banner").hidden = false;
+
+      renderDates();
+      renderTimes();
+      if (packages[params.get("package")]) {
+        selectPackage(params.get("package"));
+        goTo(2);
+      } else {
+        goTo(1);
       }
     </script>
   </body>
