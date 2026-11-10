@@ -57,6 +57,12 @@
       .login { max-width: 380px; display: grid; gap: 14px; margin-top: 26px; }
       .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
       .stat { padding: 12px 16px; border: 1px solid var(--line); background: var(--card); min-width: 150px; }
+      button.stat { text-align: left; font: inherit; color: inherit; cursor: pointer; }
+      button.stat:hover, button.stat[aria-pressed="true"] { border-color: var(--red); }
+      .code-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; letter-spacing: 0.04em; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+      .count-link { border: 0; background: none; padding: 0; font: inherit; color: var(--red); text-decoration: underline; cursor: pointer; }
+      tr.is-booked td { background: #f0f5f1; }
+      .needs-time { display: block; margin-bottom: 4px; color: var(--red); font-size: 12px; }
       .stat b { display: block; font-family: var(--serif); font-size: 28px; font-weight: 400; }
       .filter { display: flex; gap: 10px; align-items: end; margin-bottom: 12px; flex-wrap: wrap; }
       input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color: var(--green); }
@@ -106,10 +112,10 @@
           <div class="filter">
             <label>Show
               <select id="filter">
-                <option value="open">Not booked yet</option>
                 <option value="all">All inquiries</option>
+                <option value="open">Not booked yet</option>
                 <option value="booked">Booked</option>
-                <option value="code">With a referral code</option>
+                <option value="code">With any referral code</option>
               </select>
             </label>
           </div>
@@ -234,12 +240,12 @@
         $("codes-body").innerHTML = data.codes.length
           ? data.codes.map((c) => `
             <tr>
-              <td class="code">${esc(c.code)}</td>
+              <td><button class="code-link" data-act="show-code" data-code="${esc(c.code)}" title="See inquiries with this code">${esc(c.code)}</button></td>
               <td>${esc(c.partner)}</td>
               <td>${c.percent}%</td>
               <td>${c.expires ? esc(c.expires) : '<span class="muted">Never</span>'}</td>
               <td>${c.usable ? '<span class="pill on">Active</span>' : `<span class="pill off">${c.active === false ? "Off" : "Expired"}</span>`}</td>
-              <td>${c.inquiries}</td>
+              <td>${c.inquiries ? `<button class="count-link" data-act="show-code" data-code="${esc(c.code)}">${c.inquiries} — view</button>` : 0}</td>
               <td>${c.booked}</td>
               <td><div class="actions">
                 <button class="btn ghost small" data-act="toggle" data-code="${esc(c.code)}">${c.active === false ? "Turn on" : "Turn off"}</button>
@@ -249,19 +255,37 @@
             </tr>`).join("")
           : '<tr><td colspan="8" class="muted">No codes yet. Create one above.</td></tr>';
 
-        const f = $("filter").value;
+        // Per-code filter options
+        const filter = $("filter");
+        const current = filter.value;
+        filter.querySelectorAll("option[data-code]").forEach((o) => o.remove());
+        for (const c of data.codes) {
+          const o = new Option(`Code ${c.code} (${c.partner})`, `code:${c.code}`);
+          o.dataset.code = "1";
+          filter.append(o);
+        }
+        filter.value = [...filter.options].some((o) => o.value === current) ? current : "all";
+
+        const f = filter.value;
         const list = data.inquiries.filter((i) =>
-          f === "all" ? true : f === "code" ? i.code : f === "booked" ? i.booked : !i.booked
+          f === "all" ? true
+          : f === "code" ? i.code
+          : f.startsWith("code:") ? i.code === f.slice(5)
+          : f === "booked" ? i.booked
+          : !i.booked
         );
         const withCode = data.inquiries.filter((i) => i.code);
-        $("stats").innerHTML = `
-          <div class="stat"><b>${data.inquiries.length}</b>Inquiries</div>
-          <div class="stat"><b>${withCode.length}</b>With a code</div>
-          <div class="stat"><b>${data.inquiries.filter((i) => i.booked).length}</b>Marked booked</div>`;
+        const statButton = (value, count, label) =>
+          `<button type="button" class="stat" data-act="filter" data-filter="${value}" aria-pressed="${f === value}"><b>${count}</b>${label}</button>`;
+        $("stats").innerHTML =
+          statButton("all", data.inquiries.length, "Inquiries") +
+          statButton("open", data.inquiries.filter((i) => !i.booked).length, "Not booked yet") +
+          statButton("booked", data.inquiries.filter((i) => i.booked).length, "Booked") +
+          statButton("code", withCode.length, "With a code");
 
         $("inquiries-body").innerHTML = list.length
           ? list.map((i) => `
-            <tr>
+            <tr class="${i.booked ? "is-booked" : ""}">
               <td>${when(i.createdAt)}</td>
               <td>${esc(i.name)}<br><span class="muted">${esc(i.email)}${i.phone ? " · " + esc(i.phone) : ""}</span></td>
               <td>${esc(i.package)}</td>
@@ -285,6 +309,7 @@
         const date = i.bookedDate || i.dateISO || "";
         const time = Number.isInteger(i.startMin) ? toHHMM(i.startMin) : "";
         return `<div class="book-form">
+            ${i.needsTime ? '<span class="needs-time">Ticked earlier without a time — add one to block it.</span>' : ""}
             <input type="date" aria-label="Session date" id="bd-${esc(i.id)}" value="${esc(date)}">
             <input type="time" aria-label="Start time" id="bt-${esc(i.id)}" value="${esc(time)}" step="300">
             <button class="btn small" data-act="book" data-id="${esc(i.id)}">Mark booked</button>
@@ -356,6 +381,12 @@
       document.addEventListener("click", async (event) => {
         const el = event.target.closest("[data-act]");
         if (!el) return;
+        if (el.dataset.act === "filter" || el.dataset.act === "show-code") {
+          $("filter").value = el.dataset.act === "filter" ? el.dataset.filter : `code:${el.dataset.code}`;
+          render();
+          $("filter").closest("section").scrollIntoView({ behavior: "smooth" });
+          return;
+        }
         const code = data.codes.find((c) => c.code === el.dataset.code);
         try {
           if (el.dataset.act === "toggle" && code) {

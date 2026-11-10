@@ -54,7 +54,10 @@ export default async function handler(request) {
         const inquiryKeys = (await inquiries.list()).blobs.map((b) => b.key).sort().reverse();
         const inquiryList = (
           await Promise.all(inquiryKeys.slice(0, 300).map((k) => inquiries.get(k, { type: "json" })))
-        ).filter(Boolean);
+        )
+          .filter(Boolean)
+          // Inquiries ticked before booking times existed never blocked anything: treat as not booked.
+          .map((i) => (i.booked && !i.bookedDate ? { ...i, booked: false, needsTime: true } : i));
 
         const allForCounts = inquiryKeys.length > 300
           ? (await Promise.all(inquiryKeys.map((k) => inquiries.get(k, { type: "json" })))).filter(Boolean)
@@ -67,7 +70,7 @@ export default async function handler(request) {
               ...c,
               usable: isCodeUsable(c),
               inquiries: used.length,
-              booked: used.filter((i) => i.booked).length
+              booked: used.filter((i) => i.booked && i.bookedDate).length
             };
           })
           .sort((a, b) => a.code.localeCompare(b.code));
