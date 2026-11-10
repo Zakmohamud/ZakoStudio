@@ -1,14 +1,25 @@
 // Private endpoint for the referral-code manager (referral-admin.html).
 // Every request must send the REFERRAL_ADMIN_PASSWORD in the x-admin-password header.
+import { randomUUID } from "node:crypto";
 import {
+  BREAK_MINUTES,
+  PACKAGE_PRICES,
+  clashes,
   cleanText,
   codesStore,
+  formatMinutes,
   inquiriesStore,
   isCodeUsable,
+  isISODate,
+  isMinute,
   isValidCodeFormat,
   jsonResponse,
   normalizeCode,
-  passwordMatches
+  packageIdFromName,
+  passwordMatches,
+  readSchedule,
+  scheduleStore,
+  vancouverToday
 } from "../lib/referrals.mjs";
 
 export default async function handler(request) {
@@ -33,6 +44,7 @@ export default async function handler(request) {
   try {
     const codes = await codesStore();
     const inquiries = await inquiriesStore();
+    const schedule = await scheduleStore();
 
     switch (body?.action) {
       case "list": {
@@ -60,7 +72,18 @@ export default async function handler(request) {
           })
           .sort((a, b) => a.code.localeCompare(b.code));
 
-        return jsonResponse(200, { codes: withStats, inquiries: inquiryList });
+        const today = vancouverToday();
+        const upcoming = (await readSchedule())
+          .filter((e) => e.date >= today)
+          .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+
+        return jsonResponse(200, {
+          codes: withStats,
+          inquiries: inquiryList,
+          schedule: upcoming,
+          packageMinutes: Object.fromEntries(Object.entries(PACKAGE_PRICES).map(([k, v]) => [k, v.minutes])),
+          breakMinutes: BREAK_MINUTES
+        });
       }
 
       case "saveCode": {
@@ -102,19 +125,79 @@ export default async function handler(request) {
         return jsonResponse(200, { deleted: code });
       }
 
-      case "setBooked": {
+      case "book": {
         const id = cleanText(body.id, 80);
         const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
         if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
-        inquiry.booked = Boolean(body.booked);
+        const date = body.date;
+        const start = body.start;
+        if (!isISODate(date) || !isMinute(start)) {
+          return jsonResponse(400, { message: "Enter the date and start time you agreed with the client." });
+        }
+        const pkgId = inquiry.packageId || packageIdFromName(inquiry.package);
+        const minutes = PACKAGE_PRICES[pkgId]?.minutes;
+        if (!minutes) return jsonResponse(400, { message: "Unknown package length for this inquiry." });
+        const end = start + minutes;
+        if (end > 1440) return jsonResponse(400, { message: "That session would run past midnight." });
+
+        const sameDay = (await readSchedule()).filter((e) => e.date === date);
+        const clash = clashes(sameDay, start, end, id);
+        if (clash) {
+          return jsonResponse(409, {
+            message: `That overlaps ${clash.label || "another booking"} (${formatMinutes(clash.start)}–${formatMinutes(clash.end)}) including your ${BREAK_MINUTES}-minute break.`
+          });
+        }
+
+        await schedule.setJSON(id, {
+          id,
+          date,
+          start,
+          end,
+          kind: "session",
+          label: `${inquiry.name} · ${inquiry.package}`
+        });
+        Object.assign(inquiry, { booked: true, bookedDate: date, bookedStart: start, bookedEnd: end });
         await inquiries.setJSON(id, inquiry);
         return jsonResponse(200, { inquiry });
+      }
+
+      case "unbook": {
+        const id = cleanText(body.id, 80);
+        const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
+        if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
+        await schedule.delete(id);
+        Object.assign(inquiry, { booked: false, bookedDate: null, bookedStart: null, bookedEnd: null });
+        await inquiries.setJSON(id, inquiry);
+        return jsonResponse(200, { inquiry });
+      }
+
+      case "block": {
+        const date = body.date;
+        const wholeDay = Boolean(body.wholeDay);
+        const start = wholeDay ? 0 : body.start;
+        const end = wholeDay ? 1440 : body.end;
+        if (!isISODate(date)) return jsonResponse(400, { message: "Choose a date to block." });
+        if (!isMinute(start) || !isMinute(end) || end <= start) {
+          return jsonResponse(400, { message: "Enter a start and end time, with the end after the start." });
+        }
+        const id = `block-${randomUUID().slice(0, 12)}`;
+        const entry = { id, date, start, end, kind: "block", label: cleanText(body.note, 80) || "Blocked" };
+        await schedule.setJSON(id, entry);
+        return jsonResponse(200, { entry });
+      }
+
+      case "unblock": {
+        const id = cleanText(body.id, 80);
+        if (!id.startsWith("block-")) return jsonResponse(400, { message: "Only manual blocks can be removed here." });
+        await schedule.delete(id);
+        return jsonResponse(200, { deleted: id });
       }
 
       case "deleteInquiry": {
         const id = cleanText(body.id, 80);
         if (!id) return jsonResponse(400, { message: "Unknown inquiry." });
         await inquiries.delete(id);
+        await schedule.delete(id);
         return jsonResponse(200, { deleted: id });
       }
 

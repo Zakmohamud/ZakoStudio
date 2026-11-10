@@ -6,7 +6,7 @@
 
 The portfolio inquiry form submits to the studio inbox through FormSubmit. Christmas package inquiries are emailed directly to `zakotarastudio@gmail.com`, include the selected package and requested date/time, and return to the package page after submission. Christmas inquiries do not send an automatic reply to the client. An inquiry is not a reserved session.
 
-The studio inbox must approve FormSubmit's one-time activation email before submissions are delivered. Keep FormSubmit's reCAPTCHA enabled; autoresponse emails are not supported for AJAX submissions or when reCAPTCHA is disabled.
+The studio inbox must approve FormSubmit's one-time activation email before submissions are delivered. FormSubmit's reCAPTCHA is disabled on the Christmas form (see below); keep it on for the portfolio form.
 
 ## Christmas family-session bookings
 
@@ -60,3 +60,19 @@ Partners get their own code (for example `SARAH15`). Anyone who enters it on the
 - The same page lists every inquiry sent from the booking page, with the code/partner and "How did you hear about me?" answer. Tick **Booked** when a client confirms to see each partner's booked count.
 - The page is protected by the `REFERRAL_ADMIN_PASSWORD` environment variable in Netlify (Site configuration → Environment variables). Mark it as a secret and give it the Functions scope.
 - Codes and inquiries are stored in Netlify Blobs (stores `referral-codes` and `referral-inquiries`). Codes are checked server-side, so the list is never visible in the page source.
+
+## Bookings, blocking, and the schedule
+
+The Christmas booking page offers weekends (morning 8 a.m.–12 p.m., afternoon 12–5 p.m.) and Wednesday/Friday evenings (4–7 p.m.). After choosing a part of the day, clients pick an exact start time from a list that only shows open times; "Flexible" is always available. Other weekdays can be requested for after 7 p.m.
+
+Manage everything at `/referral-admin.html` ("Bookings & codes"):
+
+- **Mark booked**: each inquiry has a date and start time (pre-filled from the client's choice). Clicking *Mark booked* blocks that session's length plus a 10-minute break on the booking page. The server refuses overlaps. *Undo* opens the time again.
+- **Block off time**: block a time range or a whole day (holidays, phone bookings).
+- **Upcoming schedule**: every booked session and block, grouped by day.
+
+Hours, the break length, and the season end date are set near the top of the `<script>` in `christmas-booking.html` (`DAY_PARTS`, `BREAK_MINUTES`, `SEASON_END`); the server's break length is `BREAK_MINUTES` in `netlify/lib/referrals.mjs`. Schedule entries live in the Netlify Blobs store `booking-schedule`.
+
+The booking page no longer uses Supabase. The older `/christmas-admin.html` manager is superseded by this page.
+
+FormSubmit's verification page is turned off on the Christmas form (`_captcha=false`); the hidden honeypot field still filters most spam bots.

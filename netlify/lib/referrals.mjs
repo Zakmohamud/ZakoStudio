@@ -2,13 +2,44 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export const PACKAGE_PRICES = {
-  quick: { name: "Quick session", price: 175 },
-  mini: { name: "Mini session", price: 300 },
-  extended: { name: "Extended session", price: 600 }
+  quick: { name: "Quick session", price: 175, minutes: 15 },
+  mini: { name: "Mini session", price: 300, minutes: 30 },
+  extended: { name: "Extended session", price: 600, minutes: 60 }
 };
+
+// Minutes kept free after every session.
+export const BREAK_MINUTES = 10;
 
 const CODES_STORE = "referral-codes";
 const INQUIRIES_STORE = "referral-inquiries";
+const SCHEDULE_STORE = "booking-schedule";
+
+export function packageIdFromName(name) {
+  return Object.keys(PACKAGE_PRICES).find((id) => PACKAGE_PRICES[id].name === name) || null;
+}
+
+export function isISODate(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+export function isMinute(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 1440;
+}
+
+// True when [start, end) clashes with an existing entry, counting the break after each session.
+export function clashes(entries, start, end, ignoreId) {
+  return entries.find(
+    (e) => e.id !== ignoreId && start < e.end + BREAK_MINUTES && e.start < end + BREAK_MINUTES
+  ) || null;
+}
+
+export function formatMinutes(total) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const suffix = h >= 12 && h < 24 ? "p.m." : "a.m.";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
+}
 
 let storeFactory = null;
 
@@ -25,6 +56,14 @@ async function openStore(name) {
 
 export const codesStore = () => openStore(CODES_STORE);
 export const inquiriesStore = () => openStore(INQUIRIES_STORE);
+export const scheduleStore = () => openStore(SCHEDULE_STORE);
+
+// Every schedule entry: { id, date, start, end, kind: "session" | "block", label }
+export async function readSchedule() {
+  const store = await scheduleStore();
+  const keys = (await store.list()).blobs.map((b) => b.key);
+  return (await Promise.all(keys.map((k) => store.get(k, { type: "json" })))).filter(Boolean);
+}
 
 export function jsonResponse(status, body) {
   return new Response(JSON.stringify(body), {
