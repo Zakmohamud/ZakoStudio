@@ -918,16 +918,21 @@
         const taken = busy[date] || [];
         const starts = [];
         let s = part.from;
+        let gapStart = part.from;
         while (s + minutes <= part.to) {
           const clash = taken.find(([bs, be]) => s < be + BREAK_MINUTES && bs < s + minutes + BREAK_MINUTES);
           if (clash) {
-            s = clash[1] + BREAK_MINUTES;
+            // Also offer the latest start that still finishes (plus break) before this booking.
+            const latest = clash[0] - BREAK_MINUTES - minutes;
+            if (latest >= gapStart && latest + minutes <= part.to && !starts.includes(latest)) starts.push(latest);
+            s = Math.max(s, clash[1] + BREAK_MINUTES);
+            gapStart = s;
             continue;
           }
           starts.push(s);
           s += minutes + BREAK_MINUTES;
         }
-        return starts;
+        return starts.sort((a, b) => a - b);
       }
 
       const dayIsFull = (date, type) => DAY_PARTS[type].every((part) => freeStarts(date, part).length === 0);
