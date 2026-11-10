@@ -106,6 +106,25 @@ export function discountedPrice(price, percent) {
   return Math.round(price * (100 - percent)) / 100;
 }
 
+// A code takes either a percentage or a fixed dollar amount off any package.
+// Older codes only have `percent`.
+export function discountOf(record) {
+  if (record?.type === "amount") return { type: "amount", amount: record.amount };
+  return { type: "percent", percent: record?.percent || 0 };
+}
+
+export function discountLabel(d) {
+  if (!d) return "";
+  if (d.type === "amount") return `$${Number.isInteger(d.amount) ? d.amount : d.amount.toFixed(2)} off`;
+  return d.percent ? `${d.percent}% off` : "";
+}
+
+export function applyDiscount(price, d) {
+  if (!d) return price;
+  if (d.type === "amount") return Math.max(0, Math.round((price - d.amount) * 100) / 100);
+  return discountedPrice(price, d.percent || 0);
+}
+
 export function cleanText(value, max = 200) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }

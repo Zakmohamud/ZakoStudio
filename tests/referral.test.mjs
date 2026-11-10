@@ -45,7 +45,7 @@ test("create a code, check it, record an inquiry, see stats", async () => {
   assert.equal(res.status, 409, "duplicate codes are refused");
 
   res = await referral(new Request("https://x.test/api/referral?code=sarah15"));
-  assert.deepEqual(await res.json(), { valid: true, code: "SARAH15", percent: 15 });
+  assert.deepEqual(await res.json(), { valid: true, code: "SARAH15", type: "percent", percent: 15 });
 
   res = await referral(new Request("https://x.test/api/referral?code=NOPE99"));
   assert.equal((await res.json()).valid, false);
@@ -125,4 +125,27 @@ test("booking blocks its length plus a 10-minute break", async () => {
 
   const list = await (await adminCall({ action: "list" })).json();
   assert.equal(list.schedule.length, 2);
+});
+
+test("dollar-amount codes take a fixed amount off every package", async () => {
+  let res = await adminCall({ action: "saveCode", isNew: true, code: "LOVECINDY2026", partner: "Cindy", type: "amount", amount: 10 });
+  assert.equal(res.status, 200);
+
+  res = await referral(new Request("https://x.test/api/referral?code=lovecindy2026"));
+  assert.deepEqual(await res.json(), { valid: true, code: "LOVECINDY2026", type: "amount", amount: 10 });
+
+  for (const [pkg, expected] of [["quick", 180], ["mini", 290], ["extended", 590]]) {
+    res = await referral(new Request("https://x.test/api/referral", {
+      method: "POST",
+      body: JSON.stringify({ package: pkg, name: `C ${pkg}`, email: "c@x.com", code: "LOVECINDY2026" })
+    }));
+    assert.equal((await res.json()).finalPrice, expected);
+  }
+
+  const list = await (await adminCall({ action: "list" })).json();
+  assert.equal(list.inquiries[0].discountLabel, "$10 off");
+  assert.equal(list.codes[0].inquiries, 3);
+
+  res = await adminCall({ action: "saveCode", code: "BAD", partner: "Z", type: "amount", amount: 0 });
+  assert.equal(res.status, 400);
 });

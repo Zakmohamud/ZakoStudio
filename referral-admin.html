@@ -39,7 +39,11 @@
       .btn.ghost { background: transparent; color: var(--ink); }
       .small { min-height: 34px; padding: 0 12px; font-size: 13px; }
       .linkish { border: 0; background: none; padding: 0; color: var(--red); text-decoration: underline; font-size: 13px; }
-      .new-code { display: grid; grid-template-columns: 1.2fr 1.4fr 0.7fr 1fr auto; gap: 12px; align-items: end; padding: 18px; border: 1px solid var(--line); background: var(--card); }
+      .discount-field { display: grid; gap: 5px; font-size: 13px; font-weight: 500; }
+      .discount-row { display: flex; gap: 6px; }
+      .discount-row select { flex: 0 0 auto; }
+      .discount-row input { width: 100%; min-width: 0; }
+      .new-code { display: grid; grid-template-columns: 1.1fr 1.3fr 1.1fr 1fr auto; gap: 12px; align-items: end; padding: 18px; border: 1px solid var(--line); background: var(--card); }
       .message { min-height: 1.4em; margin: 10px 0 0; }
       .message.bad { color: var(--red); }
       .message.ok { color: var(--green); }
@@ -166,9 +170,16 @@
             <label>Partner
               <input id="nc-partner" placeholder="Sarah — Little Sprouts Daycare" required />
             </label>
-            <label>% off
-              <input id="nc-percent" type="number" min="1" max="90" step="1" value="15" required />
-            </label>
+            <div class="discount-field">
+              <label for="nc-value">Discount</label>
+              <div class="discount-row">
+                <select id="nc-type" aria-label="Discount type">
+                  <option value="percent">% off</option>
+                  <option value="amount">$ off</option>
+                </select>
+                <input id="nc-value" type="number" min="1" max="90" step="1" value="15" required aria-label="Discount amount" />
+              </div>
+            </div>
             <label>Expires (optional)
               <input id="nc-expires" type="date" />
             </label>
@@ -182,7 +193,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Code</th><th>Partner</th><th>% off</th><th>Expires</th><th>Status</th><th>Inquiries</th><th>Booked</th><th></th></tr>
+                <tr><th>Code</th><th>Partner</th><th>Discount</th><th>Expires</th><th>Status</th><th>Inquiries</th><th>Booked</th><th></th></tr>
               </thead>
               <tbody id="codes-body"></tbody>
             </table>
@@ -242,14 +253,14 @@
             <tr>
               <td><button class="code-link" data-act="show-code" data-code="${esc(c.code)}" title="See inquiries with this code">${esc(c.code)}</button></td>
               <td>${esc(c.partner)}</td>
-              <td>${c.percent}%</td>
+              <td>${discountText(c)}</td>
               <td>${c.expires ? esc(c.expires) : '<span class="muted">Never</span>'}</td>
               <td>${c.usable ? '<span class="pill on">Active</span>' : `<span class="pill off">${c.active === false ? "Off" : "Expired"}</span>`}</td>
               <td>${c.inquiries ? `<button class="count-link" data-act="show-code" data-code="${esc(c.code)}">${c.inquiries} — view</button>` : 0}</td>
               <td>${c.booked}</td>
               <td><div class="actions">
                 <button class="btn ghost small" data-act="toggle" data-code="${esc(c.code)}">${c.active === false ? "Turn on" : "Turn off"}</button>
-                <button class="btn ghost small" data-act="edit" data-code="${esc(c.code)}">Change %</button>
+                <button class="btn ghost small" data-act="edit" data-code="${esc(c.code)}">Change discount</button>
                 <button class="linkish" data-act="delete" data-code="${esc(c.code)}">Delete</button>
               </div></td>
             </tr>`).join("")
@@ -292,7 +303,7 @@
               <td>${esc(i.date)}<br><span class="muted">${esc(i.time)}</span></td>
               <td>${i.code ? `<span class="code">${esc(i.code)}</span><br><span class="muted">${esc(i.partner)}</span>` : '<span class="muted">—</span>'}</td>
               <td>${i.heardFrom ? esc(i.heardFrom) : '<span class="muted">—</span>'}</td>
-              <td>${i.percent ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> −${i.percent}%</span>` : money(i.price)}</td>
+              <td>${i.finalPrice !== i.price ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> ${esc(i.discountLabel || `${i.percent}% off`)}</span>` : money(i.price)}</td>
               <td>${bookingCell(i)}</td>
               <td><button class="linkish" data-act="remove" data-id="${esc(i.id)}">Remove</button></td>
             </tr>`).join("")
@@ -334,6 +345,18 @@
           : '<p class="muted">Nothing booked or blocked yet.</p>';
       }
 
+      function discountText(c) {
+        return c.type === "amount" ? `${money(c.amount)} off` : `${c.percent}% off`;
+      }
+
+      // "15%" -> percent, "$10" -> amount, plain number keeps the current type.
+      function parseDiscount(text, currentType) {
+        const m = String(text).trim().match(/^(\$)?\s*(\d+(?:\.\d{1,2})?)\s*(%)?$/);
+        if (!m) return null;
+        const type = m[1] ? "amount" : m[3] ? "percent" : currentType;
+        return type === "amount" ? { type, amount: Number(m[2]) } : { type, percent: Number(m[2]) };
+      }
+
       function note(text, kind) {
         $("code-message").textContent = text;
         $("code-message").className = `message ${kind || ""}`;
@@ -356,6 +379,20 @@
       });
 
       $("sign-out").addEventListener("click", signOut);
+
+      function syncDiscountInput() {
+        const input = $("nc-value");
+        if ($("nc-type").value === "amount") {
+          input.max = 500;
+          input.step = "0.01";
+          input.placeholder = "10";
+        } else {
+          input.max = 90;
+          input.step = "1";
+          input.placeholder = "15";
+        }
+      }
+      $("nc-type").addEventListener("change", syncDiscountInput);
       $("filter").addEventListener("change", render);
 
       $("new-code").addEventListener("submit", async (event) => {
@@ -366,12 +403,16 @@
             isNew: true,
             code: $("nc-code").value,
             partner: $("nc-partner").value,
-            percent: Number($("nc-percent").value),
+            type: $("nc-type").value,
+            percent: Number($("nc-value").value),
+            amount: Number($("nc-value").value),
             expires: $("nc-expires").value
           });
           event.target.reset();
-          $("nc-percent").value = 15;
-          note(`${code.code} created — ${code.percent}% off. Share it with ${code.partner}.`, "ok");
+          $("nc-type").value = "percent";
+          syncDiscountInput();
+          $("nc-value").value = 15;
+          note(`${code.code} created — ${discountText(code)} any package. Share it with ${code.partner}.`, "ok");
           await load();
         } catch (error) {
           note(error.message, "bad");
@@ -392,10 +433,17 @@
           if (el.dataset.act === "toggle" && code) {
             await api({ action: "saveCode", ...code, active: code.active === false });
           } else if (el.dataset.act === "edit" && code) {
-            const value = prompt(`New discount for ${code.code} (1–90):`, code.percent);
+            const current = code.type === "amount" ? `$${code.amount}` : `${code.percent}%`;
+            const value = prompt(`New discount for ${code.code}.\nType a percentage like 15% or a dollar amount like $10:`, current);
             if (value === null) return;
-            await api({ action: "saveCode", ...code, percent: Number(value) });
-            note(`${code.code} is now ${Number(value)}% off.`, "ok");
+            const parsed = parseDiscount(value, code.type === "amount" ? "amount" : "percent");
+            if (!parsed) {
+              note("Type something like 15% or $10.", "bad");
+              return;
+            }
+            const { percent, amount, ...rest } = code;
+            const saved = await api({ action: "saveCode", ...rest, ...parsed });
+            note(`${code.code} is now ${discountText(saved.code)}.`, "ok");
           } else if (el.dataset.act === "delete" && code) {
             if (!confirm(`Delete ${code.code}? Past inquiries keep their record, but the code will stop working.`)) return;
             await api({ action: "deleteCode", code: code.code });

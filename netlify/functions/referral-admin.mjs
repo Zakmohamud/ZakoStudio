@@ -92,14 +92,19 @@ export default async function handler(request) {
       case "saveCode": {
         const code = normalizeCode(body.code);
         const partner = cleanText(body.partner, 80);
+        const type = body.type === "amount" ? "amount" : "percent";
         const percent = Number(body.percent);
+        const amount = Math.round(Number(body.amount) * 100) / 100;
         const expires = cleanText(body.expires, 10);
         if (!isValidCodeFormat(code)) {
           return jsonResponse(400, { message: "Codes use 3–24 letters, numbers, or dashes (e.g. SARAH15)." });
         }
         if (!partner) return jsonResponse(400, { message: "Enter who the code belongs to." });
-        if (!Number.isInteger(percent) || percent < 1 || percent > 90) {
-          return jsonResponse(400, { message: "Discount must be a whole number from 1 to 90." });
+        if (type === "percent" && (!Number.isInteger(percent) || percent < 1 || percent > 90)) {
+          return jsonResponse(400, { message: "A % discount must be a whole number from 1 to 90." });
+        }
+        if (type === "amount" && (!Number.isFinite(amount) || amount <= 0 || amount > 500)) {
+          return jsonResponse(400, { message: "A $ discount must be between $1 and $500." });
         }
         if (expires && !/^\d{4}-\d{2}-\d{2}$/.test(expires)) {
           return jsonResponse(400, { message: "Expiry must be a date." });
@@ -111,7 +116,8 @@ export default async function handler(request) {
         const record = {
           code,
           partner,
-          percent,
+          type,
+          ...(type === "percent" ? { percent } : { amount }),
           expires: expires || null,
           active: body.active !== false,
           createdAt: existing?.createdAt || new Date().toISOString(),

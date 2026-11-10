@@ -1095,16 +1095,19 @@
       function updatePrice() {
         const pkg = packages[state.packageId];
         if (!pkg) return;
-        const percent = state.discount?.percent || 0;
-        const finalPrice = Math.round(pkg.price * (100 - percent)) / 100;
+        const d = state.discount;
+        const finalPrice = !d ? pkg.price
+          : d.type === "amount" ? Math.max(0, Math.round((pkg.price - d.amount) * 100) / 100)
+          : Math.round(pkg.price * (100 - d.percent)) / 100;
+        const label = !d ? "" : d.type === "amount" ? `${money(d.amount).replace(" CAD", "")} off` : `${d.percent}% off`;
         const deposit = Math.round(finalPrice * 50) / 100;
         $("summary-price").textContent = money(finalPrice);
         const was = $("summary-was");
-        if (percent) {
+        if (d) {
           was.hidden = false;
-          was.innerHTML = `<s>${money(pkg.price)}</s>${percent}% off with ${state.discount.code}`;
-          $("form-code").value = state.discount.code;
-          $("form-discount").value = `${percent}% off`;
+          was.innerHTML = `<s>${money(pkg.price)}</s>${label} with ${d.code}`;
+          $("form-code").value = d.code;
+          $("form-discount").value = label;
         } else {
           was.hidden = true;
           $("form-code").value = "None";
@@ -1136,10 +1139,11 @@
           const res = await fetch(`/api/referral?code=${encodeURIComponent(code)}`, { headers: { accept: "application/json" } });
           const result = await res.json();
           if (result.valid) {
-            state.discount = { code: result.code, percent: result.percent };
+            state.discount = { code: result.code, type: result.type, percent: result.percent, amount: result.amount };
             codeInput.value = result.code;
             updatePrice();
-            setCodeStatus(`✓ ${result.code} applied — ${result.percent}% off.`, "ok");
+            const off = result.type === "amount" ? `$${result.amount} off` : `${result.percent}% off`;
+            setCodeStatus(`✓ ${result.code} applied — ${off}.`, "ok");
             return true;
           }
           setCodeStatus(result.message || "That code isn’t valid or has expired.", "bad");

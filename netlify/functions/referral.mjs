@@ -5,7 +5,9 @@ import { randomUUID } from "node:crypto";
 import {
   PACKAGE_PRICES,
   cleanText,
-  discountedPrice,
+  applyDiscount,
+  discountLabel,
+  discountOf,
   findCode,
   inquiriesStore,
   isCodeUsable,
@@ -23,7 +25,7 @@ export default async function handler(request) {
       if (!isCodeUsable(record)) {
         return jsonResponse(200, { valid: false, message: "That code isn’t valid or has expired." });
       }
-      return jsonResponse(200, { valid: true, code: record.code, percent: record.percent });
+      return jsonResponse(200, { valid: true, code: record.code, ...discountOf(record) });
     } catch (error) {
       console.error("Referral code lookup failed.", error);
       return jsonResponse(502, { valid: false, message: "Codes can’t be checked right now. Please try again." });
@@ -48,11 +50,13 @@ export default async function handler(request) {
       let code = null;
       let partner = null;
       let percent = 0;
+      let discount = null;
       const record = await findCode(normalizeCode(body.code));
       if (isCodeUsable(record)) {
         code = record.code;
         partner = record.partner;
-        percent = record.percent;
+        discount = discountOf(record);
+        percent = discount.type === "percent" ? discount.percent : 0;
       }
 
       const createdAt = new Date().toISOString();
@@ -65,8 +69,9 @@ export default async function handler(request) {
         phone: cleanText(body.phone, 40),
         package: pkg.name,
         price: pkg.price,
-        finalPrice: discountedPrice(pkg.price, percent),
+        finalPrice: applyDiscount(pkg.price, discount),
         percent,
+        discountLabel: discountLabel(discount),
         code,
         partner,
         heardFrom: cleanText(body.heardFrom, 80),
