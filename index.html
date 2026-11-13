@@ -794,6 +794,40 @@
       .lightbox-previous { left: 12px; }
       .lightbox-next { right: 12px; }
 
+      /* Christmas section */
+      .christmas-section { padding: clamp(44px, 6vw, 70px) clamp(0px, 3vw, 24px) 10px; }
+      .christmas-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+      .christmas-head .section-copy { max-width: 560px; }
+      .christmas-cta {
+        display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px;
+        background: var(--red-deep); color: #fff; text-decoration: none;
+        font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+        transition: background 160ms ease;
+      }
+      .christmas-cta:hover { background: var(--ink); }
+      .christmas-packages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+      .xmas-card { display: flex; flex-direction: column; background: var(--panel); border: 1px solid rgba(23, 19, 18, 0.12); color: inherit; text-decoration: none; overflow: hidden; transition: transform 200ms ease, box-shadow 200ms ease; }
+      .xmas-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(54, 36, 25, 0.1); }
+      .xmas-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+      .xmas-body { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 16px 18px 18px; }
+      .xmas-name { font-family: "Cormorant Garamond", serif; font-size: 28px; font-weight: 600; }
+      .xmas-price { align-self: center; color: var(--red-deep); font-family: "Cormorant Garamond", serif; font-size: 26px; font-weight: 600; }
+      .xmas-meta { grid-column: 1 / -1; color: var(--muted); font-size: 11px; line-height: 1.7; }
+
+      /* About */
+      .about-section { padding: clamp(40px, 6vw, 64px) clamp(0px, 3vw, 24px); border-top: 1px solid rgba(23, 19, 18, 0.12); }
+      .about-body { max-width: 640px; margin-top: 18px; }
+      .about-body p { margin: 0 0 14px; color: var(--ink); font-size: 14px; line-height: 1.9; }
+      .about-link { color: var(--red-deep); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 2px; }
+
+      .christmas-booking-link { opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity 220ms ease, transform 220ms ease, background 180ms ease; }
+      .christmas-booking-link.is-visible { opacity: 1; pointer-events: auto; transform: none; }
+
+      .portfolio-item:nth-child(6) { grid-column: span 2; }
+      .portfolio-item:nth-child(6) img { object-position: center 22%; }
+
+      .service-photo { display: block; width: calc(100% + 44px); margin: -22px -22px 18px; aspect-ratio: 4 / 3; object-fit: cover; object-position: center 15%; }
+
       .services-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1013,6 +1047,7 @@
       }
 
       @media (max-width: 880px) {
+        .christmas-packages { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .frame { min-height: 1000px; }
         .hero-stage { height: 540px; }
         .ticket-row { grid-template-columns: 1fr 1fr; }
@@ -1048,7 +1083,15 @@
         .portfolio-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 132px; gap: 10px; }
         .portfolio-item:first-child { grid-row: span 2; }
         .portfolio-item:nth-child(4) { grid-column: auto; }
+        .portfolio-item:nth-child(6) { grid-column: span 2; }
         .services-grid { grid-template-columns: 1fr; }
+        .christmas-packages { grid-template-columns: 1fr; }
+        .xmas-card { flex-direction: row; }
+        .xmas-card img { width: 42%; aspect-ratio: auto; min-height: 100%; }
+        .xmas-body { grid-template-columns: 1fr; align-content: center; padding: 12px 14px; }
+        .xmas-name { font-size: 24px; }
+        .xmas-price { align-self: start; font-size: 21px; }
+        .christmas-cta { width: 100%; justify-content: center; }
         .service-card { min-height: 140px; }
         .booking-form { grid-template-columns: 1fr; }
         .form-field.full { grid-column: auto; }
@@ -1077,6 +1120,7 @@
           <ul class="nav-links">
             <li><a href="#work">Work</a></li>
             <li><a href="#services">Services</a></li>
+            <li><a href="#christmas">Christmas</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
         </nav>
@@ -1101,8 +1145,8 @@
           <div class="ticket">
             <div class="ticket-inner">
               <div class="ticket-meta">
-                <span>No</span>
-                <span>No</span>
+                <span>Admit one</span>
+                <span>No. 001</span>
               </div>
 
               <div class="ticket-artist">Zakary Maxamed</div>
@@ -1163,6 +1207,43 @@
           <span class="meta-specialty">Portraits · Lifestyle · Events</span>
         </div>
 
+        <section class="christmas-section reveal" id="christmas" aria-labelledby="christmas-title">
+          <div class="christmas-head">
+            <div>
+              <p class="section-kicker">Christmas family sessions · Vancouver</p>
+              <h2 class="section-heading" id="christmas-title">Christmas, <em>together.</em></h2>
+              <p class="section-copy">Cozy holiday portraits on a decorated set: tree, fireplace, the works. Weekends, plus Wednesday and Friday evenings. Pick a package, choose an open time, and I’ll confirm by email.</p>
+            </div>
+            <a class="christmas-cta" href="christmas-booking.html">See open times <span aria-hidden="true">→</span></a>
+          </div>
+          <div class="christmas-packages">
+            <a class="xmas-card" href="christmas-booking.html?package=quick">
+              <img src="images/christmas-quick.jpg" alt="Parents and their son in a Christmas portrait by the fireplace" loading="lazy" />
+              <span class="xmas-body">
+                <span class="xmas-name">Quick</span>
+                <span class="xmas-price">$190</span>
+                <span class="xmas-meta">15 min · 10+ edited images · up to 3 people</span>
+              </span>
+            </a>
+            <a class="xmas-card" href="christmas-booking.html?package=mini">
+              <img src="images/christmas-extended.jpg" alt="Two children in a Christmas storybook portrait" loading="lazy" />
+              <span class="xmas-body">
+                <span class="xmas-name">Mini</span>
+                <span class="xmas-price">$300</span>
+                <span class="xmas-meta">30 min · 20+ edited images · up to 5 people</span>
+              </span>
+            </a>
+            <a class="xmas-card" href="christmas-booking.html?package=extended">
+              <img src="images/christmas-standard-one-hour.jpg" alt="Parents and their baby in a Christmas family portrait" loading="lazy" />
+              <span class="xmas-body">
+                <span class="xmas-name">Extended</span>
+                <span class="xmas-price">$600</span>
+                <span class="xmas-meta">1 hour · 40+ edited images · up to 7 people</span>
+              </span>
+            </a>
+          </div>
+        </section>
+
         <section class="portfolio-section reveal" id="work">
           <p class="section-kicker">Selected frames · Vancouver, BC</p>
           <h2 class="section-heading">Stories worth <em>keeping.</em></h2>
@@ -1220,20 +1301,33 @@
           <h2 class="section-heading">Ways to <em>work together.</em></h2>
           <div class="services-grid">
             <article class="service-card">
+              <img class="service-photo" src="images/web/service-portraits.jpg" alt="Warm-lit studio portrait of a woman with long curly hair" loading="lazy" />
               <span class="service-number">01 / PORTRAITS</span>
               <h3>Portrait sessions</h3>
               <p>Natural, expressive portraits built around your personality and the way you want to be seen.</p>
             </article>
             <article class="service-card">
+              <img class="service-photo" src="images/web/service-lifestyle.jpg" alt="Smiling woman in a mustard jacket outdoors at golden hour" loading="lazy" />
               <span class="service-number">02 / LIFESTYLE</span>
               <h3>People &amp; places</h3>
               <p>Editorial-style lifestyle imagery for couples, creatives, and everyday stories worth keeping.</p>
             </article>
             <article class="service-card">
+              <img class="service-photo" src="images/web/service-events.jpg" alt="Model in a black dress at a fashion event" loading="lazy" />
               <span class="service-number">03 / EVENTS</span>
               <h3>Events &amp; projects</h3>
               <p>Thoughtful coverage for gatherings, collaborations, and independent creative projects.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="about-section reveal" id="about" aria-labelledby="about-title">
+          <p class="section-kicker">Behind the camera</p>
+          <h2 class="section-heading" id="about-title">Hi, I’m <em>Zakary.</em></h2>
+          <div class="about-body">
+            <p>I’m a Vancouver photographer and creative director. I like photographing people the way they really are: relaxed, a little playful, and in good light.</p>
+            <p>Whether it’s a solo portrait, a day out with someone you love, an event, or your family by the tree at Christmas, I’ll guide you through it so you can stop worrying about the camera and just enjoy it.</p>
+            <a class="about-link" href="#contact">Let’s plan your session <span aria-hidden="true">→</span></a>
           </div>
         </section>
 
@@ -1321,6 +1415,17 @@
       if (bookingConfirmation && new URLSearchParams(window.location.search).get("inquiry") === "sent") {
         bookingConfirmation.hidden = false;
         window.history.replaceState(null, "", `${window.location.pathname}#top`);
+      }
+
+      const floatingXmas = document.querySelector(".christmas-booking-link");
+      const xmasSection = document.getElementById("christmas");
+      if (floatingXmas && xmasSection) {
+        const updateFloating = () => {
+          const rect = xmasSection.getBoundingClientRect();
+          floatingXmas.classList.toggle("is-visible", rect.bottom < 0);
+        };
+        window.addEventListener("scroll", updateFloating, { passive: true });
+        updateFloating();
       }
 
       const revealItems = document.querySelectorAll(".reveal");
