@@ -181,20 +181,32 @@ export default async function handler(request) {
         if (!isISODate(date) || !isMinute(start) || !isMinute(end) || end <= start) {
           return jsonResponse(400, { message: "Enter a date and opening hours, with the end after the start." });
         }
-        // First edit turns the automatic weekend list into an editable list.
-        const days = Array.isArray(settings.days) ? [...settings.days] : sessionDays(settings);
+        const days = Array.isArray(settings.days) ? [...settings.days] : [];
         const i = days.findIndex((d) => d.date === date);
         const day = { date, start, end, status };
         if (i >= 0) days[i] = day; else days.push(day);
+        settings.hiddenDays = (settings.hiddenDays || []).filter((d) => d !== date);
         settings.days = days.sort((a, b) => a.date.localeCompare(b.date));
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveAutoDays": {
+        const settings = await readSettings();
+        if (body.seasonEnd !== undefined) {
+          if (!isISODate(body.seasonEnd)) return jsonResponse(400, { message: "Enter the last day of the season." });
+          settings.seasonEnd = body.seasonEnd;
+        }
+        if (body.autoWeekends !== undefined) settings.autoWeekends = Boolean(body.autoWeekends);
+        if (body.restoreHidden) settings.hiddenDays = [];
         await writeSettings(settings);
         return jsonResponse(200, { settings, days: sessionDays(settings) });
       }
 
       case "removeDay": {
         const settings = await readSettings();
-        const days = Array.isArray(settings.days) ? settings.days : sessionDays(settings);
-        settings.days = days.filter((d) => d.date !== body.date);
+        settings.days = (Array.isArray(settings.days) ? settings.days : []).filter((d) => d.date !== body.date);
+        if (isISODate(body.date)) settings.hiddenDays = [...new Set([...(settings.hiddenDays || []), body.date])];
         await writeSettings(settings);
         return jsonResponse(200, { settings, days: sessionDays(settings) });
       }

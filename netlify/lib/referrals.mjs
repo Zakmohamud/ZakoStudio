@@ -36,8 +36,12 @@ export const DEFAULT_SETTINGS = {
   studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7",
   paymentEmail: "zakotarastudio@gmail.com",
   balanceDue: "Upon receiving this confirmation, by Interac e-Transfer to zakotarastudio@gmail.com",
-  // null = not set up yet: every weekend until seasonEnd is offered as "pending studio confirmation".
-  days: null
+  // Every weekend until seasonEnd is offered as "pending" unless autoWeekends is off.
+  autoWeekends: true,
+  // Days you added or changed yourself (any day of the week, pending or secured).
+  days: null,
+  // Automatic weekend days you removed.
+  hiddenDays: []
 };
 
 export async function readSettings() {
@@ -63,17 +67,20 @@ function addDays(iso, n) {
 
 // Upcoming session days: { date, start, end, status: "secured" | "pending" }
 export function sessionDays(settings, today = vancouverToday()) {
-  if (Array.isArray(settings.days)) {
-    return settings.days.filter((d) => d.date > today).sort((a, b) => a.date.localeCompare(b.date));
-  }
-  const days = [];
-  for (let d = addDays(today, 1); d <= settings.seasonEnd; d = addDays(d, 1)) {
-    const wd = new Date(`${d}T12:00:00Z`).getUTCDay();
-    if (wd === 0 || wd === 6) {
-      days.push({ date: d, start: settings.defaultStart, end: settings.defaultEnd, status: "pending" });
+  const byDate = new Map();
+  const hidden = new Set(settings.hiddenDays || []);
+  if (settings.autoWeekends !== false && isISODate(settings.seasonEnd)) {
+    for (let d = addDays(today, 1); d <= settings.seasonEnd; d = addDays(d, 1)) {
+      const wd = new Date(`${d}T12:00:00Z`).getUTCDay();
+      if ((wd === 0 || wd === 6) && !hidden.has(d)) {
+        byDate.set(d, { date: d, start: settings.defaultStart, end: settings.defaultEnd, status: "pending", auto: true });
+      }
     }
   }
-  return days;
+  for (const d of Array.isArray(settings.days) ? settings.days : []) {
+    if (d.date > today) byDate.set(d.date, { ...d, auto: false });
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export const eventsStore = () => openStore(EVENTS_STORE);

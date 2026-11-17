@@ -299,3 +299,20 @@ test("client emails: acknowledgement is automatic, fee request and confirmation 
   res = await adminCall({ action: "sendEmail", id: ana.id, type: "feeRequest" });
   assert.equal(res.status, 503);
 });
+
+test("studio days: weekends always show, plus days you add; removed weekends stay hidden", async () => {
+  const { sessionDays } = await import("../netlify/lib/referrals.mjs");
+  const base = { seasonEnd: "2026-12-06", defaultStart: 600, defaultEnd: 840 };
+  // An empty saved list (what production had) still shows the weekends.
+  let days = sessionDays({ ...base, days: [] }, "2026-11-17");
+  assert.deepEqual(days.map((d) => d.date), ["2026-11-21", "2026-11-22", "2026-11-28", "2026-11-29", "2026-12-05", "2026-12-06"]);
+  assert.ok(days.every((d) => d.status === "pending"));
+  // Your own days (any weekday, secured) are merged in and win over the automatic entry.
+  days = sessionDays({ ...base, days: [{ date: "2026-11-25", start: 960, end: 1140, status: "secured" }, { date: "2026-11-21", start: 540, end: 900, status: "secured" }], hiddenDays: ["2026-11-29"] }, "2026-11-17");
+  assert.deepEqual(days.map((d) => d.date), ["2026-11-21", "2026-11-22", "2026-11-25", "2026-11-28", "2026-12-05", "2026-12-06"]);
+  assert.equal(days[0].status, "secured");
+  assert.equal(days[0].start, 540);
+  // Turning automatic weekends off leaves only your own days.
+  days = sessionDays({ ...base, autoWeekends: false, days: [{ date: "2026-11-25", start: 960, end: 1140, status: "secured" }] }, "2026-11-17");
+  assert.deepEqual(days.map((d) => d.date), ["2026-11-25"]);
+});

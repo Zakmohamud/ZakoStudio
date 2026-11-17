@@ -177,6 +177,12 @@
           <h2>Studio days &amp; earnings</h2>
           <div class="stats" id="money-stats"></div>
           <p class="muted">Clients can only pick times on these days, inside these hours. <strong>Pending</strong> days aren’t rented yet: clients can still send requests, and the request says the studio is waiting on confirmation. Marking a day <strong>Secured</strong> counts its rental cost.</p>
+          <form class="block-form" id="auto-form" style="margin-bottom:14px">
+            <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="au-on" /> Show every Saturday &amp; Sunday as pending (people can ask)</label>
+            <label>Until<input type="date" id="au-end" required /></label>
+            <button class="btn ghost small" type="submit">Save</button>
+            <button class="linkish" type="button" id="au-restore" hidden>Bring back removed weekends</button>
+          </form>
           <form class="block-form" id="day-form">
             <label>Date<input type="date" id="dy-date" required /></label>
             <label>Opens<input type="time" id="dy-from" value="10:00" required /></label>
@@ -428,11 +434,18 @@
             <td>${clock(r.d.start)} – ${clock(r.d.end)} <span class="muted">(${r.hours} h)</span></td>
             <td>${r.requests || '<span class="muted">0</span>'}${r.booked.length ? ` · <b>${r.booked.length} booked</b>` : ""}</td>
             <td>${money(r.rent)}</td>
-            <td>${actions(r.d)}</td></tr>`).join("")
+            <td>${actions(r.d)}${r.d.auto ? ' <span class="muted" style="font-size:12px">auto weekend</span>' : ""}</td></tr>`).join("")
           : '<tr><td colspan="5" class="muted">No pending days.</td></tr>';
-        $("days-note").textContent = Array.isArray(s.days)
-          ? ""
-          : "These are the automatic weekend days (all pending). Saving or removing any day turns this into your own list.";
+        if (!document.activeElement?.closest("#auto-form")) {
+          $("au-on").checked = s.autoWeekends !== false;
+          $("au-end").value = s.seasonEnd || "";
+        }
+        const hiddenCount = (s.hiddenDays || []).length;
+        $("au-restore").hidden = !hiddenCount;
+        $("au-restore").textContent = `Bring back ${hiddenCount} removed weekend${hiddenCount === 1 ? "" : "s"}`;
+        $("days-note").textContent = s.autoWeekends !== false
+          ? "Weekends appear automatically as pending. Add any other day above, mark days secured once you’ve rented the studio, or remove a weekend you can’t do."
+          : "Only the days you’ve added are shown on the booking page.";
 
         // Money summary (upcoming)
         const bookedInq = data.inquiries.filter((i) => i.booked && i.bookedDate);
@@ -928,6 +941,24 @@
           $("day-message").textContent = error.message;
           $("day-message").className = "message bad";
         }
+      });
+
+      $("auto-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          settingsData = await api({ action: "saveAutoDays", autoWeekends: $("au-on").checked, seasonEnd: $("au-end").value });
+          document.activeElement?.blur();
+          renderSettings();
+          $("day-message").textContent = "Saved. The booking page shows the updated dates now.";
+          $("day-message").className = "message ok";
+        } catch (error) {
+          $("day-message").textContent = error.message;
+          $("day-message").className = "message bad";
+        }
+      });
+      $("au-restore").addEventListener("click", async () => {
+        settingsData = await api({ action: "saveAutoDays", restoreHidden: true });
+        renderSettings();
       });
 
       if (password) load().catch(() => signOut());
