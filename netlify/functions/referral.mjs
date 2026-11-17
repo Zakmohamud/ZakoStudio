@@ -2,6 +2,8 @@
 //   GET  /api/referral?code=SARAH15   -> checks a code (never lists codes)
 //   POST /api/referral                -> records an inquiry (with or without a code)
 import { randomUUID } from "node:crypto";
+import { acknowledgementEmail, emailDetails, logEmail } from "../lib/emails.mjs";
+import { mailReady, sendMail } from "../lib/mail.mjs";
 import {
   PACKAGE_PRICES,
   cleanText,
@@ -14,7 +16,8 @@ import {
   isISODate,
   isMinute,
   jsonResponse,
-  normalizeCode
+  normalizeCode,
+  readSettings
 } from "../lib/referrals.mjs";
 
 export default async function handler(request) {
@@ -95,7 +98,26 @@ export default async function handler(request) {
       };
       const store = await inquiriesStore();
       await store.setJSON(id, inquiry);
-      return jsonResponse(200, { saved: true, percent, finalPrice: inquiry.finalPrice });
+
+      // Automatic acknowledgement to the client (never says the booking is confirmed).
+      let acknowledged = false;
+      if ((await mailReady()) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        try {
+          const settings = await readSettings();
+          const mail = acknowledgementEmail(emailDetails(inquiry, settings));
+          await Promise.race([
+            sendMail({ to: email, ...mail }),
+            new Promise((_, no) => setTimeout(() => no(new Error("Email timed out")), 9000))
+          ]);
+          logEmail(inquiry, { type: "acknowledgement", to: email, subject: mail.subject });
+          acknowledged = true;
+        } catch (error) {
+          console.error("Acknowledgement email failed.", error);
+          logEmail(inquiry, { type: "acknowledgement", to: email, subject: "We've received your Christmas session request", error: error.message || error });
+        }
+        await store.setJSON(id, inquiry);
+      }
+      return jsonResponse(200, { saved: true, percent, finalPrice: inquiry.finalPrice, acknowledged });
     } catch (error) {
       console.error("Unable to record inquiry.", error);
       return jsonResponse(502, { message: "Inquiry could not be recorded." });

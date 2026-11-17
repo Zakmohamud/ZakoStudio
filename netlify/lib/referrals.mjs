@@ -32,6 +32,10 @@ export const DEFAULT_SETTINGS = {
   defaultStart: 10 * 60,
   defaultEnd: 14 * 60,
   seasonEnd: "2026-12-20",
+  // Client emails
+  studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7",
+  paymentEmail: "zakotarastudio@gmail.com",
+  balanceDue: "Upon receiving this confirmation, by Interac e-Transfer to zakotarastudio@gmail.com",
   // null = not set up yet: every weekend until seasonEnd is offered as "pending studio confirmation".
   days: null
 };

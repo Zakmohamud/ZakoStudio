@@ -55,7 +55,7 @@ test("create a code, check it, record an inquiry, see stats", async () => {
     method: "POST",
     body: JSON.stringify({ package: "mini", name: "Ana", email: "ana@example.com", code: "SARAH15" })
   }));
-  assert.deepEqual(await res.json(), { saved: true, percent: 15, finalPrice: 255 });
+  assert.deepEqual(await res.json(), { saved: true, percent: 15, finalPrice: 255, acknowledged: false });
 
   res = await referral(new Request("https://x.test/api/referral", {
     method: "POST",
@@ -234,4 +234,68 @@ test("revenue, ad spend and cost per booking per campaign", async () => {
   assert.equal(row.cac, 50);
   assert.equal(a.packages.mini.requests, 2);
   assert.equal(a.packages.mini.booked, 1);
+});
+
+test("client emails: acknowledgement is automatic, fee request and confirmation are guarded", async () => {
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+  const sent = [];
+  setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  process.env.CONTEXT = "production";
+
+  await referral(new Request("https://x.test/api/referral", {
+    method: "POST",
+    body: JSON.stringify({ package: "mini", name: "Ana <b>Lee</b>", email: "ana@example.com", dateISO: "2030-12-21", startMin: 600, date: "Saturday, December 21", time: "10:00 a.m." })
+  }));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, "ana@example.com");
+  assert.match(sent[0].subject, /received/i);
+  assert.doesNotMatch(sent[0].subject + sent[0].text, /officially reserved|is confirmed/i);
+  assert.match(sent[0].text, /not a confirmed booking/);
+  assert.ok(!sent[0].html.includes("<b>Lee</b>"), "client input is escaped");
+  assert.match(sent[0].html, /The Story/);
+
+  const { inquiries } = await (await adminCall({ action: "list" })).json();
+  const ana = inquiries.find((i) => i.email === "ana@example.com");
+  assert.ok(ana.emails.acknowledgement.sentAt);
+
+  // confirmation is refused until booked + fee received
+  let res = await adminCall({ action: "sendEmail", id: ana.id, type: "confirmation" });
+  assert.equal(res.status, 400);
+
+  res = await adminCall({ action: "sendEmail", id: ana.id, type: "feeRequest" });
+  assert.equal(res.status, 200);
+  assert.match(sent.at(-1).text, /Reservation fee: \$150 CAD/);
+  assert.match(sent.at(-1).text, /Session duration: 30 minutes/);
+  assert.match(sent.at(-1).text, /zakotarastudio@gmail.com/);
+
+  await adminCall({ action: "book", id: ana.id, date: "2030-12-21", start: 600 });
+  await adminCall({ action: "setDeposit", id: ana.id, received: true, amount: 150 });
+  await adminCall({ action: "saveEmailSettings", studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7", paymentEmail: "zakotarastudio@gmail.com", balanceDue: "Upon receiving this confirmation" });
+  res = await adminCall({ action: "previewEmail", id: ana.id, type: "confirmation" });
+  const pv = await res.json();
+  assert.match(pv.html, /1909 Lilac Dr, Surrey/);
+  res = await adminCall({ action: "sendEmail", id: ana.id, type: "confirmation" });
+  assert.equal(res.status, 200);
+  assert.match(sent.at(-1).text, /officially reserved/);
+  assert.match(sent.at(-1).text, /Reservation fee received: \$150 CAD/);
+  assert.match(sent.at(-1).text, /Remaining balance: \$150 CAD/);
+  assert.match(sent.at(-1).text, /Wear your favourite festive attire/);
+
+  // email history: every email, in order, with when and to whom
+  const after = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === ana.id);
+  assert.deepEqual(after.emailLog.map((e) => e.type), ["acknowledgement", "feeRequest", "confirmation"]);
+  assert.ok(after.emailLog.every((e) => e.status === "sent" && e.to === "ana@example.com" && e.at && e.subject));
+
+  // a failed send is recorded too
+  setMailer(async () => { throw new Error("boom"); });
+  res = await adminCall({ action: "sendEmail", id: ana.id, type: "confirmation" });
+  assert.equal(res.status, 502);
+  const failed = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === ana.id);
+  assert.equal(failed.emailLog.at(-1).status, "failed");
+  setMailer(null);
+
+  // without a fake mailer and without env vars, sending is refused (no stored password path)
+  delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
+  res = await adminCall({ action: "sendEmail", id: ana.id, type: "feeRequest" });
+  assert.equal(res.status, 503);
 });
