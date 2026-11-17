@@ -80,6 +80,16 @@ export default async function handler(request) {
         packageId: body.package,
         dateISO: isISODate(body.dateISO) ? body.dateISO : null,
         startMin: isMinute(body.startMin) ? body.startMin : null,
+        dayStatus: body.dayStatus === "secured" ? "secured" : body.dayStatus === "pending" ? "pending" : null,
+        utm: body.utm && typeof body.utm === "object"
+          ? {
+              source: cleanText(body.utm.source, 60) || null,
+              medium: cleanText(body.utm.medium, 60) || null,
+              campaign: cleanText(body.utm.campaign, 80) || null,
+              content: cleanText(body.utm.content, 80) || null
+            }
+          : null,
+        notes: cleanText(body.notes, 600),
         booked: false
       };
       const store = await inquiriesStore();

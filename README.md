@@ -76,3 +76,17 @@ Hours, the break length, and the season end date are set near the top of the `<s
 The booking page no longer uses Supabase. The older `/christmas-admin.html` manager is superseded by this page.
 
 FormSubmit's verification page is turned off on the Christmas form (`_captcha=false`); the hidden honeypot field still filters most spam bots.
+
+## The Christmas Collection 2026 (seasonal campaign)
+
+Everything for the campaign lives in `/christmas/` so it can be removed after the season:
+
+- `/christmas/` — landing page (hero, four story chapters, experience, the three experiences, FAQ, closing invitation).
+- `/christmas/book/` — three-step booking: experience → date & time → details. Sends a request to the studio inbox (FormSubmit) and records it for the bookings page. Requests are never described as confirmed.
+- `christmas/campaign.js` — edit `CAMPAIGN` for Instagram handle, package copy, and the not-yet-confirmed FAQ details (`studioArea`, `deliveryTime`, `reschedulePolicy`).
+- `christmas/img/` — web copies of photos exported from the Lightroom albums Ashton, Ilda and Jaxson, and Yewon (colour grading unchanged).
+- Old links to `/christmas-booking.html` redirect here (`?package=` links go straight to booking).
+
+Session days, opening hours, studio status (secured / pending), the buffer between sessions, session lengths and the deposit % are set on `/referral-admin.html`. Until days are edited there, every weekend until 2026-12-20 is offered 10 a.m.–2 p.m. as *pending studio confirmation*. Offered times are grouped next to existing bookings so families are booked back to back.
+
+Analytics: `/api/track` stores anonymous, cookie-free events (landing/booking views, Reserve clicks, experience/date/time picks, form start/submit, Instagram clicks) with UTM source/campaign. Totals show on the bookings page. Confirmed bookings are only the sessions you mark as booked; online deposits aren't tracked because deposits are arranged by email.

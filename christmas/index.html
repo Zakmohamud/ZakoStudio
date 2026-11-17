@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F0E7" />
+    <title>Christmas, as we remember it — The Christmas Collection by Zako Studio</title>
+    <meta name="description" content="Christmas family photography in Vancouver. Storybooks, first Christmases, cocoa by the fire and the traditions that make your family yours. Sessions from $190." />
+    <meta property="og:title" content="Christmas, as we remember it — Zako Studio" />
+    <meta property="og:description" content="The Christmas Collection 2026. Family sessions in Vancouver from $190." />
+    <meta property="og:image" content="https://zako-studio.netlify.app/christmas/img/reading-by-the-fire.jpg" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="/images/zako-studio-logo-trim.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="preload" as="image" href="/christmas/img/first-christmas-kiss-sm.jpg" media="(max-width: 760px)" />
+    <link rel="preload" as="image" href="/christmas/img/reading-by-the-fire.jpg" media="(min-width: 761px)" />
+    <link rel="stylesheet" href="/christmas/campaign.css" />
+    <style>
+      /* ---------- 01 Hero ---------- */
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        min-height: min(88vh, 860px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .hero-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 40px;
+        padding: clamp(32px, 5vw, 72px) var(--pad);
+      }
+
+      .hero-issue {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        font-size: 11px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .hero-issue::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+      .hero .display { margin: 0 0 22px; font-size: clamp(46px, 6.4vw, 96px); }
+
+      .hero .lede { margin-bottom: 30px; }
+
+      .hero-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; }
+
+      .hero-meta {
+        margin: 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+
+      .hero-photo { position: relative; overflow: hidden; background: var(--ivory-deep); }
+
+      .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; }
+
+      .hero-caption {
+        position: absolute;
+        left: 18px;
+        bottom: 16px;
+        margin: 0;
+        color: #fff;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 17px;
+        text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+      }
+
+      /* ---------- 02 Stories ---------- */
+      .stories { padding: clamp(64px, 9vw, 120px) 0 clamp(40px, 6vw, 80px); }
+
+      .stories-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 24px 60px;
+        align-items: end;
+        margin-bottom: clamp(40px, 6vw, 72px);
+      }
+
+      .chapter {
+        display: grid;
+        grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+        gap: 28px clamp(28px, 4vw, 60px);
+        padding: clamp(36px, 5vw, 64px) 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .chapter:nth-of-type(even) { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); }
+      .chapter:nth-of-type(even) .chapter-text { order: 2; }
+
+      .chapter-text { align-self: center; }
+
+      .chapter-no {
+        display: block;
+        margin-bottom: 14px;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 20px;
+        color: var(--gold);
+      }
+
+      .chapter .h3 { margin-bottom: 14px; }
+
+      .chapter p { margin: 0; color: var(--ink-soft); max-width: 26em; }
+
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-rows: repeat(5, clamp(84px, 9.5vw, 140px));
+        gap: 10px;
+      }
+
+      .gallery figure { margin: 0; overflow: hidden; background: var(--ivory-deep); }
+
+      .gallery img { width: 100%; height: 100%; object-fit: cover; }
+
+      /* feature + three supporting frames, magazine style */
+      .g-a { grid-column: 1 / 5; grid-row: 1 / 4; }
+      .g-b { grid-column: 5 / 7; grid-row: 1 / 3; }
+      .g-c { grid-column: 5 / 7; grid-row: 3 / 4; }
+      .g-d { grid-column: 1 / 7; grid-row: 4 / 6; }
+
+      .gallery.alt .g-a { grid-column: 3 / 7; }
+      .gallery.alt .g-b, .gallery.alt .g-c { grid-column: 1 / 3; }
+
+      /* ---------- 03 Experience ---------- */
+      .experience {
+        background: var(--forest);
+        color: var(--ivory);
+        padding: clamp(64px, 9vw, 120px) 0;
+      }
+
+      .experience .kicker { color: var(--gold); }
+
+      .experience-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 6fr) minmax(0, 6fr);
+        gap: clamp(32px, 5vw, 80px);
+        align-items: center;
+      }
+
+      .experience .h2 { margin-bottom: 26px; }
+
+      .experience p { margin: 0 0 18px; color: rgba(245, 240, 231, 0.84); font-size: 17px; line-height: 1.75; max-width: 32em; }
+
+      .experience-notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0;
+        margin: 34px 0 0;
+        padding: 0;
+        list-style: none;
+        border-top: 1px solid rgba(245, 240, 231, 0.25);
+      }
+
+      .experience-notes li {
+        padding: 18px 16px 0 0;
+        font-size: 14px;
+        line-height: 1.55;
+        color: rgba(245, 240, 231, 0.8);
+      }
+
+      .experience-notes strong {
+        display: block;
+        margin-bottom: 6px;
+        font-family: var(--serif);
+        font-size: 21px;
+        font-weight: 400;
+        color: var(--ivory);
+      }
+
+      .collage {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-rows: repeat(6, clamp(48px, 5.4vw, 76px));
+        gap: 10px;
+      }
+
+      .collage figure { margin: 0; overflow: hidden; }
+      .collage img { width: 100%; height: 100%; object-fit: cover; }
+      .c-1 { grid-column: 1 / 4; grid-row: 1 / 5; }
+      .c-2 { grid-column: 4 / 6; grid-row: 2 / 5; }
+      .c-3 { grid-column: 2 / 6; grid-row: 5 / 7; }
+
+      /* ---------- 04 Experiences (packages) ---------- */
+      .collection { padding: clamp(64px, 9vw, 120px) 0; }
+
+      .collection-head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
+      .collection-head .h2 { margin-bottom: 18px; }
+
+      .experiences {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: clamp(20px, 3vw, 40px);
+      }
+
+      .exp { display: flex; flex-direction: column; }
+
+      .exp-photo { aspect-ratio: 4 / 5; overflow: hidden; background: var(--ivory-deep); margin-bottom: 22px; }
+      .exp-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 600ms ease; }
+      .exp:hover .exp-photo img { transform: scale(1.025); }
+
+      .exp:nth-child(2) .exp-photo { aspect-ratio: 4 / 5.6; }
+
+      .exp-no { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--gold); }
+
+      .exp-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 4px 0 12px; }
+      .exp-title .h3 { font-size: clamp(30px, 2.8vw, 38px); }
+      .exp-price { font-family: var(--serif); font-size: 26px; color: var(--cranberry); white-space: nowrap; }
+      .exp-price small { font-family: var(--sans); font-size: 12px; letter-spacing: 0.1em; color: var(--ink-soft); }
+
+      .exp ul { margin: 0 0 14px; padding: 12px 0 0; list-style: none; border-top: 1px solid var(--line); }
+      .exp li { padding: 4px 0; font-size: 15px; }
+      .exp p { margin: 0 0 18px; color: var(--ink-soft); font-size: 15px; }
+      .exp .text-link { margin-top: auto; align-self: flex-start; color: var(--cranberry); }
+
+      .collection-note {
+        margin: clamp(32px, 4vw, 48px) 0 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+        font-size: 14px;
+        color: var(--ink-soft);
+        max-width: 60em;
+      }
+
+      /* ---------- 05 FAQ ---------- */
+      .faq { padding: clamp(56px, 8vw, 100px) 0; border-top: 1px solid var(--line); background: var(--ivory-deep); }
+
+      .faq-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 32px clamp(32px, 5vw, 80px); }
+
+      .faq details { border-bottom: 1px solid var(--line-strong); }
+      .faq details:first-child { border-top: 1px solid var(--line-strong); }
+
+      .faq summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        min-height: 60px;
+        padding: 14px 0;
+        font-family: var(--serif);
+        font-size: clamp(21px, 2vw, 25px);
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .faq summary::-webkit-details-marker { display: none; }
+      .faq summary::after { content: "+"; font-family: var(--sans); font-size: 22px; font-weight: 300; color: var(--gold); }
+      .faq details[open] summary::after { content: "–"; }
+      .faq details p { margin: 0 0 20px; max-width: 40em; color: var(--ink-soft); }
+
+      /* ---------- 06 Closing ---------- */
+      .closing { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); border-top: 1px solid var(--line); }
+      .closing-photo { min-height: 520px; overflow: hidden; }
+      .closing-photo img { width: 100%; height: 100%; object-fit: cover; }
+      .closing-copy {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 22px;
+        padding: clamp(40px, 6vw, 88px) var(--pad);
+      }
+      .closing-copy .h2 { font-size: clamp(38px, 4.6vw, 62px); }
+      .closing-ig { font-size: 15px; color: var(--ink-soft); }
+      .closing-ig a { color: var(--ink); }
+
+      /* ---------- Sticky reserve bar (mobile) ---------- */
+      .sticky-cta {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 20;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px calc(10px + var(--safe-bottom));
+        background: rgba(245, 240, 231, 0.96);
+        border-top: 1px solid var(--line);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transform: translateY(110%);
+        transition: transform 260ms ease;
+      }
+      .sticky-cta.show { transform: none; }
+      .sticky-cta span { font-size: 13px; line-height: 1.3; color: var(--ink-soft); }
+      .sticky-cta strong { display: block; font-family: var(--serif); font-size: 19px; font-weight: 500; color: var(--ink); }
+      .sticky-cta .btn { min-height: 48px; padding: 0 18px; font-size: 13px; }
+
+      /* ---------- Tablet ---------- */
+      @media (max-width: 980px) {
+        .hero { grid-template-columns: 1fr; min-height: 0; }
+        .hero-photo { order: -1; aspect-ratio: 4 / 3; }
+        .stories-head, .experience-grid, .faq-grid { grid-template-columns: 1fr; }
+        .experiences { grid-template-columns: 1fr 1fr; }
+        .experiences .exp:last-child { grid-column: 1 / -1; }
+        .experiences .exp:last-child .exp-photo { aspect-ratio: 16 / 9; }
+        .closing { grid-template-columns: 1fr; }
+        .closing-photo { min-height: 0; aspect-ratio: 4 / 3; }
+      }
+
+      /* ---------- Mobile ---------- */
+      @media (max-width: 760px) {
+        .masthead-issue { display: none; }
+        .hero-photo { aspect-ratio: 4 / 3.5; }
+        .hero-photo img { object-position: 50% 30%; }
+        .hero-copy { gap: 22px; padding-top: 26px; padding-bottom: 30px; }
+        .hero-issue { font-size: 10px; letter-spacing: 0.2em; color: var(--gold); }
+        .hero-issue::after { display: none; }
+        .hero .display { font-size: clamp(44px, 12.6vw, 60px); margin-bottom: 16px; }
+        .hero .lede { margin-bottom: 22px; }
+        .hero-ctas .btn, .closing-copy .btn { width: 100%; font-size: 13px; letter-spacing: 0.08em; padding: 0 16px; }
+        .hero-ctas .text-link { margin: 0 auto; }
+        .hero-meta { font-size: 11px; letter-spacing: 0.12em; text-align: center; }
+
+        .chapter, .chapter:nth-of-type(even) { grid-template-columns: 1fr; gap: 18px; }
+        .chapter:nth-of-type(even) .chapter-text { order: 0; }
+
+        .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 31vw); gap: 6px; }
+        .g-a, .gallery.alt .g-a { grid-column: 1 / 3; grid-row: 1 / 3; }
+        .g-b, .gallery.alt .g-b { grid-column: 1 / 2; grid-row: 3 / 4; }
+        .g-c, .gallery.alt .g-c { grid-column: 2 / 3; grid-row: 3 / 4; }
+        .g-d { grid-column: 1 / 3; grid-row: 4 / 6; }
+
+        .experience p { font-size: 16px; }
+        .experience-notes { grid-template-columns: 1fr; }
+        .experience-notes li { padding: 14px 0; border-bottom: 1px solid rgba(245, 240, 231, 0.18); }
+        .collage { grid-template-rows: repeat(6, 15vw); gap: 6px; }
+
+        .experiences { grid-template-columns: 1fr; gap: 44px; }
+        .experiences .exp:last-child { grid-column: auto; }
+        .exp-photo, .exp:nth-child(2) .exp-photo, .experiences .exp:last-child .exp-photo { aspect-ratio: 4 / 3.4; }
+
+        .closing-copy { text-align: left; padding-bottom: 48px; }
+        .closing-copy .btn { width: 100%; }
+
+        .sticky-cta { display: flex; }
+        body { padding-bottom: 76px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="/">Zako Studio</a>
+      <span class="masthead-issue">The Christmas Collection · 2026</span>
+      <a class="masthead-link" href="/christmas/book/" data-track="cta_click">Reserve</a>
+    </header>
+
+    <main>
+      <!-- 01 — The hero -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="hero-issue">The Christmas Collection by Zako Studio — 2026</div>
+          <div>
+            <h1 class="display" id="hero-title">Christmas, <em>as we remember&nbsp;it.</em></h1>
+            <p class="lede">For the little moments, the familiar traditions and the people who make Christmas feel like home.</p>
+            <div class="hero-ctas">
+              <a class="btn" href="/christmas/book/" data-track="cta_click">Reserve your Christmas session</a>
+              <a class="text-link" href="#stories"><span>Discover the collection</span> <span aria-hidden="true" style="border:0">↓</span></a>
+            </div>
+          </div>
+          <p class="hero-meta">Vancouver · Christmas 2026 · Sessions from $190</p>
+        </div>
+        <figure class="hero-photo" style="margin:0">
+          <picture>
+            <source media="(max-width: 760px)" srcset="/christmas/img/first-christmas-kiss-sm.jpg 800w, /christmas/img/first-christmas-kiss.jpg 1600w" sizes="100vw" />
+            <img src="/christmas/img/reading-by-the-fire.jpg" srcset="/christmas/img/reading-by-the-fire-sm.jpg 800w, /christmas/img/reading-by-the-fire.jpg 1600w" sizes="(max-width: 980px) 100vw, 60vw" alt="A brother and sister reading a storybook together by the fireplace, surrounded by Christmas trees" fetchpriority="high" />
+          </picture>
+        </figure>
+      </section>
+
+      <!-- 02 — Every family has a story -->
+      <section class="stories" id="stories" aria-labelledby="stories-title">
+        <div class="wrap">
+          <div class="stories-head">
+            <div>
+              <p class="kicker">The collection</p>
+              <h2 class="h2" id="stories-title">Every family <em>has a story.</em></h2>
+            </div>
+            <p class="lede">The little things. The big feelings. The moments we wish could last forever. Four chapters from this season’s sessions.</p>
+          </div>
+
+          <article class="chapter" aria-labelledby="ch1">
+            <div class="chapter-text">
+              <span class="chapter-no">Chapter I</span>
+              <h3 class="h3" id="ch1">The Wonder of Christmas</h3>
+              <p>The magic of childhood. Storybooks, little adventures, laughter and endless imagination.</p>
+            </div>
+            <div class="gallery">
+              <figure class="g-a"><img src="/christmas/img/storybook.jpg" srcset="/christmas/img/storybook-sm.jpg 800w, /christmas/img/storybook.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A little girl in a white dress lying back with a storybook in a fairy-lit reading nook" loading="lazy" /></figure>
+              <figure class="g-b"><img src="/christmas/img/rocking-horse-sm.jpg" alt="A boy in a tartan blazer laughing on a rocking horse" loading="lazy" style="object-position: 40% 50%" /></figure>
+              <figure class="g-c"><img src="/christmas/img/toy-car-sm.jpg" alt="A girl riding a red vintage toy car" loading="lazy" /></figure>
+              <figure class="g-d"><img src="/christmas/img/cookies-and-cocoa.jpg" srcset="/christmas/img/cookies-and-cocoa-sm.jpg 800w, /christmas/img/cookies-and-cocoa.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Siblings sharing cookies and hot chocolate on a snowy rug" loading="lazy" style="object-position: 50% 60%" /></figure>
+            </div>
+          </article>
+
+          <article class="chapter" aria-labelledby="ch2">
+            <div class="chapter-text">
+              <span class="chapter-no">Chapter II</span>
+              <h3 class="h3" id="ch2">The Joy of Togetherness</h3>
+              <p>The warmth of family, the closeness of loved ones and the joy of simply being together.</p>
+            </div>
+            <div class="gallery alt">
+              <figure class="g-a"><img src="/christmas/img/family-hug.jpg" srcset="/christmas/img/family-hug-sm.jpg 800w, /christmas/img/family-hug.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Parents wrapping their son in a hug beside a gold-and-white Christmas tree" loading="lazy" /></figure>
+              <figure class="g-b"><img src="/christmas/img/couple-laughing-sm.jpg" alt="A couple in evening wear laughing together" loading="lazy" style="object-position: 45% 30%" /></figure>
+              <figure class="g-c"><img src="/christmas/img/sibling-kiss-sm.jpg" alt="A little sister kissing her brother on the cheek on the sofa" loading="lazy" /></figure>
+              <figure class="g-d"><img src="/christmas/img/cocoa-mugs.jpg" srcset="/christmas/img/cocoa-mugs-sm.jpg 800w, /christmas/img/cocoa-mugs.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A mother and son holding cocoa mugs and smiling" loading="lazy" style="object-position: 50% 40%" /></figure>
+            </div>
+          </article>
+
+          <article class="chapter" aria-labelledby="ch3">
+            <div class="chapter-text">
+              <span class="chapter-no">Chapter III</span>
+              <h3 class="h3" id="ch3">The First of Many</h3>
+              <p>Tiny hands, new beginnings and the magic of celebrating a baby’s first Christmas.</p>
+            </div>
+            <div class="gallery">
+              <figure class="g-a"><img src="/christmas/img/overhead-family.jpg" srcset="/christmas/img/overhead-family-sm.jpg 800w, /christmas/img/overhead-family.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Overhead view of parents lying head to head with their baby in a Santa suit" loading="lazy" /></figure>
+              <figure class="g-b"><img src="/christmas/img/baby-close-sm.jpg" alt="A baby in a Santa suit and hat held by his parents" loading="lazy" style="object-position: 50% 30%" /></figure>
+              <figure class="g-c"><img src="/christmas/img/baby-cookie-sm.jpg" alt="Tiny hands reaching for a Christmas cookie" loading="lazy" /></figure>
+              <figure class="g-d"><img src="/christmas/img/baby-and-parents.jpg" srcset="/christmas/img/baby-and-parents-sm.jpg 800w, /christmas/img/baby-and-parents.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Parents lying on the rug smiling beside their baby" loading="lazy" style="object-position: 50% 45%" /></figure>
+            </div>
+          </article>
+
+          <article class="chapter" aria-labelledby="ch4">
+            <div class="chapter-text">
+              <span class="chapter-no">Chapter IV</span>
+              <h3 class="h3" id="ch4">Christmas Morning</h3>
+              <p>Matching pyjamas, freshly baked cookies, playful moments and the traditions that become lifelong memories.</p>
+            </div>
+            <div class="gallery alt">
+              <figure class="g-a"><img src="/christmas/img/christmas-cracker.jpg" srcset="/christmas/img/christmas-cracker-sm.jpg 800w, /christmas/img/christmas-cracker.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A mother and son in pyjamas pulling a Christmas cracker in the kitchen" loading="lazy" /></figure>
+              <figure class="g-b"><img src="/christmas/img/flour-on-the-nose-sm.jpg" alt="A mother dabbing flour on the dad’s nose while baking with their baby" loading="lazy" style="object-position: 45% 50%" /></figure>
+              <figure class="g-c"><img src="/christmas/img/kids-baking-sm.jpg" alt="Siblings in matching pyjamas baking together" loading="lazy" /></figure>
+              <figure class="g-d"><img src="/christmas/img/sifting-flour.jpg" srcset="/christmas/img/sifting-flour-sm.jpg 800w, /christmas/img/sifting-flour.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A boy laughing while sifting flour, his sister beside him" loading="lazy" style="object-position: 50% 35%" /></figure>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 03 — An experience worth remembering -->
+      <section class="experience" aria-labelledby="exp-title">
+        <div class="wrap experience-grid">
+          <div>
+            <p class="kicker">The experience</p>
+            <h2 class="h2" id="exp-title">An experience <em>worth remembering.</em></h2>
+            <p>Christmas is more than a photograph. It’s the laughter between siblings, the warmth of an embrace, the excitement of opening presents and the little traditions that make your family yours.</p>
+            <p>Our Christmas sessions are thoughtfully designed to capture those moments through beautiful festive settings, natural interactions and timeless photography.</p>
+            <ul class="experience-notes">
+              <li><strong>Festive settings</strong>A fireplace living room, a cozy reading nook and a Christmas kitchen, styled and ready.</li>
+              <li><strong>Natural direction</strong>Gentle guidance and games, so the photos show who you really are together.</li>
+              <li><strong>Timeless images</strong>Every photograph in your collection is professionally edited, true to the warm look you see here.</li>
+            </ul>
+          </div>
+          <div class="collage">
+            <figure class="c-1"><img src="/christmas/img/reading-siblings.jpg" srcset="/christmas/img/reading-siblings-sm.jpg 800w, /christmas/img/reading-siblings.jpg 1600w" sizes="(max-width: 980px) 70vw, 30vw" alt="A sister reading aloud to her brother by the fire" loading="lazy" /></figure>
+            <figure class="c-2"><img src="/christmas/img/the-gift-sm.jpg" alt="A boy holding a wrapped present beside his mother" loading="lazy" style="object-position: 35% 50%" /></figure>
+            <figure class="c-3"><img src="/christmas/img/candy-canes.jpg" srcset="/christmas/img/candy-canes-sm.jpg 800w, /christmas/img/candy-canes.jpg 1600w" sizes="(max-width: 980px) 70vw, 28vw" alt="Siblings in pyjamas holding candy canes in the Christmas kitchen" loading="lazy" style="object-position: 50% 60%" /></figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 — The Christmas Experiences -->
+      <section class="collection" id="experiences" aria-labelledby="col-title">
+        <div class="wrap">
+          <div class="collection-head">
+            <p class="kicker">The Christmas Experiences</p>
+            <h2 class="h2" id="col-title">Choose how much of <em>your story</em> to tell.</h2>
+            <p class="lede">Three ways to spend time with us this Christmas. Every session takes place in our decorated studio in Vancouver.</p>
+          </div>
+          <div class="experiences" id="experience-list"></div>
+          <p class="collection-note" id="collection-note">
+            Settings and moments are planned with you before your session and depend on its length. Shorter sessions focus on one or two scenes.
+            A deposit reserves your time once availability is confirmed; the remaining balance is arranged with you directly.
+          </p>
+        </div>
+      </section>
+
+      <!-- 05 — Before your session -->
+      <section class="faq" aria-labelledby="faq-title">
+        <div class="wrap faq-grid">
+          <div>
+            <p class="kicker">Before your session</p>
+            <h2 class="h2" id="faq-title">Good <em>to know.</em></h2>
+          </div>
+          <div id="faq-list"></div>
+        </div>
+      </section>
+
+      <!-- 06 — Closing invitation -->
+      <section class="closing" aria-labelledby="close-title">
+        <figure class="closing-photo" style="margin:0">
+          <img src="/christmas/img/overhead-kiss.jpg" srcset="/christmas/img/overhead-kiss-sm.jpg 800w, /christmas/img/overhead-kiss.jpg 1600w" sizes="(max-width: 980px) 100vw, 58vw" alt="Parents curled around their baby, kissing his cheeks, seen from above" loading="lazy" />
+        </figure>
+        <div class="closing-copy" id="closing">
+          <p class="kicker">Christmas 2026</p>
+          <h2 class="h2" id="close-title">One day, these will be <em>the good old days.</em></h2>
+          <p class="lede">Make this Christmas a memory you can return to, year after year.</p>
+          <div><a class="btn" href="/christmas/book/" data-track="cta_click">Reserve your Christmas session</a></div>
+          <p class="closing-ig">Questions first? <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Message me on Instagram</a>.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>The Christmas Collection by Zako Studio — 2026</span>
+      <span><a href="/">Portfolio</a> · <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">@zakarymaxamed</a></span>
+    </footer>
+
+    <div class="sticky-cta" id="sticky-cta" aria-hidden="true">
+      <span><strong>Christmas sessions</strong>Vancouver · from $190</span>
+      <a class="btn" href="/christmas/book/" data-track="cta_click" tabindex="-1">Reserve</a>
+    </div>
+
+    <script src="/christmas/campaign.js"></script>
+    <script>
+      (function () {
+        const C = window.CAMPAIGN;
+        const roman = ["I", "II", "III"];
+
+        // Experiences
+        document.getElementById("experience-list").innerHTML = Object.entries(C.packages).map(([id, p], i) => `
+          <article class="exp">
+            <a class="exp-photo" href="/christmas/book/?package=${id}" data-track="package_select" data-pkg="${id}" tabindex="-1" aria-hidden="true">
+              <img src="${p.photo}.jpg" srcset="${p.photo}-sm.jpg 800w, ${p.photo}.jpg 1600w" sizes="(max-width: 760px) 100vw, (max-width: 980px) 50vw, 33vw" alt="${p.alt}" loading="lazy" />
+            </a>
+            <span class="exp-no">${roman[i]}</span>
+            <div class="exp-title"><h3 class="h3">${p.name}</h3><span class="exp-price">$${p.price} <small>CAD</small></span></div>
+            <ul>
+              <li>${p.minutes}-minute photography session</li>
+              <li>${p.images} professionally edited photographs</li>
+              <li>Up to ${p.people} people</li>
+            </ul>
+            <p>${p.line}</p>
+            <a class="text-link" href="/christmas/book/?package=${id}" data-track="package_select" data-pkg="${id}"><span>Reserve ${p.name}</span> <span aria-hidden="true" style="border:0">→</span></a>
+          </article>`).join("");
+
+        // FAQ — only states what's confirmed; fill the blanks in campaign.js.
+        const faq = [
+          ["What should we wear?", "Coordinated, not matching: warm neutrals, creams, deep greens and reds look beautiful on our sets. Matching Christmas pyjamas are lovely for kitchen and morning scenes. I’m happy to look at outfit ideas with you before your session."],
+          ["Can we bring our baby?", "Absolutely. A baby’s first Christmas is one of our favourite stories to tell. We go at your little one’s pace, with time for feeds and cuddles."],
+          ["Can couples book a session?", "Yes. Any of the experiences can be booked by couples, whether that’s cozy and casual or dressed up for the evening." + (C.maxCouplesNote ? " " + C.maxCouplesNote : "")],
+          ["Where is the studio located?", C.studioArea
+            ? `Sessions take place at our decorated studio in ${C.studioArea}. The exact address is sent with your confirmation.`
+            : "Sessions take place at our decorated studio in Vancouver. The exact address is sent with your confirmation."],
+          ["When will we receive our photographs?", C.deliveryTime
+            ? `Your edited photographs are delivered ${C.deliveryTime}.`
+            : "Your delivery date is confirmed with you when your session is booked."],
+          ["How do we reserve a session?", "Choose your experience, pick an available date and time, and send your request. I’ll confirm availability by email and arrange your deposit. Your session is reserved once the deposit is received."],
+          ["What happens if we need to reschedule?", C.reschedulePolicy
+            ? C.reschedulePolicy
+            : "Message me as soon as you know and we’ll look at the available dates together. Rescheduling terms are confirmed with you when you book."]
+        ];
+        document.getElementById("faq-list").innerHTML = faq.map(([q, a]) =>
+          `<details><summary>${q}</summary><p>${a}</p></details>`).join("");
+
+        // Sticky reserve bar: after the hero, hidden near the closing invitation.
+        const bar = document.getElementById("sticky-cta");
+        const hero = document.querySelector(".hero");
+        const closing = document.getElementById("closing");
+        function update() {
+          const pastHero = hero.getBoundingClientRect().bottom < 0;
+          const atEnd = closing.getBoundingClientRect().top < window.innerHeight;
+          const show = pastHero && !atEnd;
+          bar.classList.toggle("show", show);
+          bar.setAttribute("aria-hidden", String(!show));
+          bar.querySelector("a").tabIndex = show ? 0 : -1;
+        }
+        addEventListener("scroll", update, { passive: true });
+        update();
+
+        // Deposit wording from the live settings (falls back to the text above).
+        fetch("/api/schedule").then((r) => (r.ok ? r.json() : null)).then((s) => {
+          if (!s || typeof s.depositPercent !== "number") return;
+          document.getElementById("collection-note").textContent =
+            `Settings and moments are planned with you before your session and depend on its length; shorter sessions focus on one or two scenes. ` +
+            `A ${s.depositPercent}% deposit reserves your time once availability is confirmed.`;
+        }).catch(() => {});
+
+        ZS.track("landing_view", {}, true);
+      })();
+    </script>
+  </body>
+</html>

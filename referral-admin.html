@@ -111,6 +111,64 @@
 
       <div id="app" hidden>
         <section>
+          <h2>Christmas campaign</h2>
+          <div class="filter">
+            <label>Period
+              <select id="an-days">
+                <option value="7">Last 7 days</option>
+                <option value="14" selected>Last 14 days</option>
+                <option value="30">Last 30 days</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" id="an-preview" /> Include preview/test visits</label>
+          </div>
+          <div class="stats" id="an-stats"><p class="muted">Loading…</p></div>
+          <div class="table-wrap" style="margin-top:12px">
+            <table>
+              <thead><tr><th>Source / campaign</th><th>Page visits</th><th>Reserve clicks</th><th>Experience picked</th><th>Date picked</th><th>Form started</th><th>Requests sent</th><th>Instagram clicks</th></tr></thead>
+              <tbody id="an-sources"></tbody>
+            </table>
+          </div>
+          <p class="muted" style="font-size:13px">Counted without cookies or personal data. “Requests sent” means the booking form was submitted, not a confirmed booking. Confirmed bookings are the sessions you mark as booked below. Deposits aren’t paid online, so they’re not tracked here. Tag your Instagram ad links with <code>?utm_source=instagram&amp;utm_campaign=christmas</code> to see them as their own row.</p>
+        </section>
+
+        <section>
+          <h2>Session days</h2>
+          <p class="muted">Clients can only pick times on these days, inside these hours. <strong>Pending</strong> means you haven’t secured the studio yet: clients can still request, and the request clearly says it’s waiting on studio confirmation.</p>
+          <form class="block-form" id="day-form">
+            <label>Date<input type="date" id="dy-date" required /></label>
+            <label>Opens<input type="time" id="dy-from" value="10:00" required /></label>
+            <label>Closes<input type="time" id="dy-to" value="14:00" required /></label>
+            <label>Studio
+              <select id="dy-status"><option value="pending">Pending</option><option value="secured">Secured</option></select>
+            </label>
+            <span class="note muted" style="font-size:13px">Saving a date that already exists updates it.</span>
+            <button class="btn red" type="submit">Save day</button>
+          </form>
+          <p class="message" id="day-message" role="status"></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Hours</th><th>Studio</th><th>Booked</th><th>Studio cost</th><th></th></tr></thead>
+              <tbody id="days-body"></tbody>
+            </table>
+          </div>
+          <p class="muted" style="font-size:13px" id="days-note"></p>
+        </section>
+
+        <section>
+          <h2>Booking settings</h2>
+          <form class="new-code" id="settings-form" style="grid-template-columns: repeat(5, minmax(0,1fr)) auto">
+            <label>Buffer between sessions (min)<input id="st-buffer" type="number" min="0" max="60" step="1" required /></label>
+            <label>Deposit %<input id="st-deposit" type="number" min="0" max="100" step="1" required /></label>
+            <label>Keepsake length (min)<input id="st-quick" type="number" min="5" max="240" step="5" required /></label>
+            <label>Story length (min)<input id="st-mini" type="number" min="5" max="240" step="5" required /></label>
+            <label>Heirloom length (min)<input id="st-extended" type="number" min="5" max="240" step="5" required /></label>
+            <button class="btn red" type="submit">Save</button>
+          </form>
+          <p class="message" id="settings-message" role="status"></p>
+        </section>
+
+        <section>
           <h2>Inquiries</h2>
           <div class="stats" id="stats"></div>
           <div class="filter">
@@ -239,12 +297,71 @@
         $("login").hidden = false;
       }
 
+      let settingsData = null;
+      const STUDIO_RATE = 125; // $ per studio hour
+
       async function load() {
         data = await api({ action: "list" });
         $("login").hidden = true;
         $("app").hidden = false;
         $("sign-out").hidden = false;
+        settingsData = await api({ action: "getSettings" });
         render();
+        loadAnalytics();
+      }
+
+      function renderSettings() {
+        if (!settingsData) return;
+        const s = settingsData.settings;
+        $("st-buffer").value = s.bufferMinutes;
+        $("st-deposit").value = s.depositPercent;
+        $("st-quick").value = s.durations.quick;
+        $("st-mini").value = s.durations.mini;
+        $("st-extended").value = s.durations.extended;
+        const sessions = (data.schedule || []).filter((e) => e.kind === "session");
+        $("days-body").innerHTML = settingsData.days.length
+          ? settingsData.days.map((d) => {
+              const booked = sessions.filter((e) => e.date === d.date);
+              const mins = booked.reduce((t, e) => t + (e.end - e.start), 0);
+              const hours = (d.end - d.start) / 60;
+              return `<tr>
+                <td>${esc(dayLabel(d.date))}</td>
+                <td>${clock(d.start)} – ${clock(d.end)}</td>
+                <td>${d.status === "secured" ? '<span class="pill on">Secured</span>' : '<span class="pill off">Pending</span>'}</td>
+                <td>${booked.length ? `${booked.length} session${booked.length > 1 ? "s" : ""} · ${mins} min` : '<span class="muted">—</span>'}</td>
+                <td>${money(hours * STUDIO_RATE)} <span class="muted">(${hours} h)</span></td>
+                <td><div class="actions">
+                  <button class="btn ghost small" data-act="day-toggle" data-date="${d.date}">${d.status === "secured" ? "Mark pending" : "Mark secured"}</button>
+                  <button class="linkish" data-act="day-remove" data-date="${d.date}">Remove</button>
+                </div></td></tr>`;
+            }).join("")
+          : '<tr><td colspan="6" class="muted">No session days. Add one above.</td></tr>';
+        $("days-note").textContent = Array.isArray(s.days)
+          ? ""
+          : "These are the automatic weekend days (all pending). Saving or removing any day turns this into your own list.";
+      }
+
+      async function loadAnalytics() {
+        try {
+          const a = await api({ action: "analytics", days: Number($("an-days").value), includePreview: $("an-preview").checked });
+          const u = a.uniques || {}, c = a.counts || {};
+          const views = (u.landing_view || 0) + (u.booking_view || 0);
+          const stat = (n, label) => `<div class="stat"><b>${n}</b>${label}</div>`;
+          $("an-stats").innerHTML =
+            stat(u.landing_view || 0, "Landing visits") +
+            stat(u.booking_view || 0, "Booking page visits") +
+            stat(u.cta_click || 0, "Clicked Reserve") +
+            stat(u.form_start || 0, "Started the form") +
+            stat(c.form_submit || 0, "Requests sent") +
+            stat(a.booked, "Booked (marked by you)");
+          const cols = ["landing_view", "cta_click", "package_select", "date_select", "form_start", "form_submit", "instagram_click"];
+          const rows = Object.entries(a.sources || {}).sort((x, y) => (y[1].landing_view || 0) - (x[1].landing_view || 0));
+          $("an-sources").innerHTML = rows.length
+            ? rows.map(([src, v]) => `<tr><td>${esc(src)}</td>${cols.map((k) => `<td>${k === "landing_view" ? (v.landing_view || 0) + (v.booking_view || 0) : v[k] || 0}</td>`).join("")}</tr>`).join("")
+            : '<tr><td colspan="8" class="muted">No visits recorded in this period yet.</td></tr>';
+        } catch (error) {
+          $("an-stats").innerHTML = `<p class="message bad">${esc(error.message)}</p>`;
+        }
       }
 
       function render() {
@@ -300,9 +417,9 @@
               <td>${when(i.createdAt)}</td>
               <td>${esc(i.name)}<br><span class="muted">${esc(i.email)}${i.phone ? " · " + esc(i.phone) : ""}</span></td>
               <td>${esc(i.package)}</td>
-              <td>${esc(i.date)}<br><span class="muted">${esc(i.time)}</span></td>
+              <td>${esc(i.date)}<br><span class="muted">${esc(i.time)}${i.dayStatus === "pending" ? " · studio pending" : ""}</span>${i.notes ? `<br><span class="muted" title="${esc(i.notes)}">“${esc(i.notes.slice(0, 60))}${i.notes.length > 60 ? "…" : ""}”</span>` : ""}</td>
               <td>${i.code ? `<span class="code">${esc(i.code)}</span><br><span class="muted">${esc(i.partner)}</span>` : '<span class="muted">—</span>'}</td>
-              <td>${i.heardFrom ? esc(i.heardFrom) : '<span class="muted">—</span>'}</td>
+              <td>${i.heardFrom ? esc(i.heardFrom) : i.utm?.source ? esc([i.utm.source, i.utm.campaign].filter(Boolean).join(" · ")) : '<span class="muted">—</span>'}</td>
               <td>${i.finalPrice !== i.price ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> ${esc(i.discountLabel || `${i.percent}% off`)}</span>` : money(i.price)}</td>
               <td>${bookingCell(i)}</td>
               <td><button class="linkish" data-act="remove" data-id="${esc(i.id)}">Remove</button></td>
@@ -310,6 +427,7 @@
           : '<tr><td colspan="9" class="muted">Nothing here.</td></tr>';
 
         renderSchedule();
+        renderSettings();
       }
 
       function bookingCell(i) {
@@ -507,6 +625,66 @@
         } catch (error) {
           msg.textContent = error.message;
           msg.className = "message bad";
+        }
+      });
+
+      $("an-days").addEventListener("change", loadAnalytics);
+      $("an-preview").addEventListener("change", loadAnalytics);
+
+      $("day-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("day-message");
+        try {
+          settingsData = await api({
+            action: "saveDay",
+            date: $("dy-date").value,
+            start: fromHHMM($("dy-from").value),
+            end: fromHHMM($("dy-to").value),
+            status: $("dy-status").value
+          });
+          msg.textContent = "Saved. The booking page now uses this day.";
+          msg.className = "message ok";
+          renderSettings();
+        } catch (error) {
+          msg.textContent = error.message;
+          msg.className = "message bad";
+        }
+      });
+
+      $("settings-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("settings-message");
+        try {
+          settingsData = await api({
+            action: "saveSettings",
+            bufferMinutes: Number($("st-buffer").value),
+            depositPercent: Number($("st-deposit").value),
+            durations: { quick: Number($("st-quick").value), mini: Number($("st-mini").value), extended: Number($("st-extended").value) }
+          });
+          msg.textContent = "Saved. New requests use these settings straight away.";
+          msg.className = "message ok";
+          renderSettings();
+        } catch (error) {
+          msg.textContent = error.message;
+          msg.className = "message bad";
+        }
+      });
+
+      document.addEventListener("click", async (event) => {
+        const el = event.target.closest("[data-act^='day-']");
+        if (!el) return;
+        const d = settingsData?.days.find((x) => x.date === el.dataset.date);
+        if (!d) return;
+        try {
+          if (el.dataset.act === "day-toggle") {
+            settingsData = await api({ action: "saveDay", ...d, status: d.status === "secured" ? "pending" : "secured" });
+          } else if (confirm(`Remove ${dayLabel(d.date)} from the booking page? Existing bookings stay in your schedule.`)) {
+            settingsData = await api({ action: "removeDay", date: d.date });
+          }
+          renderSettings();
+        } catch (error) {
+          $("day-message").textContent = error.message;
+          $("day-message").className = "message bad";
         }
       });
 

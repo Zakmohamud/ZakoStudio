@@ -5,6 +5,7 @@ import { setStoreFactory } from "../netlify/lib/referrals.mjs";
 import referral from "../netlify/functions/referral.mjs";
 import admin from "../netlify/functions/referral-admin.mjs";
 import schedule from "../netlify/functions/schedule.mjs";
+import track from "../netlify/functions/track.mjs";
 
 function memoryStores() {
   const stores = new Map();
@@ -15,7 +16,7 @@ function memoryStores() {
       async get(key) { return data.has(key) ? structuredClone(data.get(key)) : null; },
       async setJSON(key, value) { data.set(key, structuredClone(value)); return { modified: true }; },
       async delete(key) { data.delete(key); },
-      async list() { return { blobs: [...data.keys()].map((key) => ({ key })) }; }
+      async list(opts = {}) { return { blobs: [...data.keys()].filter((k) => !opts.prefix || k.startsWith(opts.prefix)).map((key) => ({ key })) }; }
     };
   };
 }
@@ -148,4 +149,57 @@ test("dollar-amount codes take a fixed amount off every package", async () => {
 
   res = await adminCall({ action: "saveCode", code: "BAD", partner: "Z", type: "amount", amount: 0 });
   assert.equal(res.status, 400);
+});
+
+test("session days default to pending weekends, and can be edited", async () => {
+  let res = await schedule(new Request("https://x.test/api/schedule"));
+  let body = await res.json();
+  assert.ok(body.days.length > 0);
+  for (const d of body.days) {
+    const wd = new Date(`${d.date}T12:00:00Z`).getUTCDay();
+    assert.ok(wd === 0 || wd === 6, "weekends only");
+    assert.equal(d.status, "pending");
+  }
+  assert.equal(body.depositPercent, 50);
+
+  res = await adminCall({ action: "saveDay", date: "2030-12-07", start: 600, end: 780, status: "secured" });
+  assert.equal(res.status, 200);
+  res = await adminCall({ action: "removeDay", date: body.days[0].date });
+  body = await (await schedule(new Request("https://x.test/api/schedule"))).json();
+  assert.ok(body.days.find((d) => d.date === "2030-12-07" && d.status === "secured" && d.end === 780));
+  assert.ok(!body.days.find((d) => d.date === body.days[0]?.date && false));
+
+  res = await adminCall({ action: "saveSettings", bufferMinutes: 15, depositPercent: 30, durations: { quick: 20 } });
+  assert.equal(res.status, 200);
+  body = await (await schedule(new Request("https://x.test/api/schedule"))).json();
+  assert.equal(body.bufferMinutes, 15);
+  assert.equal(body.depositPercent, 30);
+  assert.equal(body.durations.quick, 20);
+});
+
+test("the buffer setting is used when marking bookings", async () => {
+  await adminCall({ action: "saveSettings", bufferMinutes: 20, depositPercent: 50 });
+  for (const n of ["A", "B"]) {
+    await referral(new Request("https://x.test/api/referral", { method: "POST", body: JSON.stringify({ package: "mini", name: n, email: `${n}@x.com` }) }));
+  }
+  const { inquiries } = await (await adminCall({ action: "list" })).json();
+  const [a, b] = inquiries;
+  assert.equal((await adminCall({ action: "book", id: a.id, date: "2030-12-07", start: 600 })).status, 200);
+  assert.equal((await adminCall({ action: "book", id: b.id, date: "2030-12-07", start: 640 })).status, 409, "10:40 is inside the 20-min buffer");
+  assert.equal((await adminCall({ action: "book", id: b.id, date: "2030-12-07", start: 650 })).status, 200);
+});
+
+test("tracking stores anonymous events and the admin sees totals", async () => {
+  process.env.CONTEXT = "production";
+  const send = (e, s) => track(new Request("https://x.test/api/track", { method: "POST", body: JSON.stringify({ e, s, p: "/christmas/", utm: { source: "instagram", campaign: "xmas" } }) }));
+  assert.equal((await send("landing_view", "s1")).status, 204);
+  await send("landing_view", "s2");
+  await send("cta_click", "s1");
+  await send("form_submit", "s1");
+  assert.equal((await send("hack", "s1")).status, 400);
+  const a = await (await adminCall({ action: "analytics", days: 7 })).json();
+  assert.equal(a.uniques.landing_view, 2);
+  assert.equal(a.counts.form_submit, 1);
+  assert.equal(a.sources["instagram / xmas"].cta_click, 1);
+  assert.equal(a.booked, 0);
 });

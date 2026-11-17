@@ -8,3 +8,37 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# Christmas campaign: the old booking page now lives at /christmas/book/.
+# Links with ?package= go straight to booking; everything else opens the campaign landing page.
+[[redirects]]
+  from = "/christmas-booking.html"
+  to = "/christmas/book/?package=:package"
+  query = { package = ":package" }
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/christmas-booking"
+  to = "/christmas/book/?package=:package"
+  query = { package = ":package" }
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/christmas-booking.html"
+  to = "/christmas/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/christmas-booking"
+  to = "/christmas/"
+  status = 301
+  force = true
+
+# Long cache for campaign photos (file names change if photos change).
+[[headers]]
+  for = "/christmas/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

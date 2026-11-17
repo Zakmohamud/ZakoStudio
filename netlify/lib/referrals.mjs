@@ -1,22 +1,78 @@
 // Shared helpers for referral codes and inquiry tracking (Netlify Blobs).
 import { createHash, timingSafeEqual } from "node:crypto";
 
+// Christmas experiences. Ids stay quick/mini/extended so older links and records keep working.
 export const PACKAGE_PRICES = {
-  quick: { name: "Quick session", price: 190, minutes: 15 },
-  mini: { name: "Mini session", price: 300, minutes: 30 },
-  extended: { name: "Extended session", price: 600, minutes: 60 }
+  quick: { name: "The Keepsake", price: 190, minutes: 15 },
+  mini: { name: "The Story", price: 300, minutes: 30 },
+  extended: { name: "The Heirloom", price: 600, minutes: 60 }
 };
+const LEGACY_PACKAGE_NAMES = { "Quick session": "quick", "Mini session": "mini", "Extended session": "extended" };
 
-// Minutes kept free after every session.
+// Default minutes kept free after every session (configurable in the admin page).
 export const BREAK_MINUTES = 10;
 
 const CODES_STORE = "referral-codes";
 const INQUIRIES_STORE = "referral-inquiries";
 const SCHEDULE_STORE = "booking-schedule";
+const SETTINGS_STORE = "campaign-settings";
+const EVENTS_STORE = "campaign-events";
 
 export function packageIdFromName(name) {
-  return Object.keys(PACKAGE_PRICES).find((id) => PACKAGE_PRICES[id].name === name) || null;
+  return Object.keys(PACKAGE_PRICES).find((id) => PACKAGE_PRICES[id].name === name)
+    || LEGACY_PACKAGE_NAMES[name]
+    || null;
 }
+
+// ---- Campaign settings (session days, buffer, deposit, durations) ----
+export const DEFAULT_SETTINGS = {
+  bufferMinutes: BREAK_MINUTES,
+  depositPercent: 50,
+  durations: { quick: 15, mini: 30, extended: 60 },
+  defaultStart: 10 * 60,
+  defaultEnd: 14 * 60,
+  seasonEnd: "2026-12-20",
+  // null = not set up yet: every weekend until seasonEnd is offered as "pending studio confirmation".
+  days: null
+};
+
+export async function readSettings() {
+  const store = await openStore(SETTINGS_STORE);
+  const saved = (await store.get("christmas", { type: "json" })) || {};
+  return {
+    ...DEFAULT_SETTINGS,
+    ...saved,
+    durations: { ...DEFAULT_SETTINGS.durations, ...(saved.durations || {}) }
+  };
+}
+
+export async function writeSettings(settings) {
+  const store = await openStore(SETTINGS_STORE);
+  await store.setJSON("christmas", settings);
+}
+
+function addDays(iso, n) {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// Upcoming session days: { date, start, end, status: "secured" | "pending" }
+export function sessionDays(settings, today = vancouverToday()) {
+  if (Array.isArray(settings.days)) {
+    return settings.days.filter((d) => d.date > today).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  const days = [];
+  for (let d = addDays(today, 1); d <= settings.seasonEnd; d = addDays(d, 1)) {
+    const wd = new Date(`${d}T12:00:00Z`).getUTCDay();
+    if (wd === 0 || wd === 6) {
+      days.push({ date: d, start: settings.defaultStart, end: settings.defaultEnd, status: "pending" });
+    }
+  }
+  return days;
+}
+
+export const eventsStore = () => openStore(EVENTS_STORE);
 
 export function isISODate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -27,9 +83,9 @@ export function isMinute(value) {
 }
 
 // True when [start, end) clashes with an existing entry, counting the break after each session.
-export function clashes(entries, start, end, ignoreId) {
+export function clashes(entries, start, end, ignoreId, buffer = BREAK_MINUTES) {
   return entries.find(
-    (e) => e.id !== ignoreId && start < e.end + BREAK_MINUTES && e.start < end + BREAK_MINUTES
+    (e) => e.id !== ignoreId && start < e.end + buffer && e.start < end + buffer
   ) || null;
 }
 

@@ -18,7 +18,11 @@ import {
   packageIdFromName,
   passwordMatches,
   readSchedule,
+  readSettings,
   scheduleStore,
+  sessionDays,
+  eventsStore,
+  writeSettings,
   vancouverToday
 } from "../lib/referrals.mjs";
 
@@ -89,6 +93,90 @@ export default async function handler(request) {
         });
       }
 
+      case "getSettings": {
+        const settings = await readSettings();
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveSettings": {
+        const settings = await readSettings();
+        const buffer = Number(body.bufferMinutes);
+        const deposit = Number(body.depositPercent);
+        if (!Number.isInteger(buffer) || buffer < 0 || buffer > 60) {
+          return jsonResponse(400, { message: "Buffer must be 0–60 minutes." });
+        }
+        if (!Number.isFinite(deposit) || deposit < 0 || deposit > 100) {
+          return jsonResponse(400, { message: "Deposit must be 0–100%." });
+        }
+        const durations = { ...settings.durations };
+        for (const id of Object.keys(PACKAGE_PRICES)) {
+          const v = Number(body.durations?.[id]);
+          if (body.durations?.[id] !== undefined) {
+            if (!Number.isInteger(v) || v < 5 || v > 240) return jsonResponse(400, { message: "Session lengths must be 5–240 minutes." });
+            durations[id] = v;
+          }
+        }
+        Object.assign(settings, { bufferMinutes: buffer, depositPercent: deposit, durations });
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveDay": {
+        const settings = await readSettings();
+        const { date, start, end } = body;
+        const status = body.status === "secured" ? "secured" : "pending";
+        if (!isISODate(date) || !isMinute(start) || !isMinute(end) || end <= start) {
+          return jsonResponse(400, { message: "Enter a date and opening hours, with the end after the start." });
+        }
+        // First edit turns the automatic weekend list into an editable list.
+        const days = Array.isArray(settings.days) ? [...settings.days] : sessionDays(settings);
+        const i = days.findIndex((d) => d.date === date);
+        const day = { date, start, end, status };
+        if (i >= 0) days[i] = day; else days.push(day);
+        settings.days = days.sort((a, b) => a.date.localeCompare(b.date));
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "removeDay": {
+        const settings = await readSettings();
+        const days = Array.isArray(settings.days) ? settings.days : sessionDays(settings);
+        settings.days = days.filter((d) => d.date !== body.date);
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "analytics": {
+        const span = Math.min(Math.max(Number(body.days) || 14, 1), 60);
+        const includePreview = Boolean(body.includePreview);
+        const store = await eventsStore();
+        const today = vancouverToday();
+        const dates = [];
+        for (let n = 0; n < span; n++) {
+          const d = new Date(`${today}T12:00:00Z`);
+          d.setUTCDate(d.getUTCDate() - n);
+          dates.push(d.toISOString().slice(0, 10));
+        }
+        const keys = [];
+        for (const d of dates) keys.push(...(await store.list({ prefix: `${d}/` })).blobs.map((b) => b.key));
+        const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" })))).filter(Boolean)
+          .filter((ev) => includePreview || ev.ctx === "production");
+        const counts = {};
+        const sessions = {};
+        const sources = {};
+        for (const ev of events) {
+          counts[ev.e] = (counts[ev.e] || 0) + 1;
+          (sessions[ev.e] ||= new Set()).add(ev.s);
+          const src = [ev.utm?.source, ev.utm?.campaign].filter(Boolean).join(" / ") || "direct / unknown";
+          (sources[src] ||= {});
+          sources[src][ev.e] = (sources[src][ev.e] || 0) + 1;
+        }
+        const uniques = Object.fromEntries(Object.entries(sessions).map(([k, v]) => [k, v.size]));
+        // Bookings come from the schedule you mark, never from page events.
+        const booked = (await readSchedule()).filter((e) => e.kind === "session").length;
+        return jsonResponse(200, { span, counts, uniques, sources, booked, total: events.length });
+      }
+
       case "saveCode": {
         const code = normalizeCode(body.code);
         const partner = cleanText(body.partner, 80);
@@ -144,16 +232,17 @@ export default async function handler(request) {
           return jsonResponse(400, { message: "Enter the date and start time you agreed with the client." });
         }
         const pkgId = inquiry.packageId || packageIdFromName(inquiry.package);
-        const minutes = PACKAGE_PRICES[pkgId]?.minutes;
+        const settings = await readSettings();
+        const minutes = settings.durations[pkgId] || PACKAGE_PRICES[pkgId]?.minutes;
         if (!minutes) return jsonResponse(400, { message: "Unknown package length for this inquiry." });
         const end = start + minutes;
         if (end > 1440) return jsonResponse(400, { message: "That session would run past midnight." });
 
         const sameDay = (await readSchedule()).filter((e) => e.date === date);
-        const clash = clashes(sameDay, start, end, id);
+        const clash = clashes(sameDay, start, end, id, settings.bufferMinutes);
         if (clash) {
           return jsonResponse(409, {
-            message: `That overlaps ${clash.label || "another booking"} (${formatMinutes(clash.start)}–${formatMinutes(clash.end)}) including your ${BREAK_MINUTES}-minute break.`
+            message: `That overlaps ${clash.label || "another booking"} (${formatMinutes(clash.start)}–${formatMinutes(clash.end)}) including your ${settings.bufferMinutes}-minute buffer.`
           });
         }
 

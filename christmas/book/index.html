@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F0E7" />
+    <title>Reserve your Christmas session — Zako Studio</title>
+    <meta name="description" content="Reserve a Christmas family photography session in Vancouver. Choose your experience, an available weekend time and send your request." />
+    <link rel="icon" type="image/png" href="/images/zako-studio-logo-trim.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/christmas/campaign.css" />
+    <style>
+      .book { padding: clamp(28px, 5vw, 64px) 0 clamp(48px, 7vw, 96px); }
+
+      .book-head { margin-bottom: clamp(22px, 3vw, 34px); }
+      .book-head .h2 { font-size: clamp(36px, 5vw, 60px); }
+
+      .steps {
+        display: flex;
+        gap: 6px;
+        margin: 22px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: s;
+      }
+      .steps li {
+        flex: 1;
+        padding-top: 10px;
+        border-top: 2px solid var(--line);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .steps li.done { border-color: var(--gold); color: var(--ink); }
+      .steps li.now { border-color: var(--cranberry); color: var(--cranberry); }
+      .steps button { border: 0; background: none; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; text-align: left; }
+      .steps button[disabled] { cursor: default; }
+
+      .layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(24px, 4vw, 56px); align-items: start; }
+
+      .panel-title { margin: 0 0 6px; font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 3vw, 36px); line-height: 1.1; }
+      .panel-sub { margin: 0 0 22px; color: var(--ink-soft); }
+
+      /* Step 1 */
+      .exp-options { display: grid; gap: 12px; }
+      .exp-option {
+        display: grid;
+        grid-template-columns: 132px minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line-strong);
+        background: rgba(255, 255, 255, 0.35);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 150ms ease, background 150ms ease;
+      }
+      .exp-option:hover { border-color: var(--ink); }
+      .exp-option[aria-pressed="true"] { border: 2px solid var(--cranberry); padding: 9px; background: #fff; }
+      .exp-option img { width: 132px; height: 104px; object-fit: cover; }
+      .exp-option .name { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-family: var(--serif); font-size: 26px; line-height: 1.1; }
+      .exp-option .price { color: var(--cranberry); font-size: 22px; white-space: nowrap; }
+      .exp-option .meta { display: block; margin-top: 4px; font-size: 14px; color: var(--ink-soft); }
+
+      /* Step 2 */
+      .month { margin: 0 0 10px; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+      .dates { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; margin-bottom: 24px; }
+      .chip {
+        display: grid;
+        place-items: center;
+        gap: 0;
+        min-height: 62px;
+        padding: 8px 6px;
+        border: 1px solid var(--line-strong);
+        background: rgba(255, 255, 255, 0.35);
+        cursor: pointer;
+        line-height: 1.15;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .chip:hover { border-color: var(--ink); }
+      .chip[aria-pressed="true"] { border: 2px solid var(--cranberry); background: #fff; color: var(--cranberry); }
+      .chip .dow { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+      .chip .day { font-family: var(--serif); font-size: 24px; }
+      .chip small { font-size: 11px; color: var(--ink-soft); }
+      .chip:disabled { cursor: not-allowed; opacity: 0.45; border-style: dashed; background: transparent; }
+      .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+      .times .chip { min-height: 52px; font-size: 16px; }
+      .day-note { margin: 14px 0 0; padding: 12px 14px; border-left: 2px solid var(--gold); background: rgba(173, 147, 97, 0.1); font-size: 14px; color: var(--ink); }
+      .other-time { margin-top: 16px; }
+
+      /* Step 3 */
+      .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .fields .full { grid-column: 1 / -1; }
+      label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; }
+      input, textarea {
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 0;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 16px;
+      }
+      textarea { min-height: 96px; resize: vertical; }
+      details.more { border-top: 1px solid var(--line); }
+      details.more:last-of-type { border-bottom: 1px solid var(--line); }
+      details.more summary { display: flex; justify-content: space-between; align-items: center; min-height: 52px; cursor: pointer; list-style: none; font-size: 15px; }
+      details.more summary::-webkit-details-marker { display: none; }
+      details.more summary::after { content: "+"; color: var(--gold); font-size: 20px; }
+      details.more[open] summary::after { content: "–"; }
+      details.more .inner { padding: 0 0 16px; }
+      .code-row { display: flex; gap: 8px; }
+      .code-row input { text-transform: uppercase; }
+      .code-row .btn { min-height: 52px; padding: 0 18px; }
+      .code-status { margin: 8px 0 0; font-size: 14px; }
+      .code-status.ok { color: var(--forest); }
+      .code-status.bad { color: var(--cranberry); }
+      .fine { margin: 14px 0 0; font-size: 13px; color: var(--ink-soft); }
+      .error { margin: 14px 0 0; color: var(--cranberry); font-size: 15px; }
+
+      .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 26px; }
+
+      /* Summary */
+      .summary { position: sticky; top: 18px; padding: 22px; border: 1px solid var(--line-strong); background: #fff; }
+      .summary h2 { margin: 0 0 14px; font-size: 12px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+      .summary img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; margin-bottom: 14px; }
+      .s-name { font-family: var(--serif); font-size: 28px; line-height: 1.1; }
+      .s-line { margin: 4px 0 0; font-size: 14px; color: var(--ink-soft); }
+      .s-rows { margin: 16px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 15px; }
+      .s-rows div { display: flex; justify-content: space-between; gap: 12px; }
+      .s-rows dt { color: var(--ink-soft); }
+      .s-rows dd { margin: 0; text-align: right; }
+      .s-total { padding-top: 8px; border-top: 1px solid var(--line); font-weight: 500; }
+      .s-status { margin: 14px 0 0; padding: 10px 12px; background: var(--ivory); font-size: 13px; line-height: 1.5; }
+      .s-status b { display: block; font-weight: 500; margin-bottom: 2px; }
+
+      /* Mobile bottom bar */
+      .bar {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        display: none; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 10px 14px calc(10px + var(--safe-bottom));
+        background: rgba(255, 255, 255, 0.97); border-top: 1px solid var(--line);
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      }
+      .bar-text { min-width: 0; font-size: 13px; line-height: 1.3; color: var(--ink-soft); }
+      .bar-text strong { display: block; font-family: var(--serif); font-size: 19px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .bar .btn { flex: 0 0 auto; min-height: 48px; padding: 0 18px; font-size: 13px; }
+
+      .sent { padding: 26px; border: 1px solid var(--forest); background: #fff; }
+      .sent .panel-title { color: var(--forest); }
+
+      .mobile-summary { display: none; }
+      .mobile-summary dl { margin: 0 0 20px; padding: 14px 16px; border: 1px solid var(--line-strong); background: #fff; display: grid; gap: 6px; font-size: 15px; }
+      .mobile-summary dl div { display: flex; justify-content: space-between; gap: 12px; }
+      .mobile-summary dt { color: var(--ink-soft); }
+      .mobile-summary dd { margin: 0; text-align: right; }
+      .mobile-summary .s-status { margin: 4px 0 0; }
+
+      .form-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+      @media (max-width: 900px) {
+        .layout { grid-template-columns: 1fr; }
+        .summary { display: none; }
+        .mobile-summary { display: block; }
+        .bar { display: flex; }
+        body { padding-bottom: 84px; }
+        .actions .btn-next { display: none; }
+      }
+      @media (max-width: 560px) {
+        .exp-option { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; }
+        .exp-option img { width: 96px; height: 96px; }
+        .exp-option .name { font-size: 23px; }
+        .exp-option .price { font-size: 20px; }
+        .fields { grid-template-columns: 1fr; }
+        .dates { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+        .chip .day { font-size: 22px; }
+        .times { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .steps li { font-size: 10px; letter-spacing: 0.1em; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="masthead">
+      <a class="wordmark" href="/christmas/">Zako Studio</a>
+      <span class="masthead-issue">The Christmas Collection · 2026</span>
+      <a class="masthead-link" href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Questions?</a>
+    </header>
+
+    <main class="book">
+      <div class="wrap">
+        <div class="book-head">
+          <p class="kicker">Christmas 2026 · Vancouver</p>
+          <h1 class="h2">Reserve your <em>Christmas session.</em></h1>
+          <ol class="steps" id="steps">
+            <li><button type="button" data-go="1">1 · Experience</button></li>
+            <li><button type="button" data-go="2">2 · Date &amp; time</button></li>
+            <li><button type="button" data-go="3">3 · Your details</button></li>
+          </ol>
+        </div>
+
+        <div class="sent" id="sent" role="status" hidden>
+          <h2 class="panel-title">Thank you, your request has been received.</h2>
+          <p>Your session is <strong>not confirmed yet</strong>. I’ll check availability and email you to confirm your time and arrange your deposit. Your session is reserved once the deposit is received.</p>
+          <p class="fine">Can’t see my email? Check your spam folder, or message me on <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Instagram</a>.</p>
+          <div class="actions"><a class="text-link" href="/christmas/"><span>Back to the Christmas Collection</span></a></div>
+        </div>
+
+        <div class="layout" id="layout">
+          <form id="form" action="https://formsubmit.co/zakotarastudio@gmail.com" method="POST" novalidate>
+            <input type="hidden" name="_subject" value="New Christmas session request" />
+            <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_next" id="f-next" />
+            <input type="hidden" name="Experience" id="f-exp" />
+            <input type="hidden" name="Requested date" id="f-date" />
+            <input type="hidden" name="Requested time" id="f-time" />
+            <input type="hidden" name="Studio date status" id="f-status" />
+            <input type="hidden" name="Price" id="f-price" />
+            <input type="hidden" name="Deposit" id="f-deposit" />
+            <input type="hidden" name="Referral code" id="f-code" value="None" />
+            <input type="hidden" name="Discount" id="f-discount" value="None" />
+            <input type="hidden" name="Source" id="f-source" value="Direct" />
+            <div class="form-trap" aria-hidden="true"><label for="hp">Leave blank</label><input id="hp" name="_honey" tabindex="-1" autocomplete="off" /></div>
+
+            <!-- Step 1 -->
+            <section id="step-1" aria-labelledby="t1">
+              <h2 class="panel-title" id="t1">Choose your experience</h2>
+              <p class="panel-sub">All sessions take place in our decorated studio in Vancouver.</p>
+              <div class="exp-options" id="exp-options"></div>
+            </section>
+
+            <!-- Step 2 -->
+            <section id="step-2" aria-labelledby="t2" hidden>
+              <h2 class="panel-title" id="t2">Select a date and time</h2>
+              <p class="panel-sub">Weekend sessions. Times shown are the ones still open for your experience.</p>
+              <div id="date-list"><p class="fine">Loading available dates…</p></div>
+              <div id="time-block" hidden>
+                <p class="month" id="time-title">Available times</p>
+                <div class="times" id="time-list" role="group" aria-labelledby="time-title"></div>
+                <p class="day-note" id="day-note"></p>
+              </div>
+              <p class="fine other-time">Don’t see a time that works? Choose the closest one and tell me your preference in the next step, or <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">message me</a>.</p>
+              <p class="error" id="e2" role="alert" hidden></p>
+            </section>
+
+            <!-- Step 3 -->
+            <section id="step-3" aria-labelledby="t3" hidden>
+              <h2 class="panel-title" id="t3">Your details</h2>
+              <p class="panel-sub">I’ll reply by email to confirm your time and arrange the deposit.</p>
+              <div class="mobile-summary" id="mobile-summary"></div>
+              <div class="fields">
+                <label class="f full" for="name">Full name<input id="name" name="Name" autocomplete="name" required /></label>
+                <label class="f" for="email">Email<input id="email" name="email" type="email" autocomplete="email" inputmode="email" required /></label>
+                <label class="f" for="phone">Phone<input id="phone" name="Phone" type="tel" autocomplete="tel" inputmode="tel" required /></label>
+              </div>
+              <div style="margin-top:18px">
+                <details class="more">
+                  <summary>Add a note <span class="fine" style="margin:0 auto 0 8px">(optional)</span></summary>
+                  <div class="inner"><textarea id="notes" name="Notes" placeholder="Ages of the kids, a preferred time, anything I should know…"></textarea></div>
+                </details>
+                <details class="more" id="code-box">
+                  <summary>Have a referral code?</summary>
+                  <div class="inner">
+                    <div class="code-row">
+                      <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Code" aria-label="Referral code" />
+                      <button class="btn btn-ghost" type="button" id="apply">Apply</button>
+                    </div>
+                    <p class="code-status" id="code-status" role="status" aria-live="polite"></p>
+                  </div>
+                </details>
+              </div>
+              <p class="error" id="e3" role="alert" hidden></p>
+              <p class="fine">Sending this form is a reservation request. Nothing is charged, and your time is not confirmed until I confirm availability by email and your deposit is received.</p>
+            </section>
+
+            <div class="actions">
+              <button class="btn btn-next" type="button" id="next">Continue</button>
+              <button class="text-link" type="button" id="back" hidden><span>Back</span></button>
+            </div>
+          </form>
+
+          <aside class="summary" id="summary" aria-label="Your booking">
+            <h2>Your booking</h2>
+            <div id="summary-body"></div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <div class="bar" id="bar">
+      <div class="bar-text" id="bar-text"></div>
+      <button class="btn" type="button" id="bar-next">Continue</button>
+    </div>
+
+    <footer class="footer">
+      <span>The Christmas Collection by Zako Studio — 2026</span>
+      <span><a href="/christmas/">The collection</a> · <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">@zakarymaxamed</a></span>
+    </footer>
+
+    <script src="/christmas/campaign.js"></script>
+    <script>
+      (function () {
+        const C = window.CAMPAIGN;
+        const $ = (id) => document.getElementById(id);
+        const params = new URLSearchParams(location.search);
+
+        const state = { step: 1, pkg: null, date: null, start: null, discount: null, formStarted: false, sending: false };
+        let sched = { busy: {}, days: [], bufferMinutes: 10, depositPercent: 50, durations: {} };
+
+        const minutesOf = (id) => sched.durations?.[id] || C.packages[id].minutes;
+        const clock = (m) => { const h = Math.floor(m / 60), mm = m % 60; return `${h % 12 === 0 ? 12 : h % 12}:${String(mm).padStart(2, "0")} ${h >= 12 ? "p.m." : "a.m."}`; };
+        const dateObj = (iso) => new Date(`${iso}T12:00:00Z`);
+        const fmt = (iso, o) => new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", ...o }).format(dateObj(iso));
+        const longDate = (iso) => fmt(iso, { weekday: "long", month: "long", day: "numeric" });
+        const money = ZS.money;
+        const dayOf = (iso) => sched.days.find((d) => d.date === iso);
+
+        // ---- Times: keep families back to back so each rented studio hour is used well ----
+        // Offer the start of the day, and the slots right before/after existing bookings (with the buffer).
+        // On an empty day, offer the first few consecutive slots from opening.
+        function openTimes(day, pkg) {
+          const dur = minutesOf(pkg);
+          const buf = sched.bufferMinutes ?? 10;
+          const taken = (sched.busy[day.date] || []).filter(([s, e]) => e > day.start && s < day.end);
+          const fits = (s) => s >= day.start && s + dur <= day.end && !taken.some(([bs, be]) => s < be + buf && bs < s + dur + buf);
+          const cands = new Set();
+          if (!taken.length) {
+            for (let k = 0; k < 3; k++) cands.add(day.start + k * (dur + buf));
+          } else {
+            cands.add(day.start);
+            for (const [bs, be] of taken) {
+              cands.add(be + buf);
+              cands.add(be + buf + dur + buf);
+              cands.add(bs - buf - dur);
+            }
+          }
+          return [...cands].filter(fits).sort((a, b) => a - b);
+        }
+
+        // ---- Step 1 ----
+        function renderExperiences() {
+          $("exp-options").innerHTML = Object.entries(C.packages).map(([id, p]) => `
+            <button type="button" class="exp-option" data-id="${id}" aria-pressed="${state.pkg === id}">
+              <img src="${p.photo}-sm.jpg" alt="" loading="lazy" />
+              <span>
+                <span class="name"><span>${p.name}</span><span class="price">$${p.price}</span></span>
+                <span class="meta">${minutesOf(id)} minutes · ${p.images} edited photographs · up to ${p.people} people</span>
+              </span>
+            </button>`).join("");
+          document.querySelectorAll(".exp-option").forEach((b) => b.addEventListener("click", () => {
+            const changed = state.pkg !== b.dataset.id;
+            state.pkg = b.dataset.id;
+            if (changed) { state.start = null; }
+            ZS.track("package_select", { pkg: state.pkg });
+            renderExperiences();
+            render();
+            go(2);
+          }));
+        }
+
+        // ---- Step 2 ----
+        function renderDates() {
+          const box = $("date-list");
+          if (!state.pkg) return;
+          if (!sched.days.length) {
+            box.innerHTML = `<p class="day-note">New Christmas dates are being added. Please <a href="${ZS.instagramUrl}" target="_blank" rel="noopener" data-track="instagram_click">message me on Instagram</a> and I’ll let you know what’s available.</p>`;
+            return;
+          }
+          const months = {};
+          for (const d of sched.days) (months[fmt(d.date, { month: "long", year: "numeric" })] ||= []).push(d);
+          box.innerHTML = Object.entries(months).map(([m, days]) => `
+            <p class="month">${m}</p>
+            <div class="dates" role="group" aria-label="${m}">
+              ${days.map((d) => {
+                const full = openTimes(d, state.pkg).length === 0;
+                return `<button type="button" class="chip" data-date="${d.date}" aria-pressed="${state.date === d.date}" ${full ? "disabled" : ""}>
+                  <span class="dow">${fmt(d.date, { weekday: "short" })}</span>
+                  <span class="day">${fmt(d.date, { day: "numeric" })}</span>
+                  ${full ? "<small>Full</small>" : ""}
+                </button>`;
+              }).join("")}
+            </div>`).join("");
+          box.querySelectorAll(".chip[data-date]").forEach((b) => b.addEventListener("click", () => {
+            if (state.date !== b.dataset.date) state.start = null;
+            state.date = b.dataset.date;
+            ZS.track("date_select", { pkg: state.pkg });
+            hideErr("e2");
+            renderDates();
+            renderTimes();
+            render();
+          }));
+          if (state.date && !dayOf(state.date)) state.date = null;
+        }
+
+        function renderTimes() {
+          const day = state.date && dayOf(state.date);
+          $("time-block").hidden = !day;
+          if (!day) return;
+          const dur = minutesOf(state.pkg);
+          const times = openTimes(day, state.pkg);
+          if (!times.includes(state.start)) state.start = null;
+          $("time-title").textContent = `Available times · ${longDate(day.date)}`;
+          $("time-list").innerHTML = times.map((m) => `
+            <button type="button" class="chip" data-start="${m}" aria-pressed="${state.start === m}">${clock(m)}</button>`).join("");
+          $("time-list").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => {
+            state.start = Number(b.dataset.start);
+            ZS.track("time_select", { pkg: state.pkg });
+            hideErr("e2");
+            renderTimes();
+            render();
+          }));
+          $("day-note").textContent = day.status === "secured"
+            ? `Sessions run ${dur} minutes. This time is open now; I’ll confirm it by email.`
+            : `Sessions run ${dur} minutes. Studio time for this date is still being finalised, so I’ll confirm your time by email before any deposit is taken.`;
+        }
+
+        // ---- Prices ----
+        function prices() {
+          const p = C.packages[state.pkg];
+          if (!p) return null;
+          const d = state.discount;
+          const total = !d ? p.price
+            : d.type === "amount" ? Math.max(0, Math.round((p.price - d.amount) * 100) / 100)
+            : Math.round(p.price * (100 - d.percent)) / 100;
+          const deposit = Math.round(total * (sched.depositPercent ?? 50)) / 100;
+          return { total, deposit, balance: Math.round((total - deposit) * 100) / 100, list: p.price };
+        }
+
+        // ---- Summary (desktop sidebar + mobile bar) ----
+        function render() {
+          const p = C.packages[state.pkg];
+          const pr = prices();
+          const day = state.date && dayOf(state.date);
+          const when = day ? `${fmt(day.date, { weekday: "short", month: "short", day: "numeric" })}${state.start !== null ? ` · ${clock(state.start)}` : ""}` : "Not chosen yet";
+          $("summary-body").innerHTML = !p
+            ? `<p class="s-line">Choose an experience to begin.</p>`
+            : `<img src="${p.photo}-sm.jpg" alt="" />
+               <div class="s-name">${p.name}</div>
+               <p class="s-line">${minutesOf(state.pkg)} minutes · ${p.images} edited photographs · up to ${p.people} people</p>
+               <dl class="s-rows">
+                 <div><dt>When</dt><dd>${when}</dd></div>
+                 <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
+                 <div><dt>Deposit (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
+                 <div class="s-total"><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
+               </dl>
+               <p class="s-status"><b>Status: not reserved yet</b>Send your request and I’ll confirm availability by email. Your time is reserved once your deposit is received.</p>`;
+
+          $("mobile-summary").innerHTML = !p ? "" : `
+            <dl>
+              <div><dt>Experience</dt><dd>${p.name}</dd></div>
+              <div><dt>When</dt><dd>${when}</dd></div>
+              <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
+              <div><dt>Deposit (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
+              <div><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
+              <p class="s-status"><b>Status: not reserved yet</b>Reserved once availability is confirmed and your deposit is received.</p>
+            </dl>`;
+
+          // mobile bar
+          const labels = { 1: "Continue", 2: "Continue", 3: "Send request" };
+          $("bar-text").innerHTML = !p
+            ? `<strong>Christmas sessions</strong>from $${C.fromPrice} · Vancouver`
+            : `<strong>${p.name} · ${money(pr.total)}</strong>${day ? when : `${minutesOf(state.pkg)} min · choose a date`}`;
+          $("bar-next").textContent = labels[state.step];
+          $("next").textContent = labels[state.step];
+          $("bar-next").disabled = !canContinue();
+
+          // steps
+          document.querySelectorAll("#steps li").forEach((li, i) => {
+            const n = i + 1;
+            li.className = n === state.step ? "now" : n < state.step ? "done" : "";
+            li.querySelector("button").disabled = n > maxStep();
+          });
+        }
+
+        const maxStep = () => (!state.pkg ? 1 : state.date && state.start !== null ? 3 : 2);
+        const canContinue = () => (state.step === 1 ? !!state.pkg : state.step === 2 ? state.date && state.start !== null : true);
+
+        function go(n) {
+          n = Math.min(n, maxStep());
+          state.step = n;
+          [1, 2, 3].forEach((i) => ($(`step-${i}`).hidden = i !== n));
+          $("back").hidden = n === 1;
+          if (n === 2) { renderDates(); renderTimes(); }
+          if (n === 3 && !state.formStarted) { state.formStarted = true; ZS.track("form_start", { pkg: state.pkg }); }
+          render();
+          const top = document.querySelector(".book-head").getBoundingClientRect().top;
+          if (top < -20) window.scrollTo({ top: window.scrollY + top - 10, behavior: "smooth" });
+        }
+
+        function showErr(id, t) { $(id).textContent = t; $(id).hidden = false; }
+        function hideErr(id) { $(id).hidden = true; }
+
+        function next() {
+          if (state.step === 1) { if (!state.pkg) return; go(2); return; }
+          if (state.step === 2) {
+            if (!state.date) return showErr("e2", "Choose a date first.");
+            if (state.start === null) return showErr("e2", "Choose a time.");
+            go(3);
+            return;
+          }
+          $("form").requestSubmit ? $("form").requestSubmit() : $("form").dispatchEvent(new Event("submit", { cancelable: true }));
+        }
+
+        $("next").addEventListener("click", next);
+        $("bar-next").addEventListener("click", next);
+        $("back").addEventListener("click", () => go(state.step - 1));
+        document.querySelectorAll("#steps button").forEach((b) => b.addEventListener("click", () => go(Number(b.dataset.go))));
+
+        // ---- Referral code ----
+        async function applyCode() {
+          const code = $("code").value.trim().toUpperCase();
+          state.discount = null;
+          const st = $("code-status");
+          if (!code) { st.textContent = ""; render(); return true; }
+          st.textContent = "Checking…"; st.className = "code-status";
+          try {
+            const r = await (await fetch(`/api/referral?code=${encodeURIComponent(code)}`)).json();
+            if (r.valid) {
+              state.discount = { code: r.code, type: r.type, percent: r.percent, amount: r.amount };
+              $("code").value = r.code;
+              st.textContent = `✓ ${r.code} applied: ${r.type === "amount" ? `$${r.amount}` : `${r.percent}%`} off.`;
+              st.className = "code-status ok";
+              render();
+              return true;
+            }
+            st.textContent = r.message || "That code isn’t valid or has expired.";
+            st.className = "code-status bad";
+          } catch {
+            st.textContent = "Codes can’t be checked right now. Add it as a note instead.";
+            st.className = "code-status bad";
+          }
+          render();
+          return false;
+        }
+        $("apply").addEventListener("click", applyCode);
+        $("code").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); applyCode(); } });
+
+        // ---- Submit ----
+        $("form").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (state.sending) return;
+          hideErr("e3");
+          const req = ["name", "email", "phone"].map($);
+          const bad = req.find((f) => !f.checkValidity());
+          if (bad) {
+            showErr("e3", bad.id === "email" && bad.value ? "Please check your email address." : "Please add your name, email and phone number.");
+            bad.focus();
+            return;
+          }
+          const typed = $("code").value.trim().toUpperCase();
+          if (typed && typed !== state.discount?.code && !(await applyCode())) {
+            showErr("e3", "Check the referral code, or clear it to send without one.");
+            return;
+          }
+          const p = C.packages[state.pkg];
+          const pr = prices();
+          const day = dayOf(state.date);
+          $("f-exp").value = `${p.name} — ${minutesOf(state.pkg)} min, $${p.price} CAD`;
+          $("f-date").value = longDate(state.date);
+          $("f-time").value = clock(state.start);
+          $("f-status").value = day?.status === "secured" ? "Studio secured" : "Pending studio confirmation";
+          $("f-price").value = `${money(pr.total)} CAD`;
+          $("f-deposit").value = `${money(pr.deposit)} (${sched.depositPercent ?? 50}%), balance ${money(pr.balance)}`;
+          $("f-code").value = state.discount?.code || "None";
+          $("f-discount").value = state.discount ? (state.discount.type === "amount" ? `$${state.discount.amount} off` : `${state.discount.percent}% off`) : "None";
+          $("f-source").value = [ZS.utm.source, ZS.utm.campaign, ZS.utm.content].filter(Boolean).join(" / ") || "Direct";
+          const next = new URL("/christmas/book/", location.origin);
+          next.searchParams.set("sent", "1");
+          $("f-next").value = next.toString();
+
+          state.sending = true;
+          $("bar-next").disabled = true;
+          $("next").disabled = true;
+          ZS.track("form_submit", { pkg: state.pkg });
+          try {
+            const ctl = new AbortController();
+            const t = setTimeout(() => ctl.abort(), 3000);
+            await fetch("/api/referral", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                package: state.pkg,
+                name: $("name").value,
+                email: $("email").value,
+                phone: $("phone").value,
+                notes: $("notes").value,
+                code: state.discount?.code || "",
+                heardFrom: ZS.utm.source ? `${ZS.utm.source}${ZS.utm.campaign ? " · " + ZS.utm.campaign : ""}` : "",
+                date: longDate(state.date),
+                time: clock(state.start),
+                dateISO: state.date,
+                startMin: state.start,
+                dayStatus: day?.status || null,
+                utm: ZS.utm
+              }),
+              keepalive: true,
+              signal: ctl.signal
+            });
+            clearTimeout(t);
+          } catch {}
+          e.target.submit();
+        });
+
+        // ---- Start ----
+        if (params.get("sent") === "1") {
+          $("sent").hidden = false;
+          $("layout").hidden = true;
+          $("steps").hidden = true;
+          $("bar").style.display = "none";
+          return;
+        }
+        if (C.packages[params.get("package")]) state.pkg = params.get("package");
+        renderExperiences();
+        go(state.pkg ? 2 : 1);
+        ZS.track("booking_view", {}, true);
+
+        fetch("/api/schedule", { headers: { accept: "application/json" } })
+          .then((r) => (r.ok ? r.json() : Promise.reject()))
+          .then((s) => { sched = { ...sched, ...s }; renderExperiences(); renderDates(); renderTimes(); render(); })
+          .catch(() => {
+            $("date-list").innerHTML = `<p class="day-note">Dates couldn’t load just now. Please refresh, or <a href="${ZS.instagramUrl}" target="_blank" rel="noopener">message me on Instagram</a>.</p>`;
+          });
+      })();
+    </script>
+  </body>
+</html>
