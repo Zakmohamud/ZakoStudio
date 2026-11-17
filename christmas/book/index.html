@@ -245,7 +245,7 @@
               <h2 class="panel-title" id="t2">Select a date and time</h2>
               <p class="panel-sub">Weekend sessions in Vancouver. Only times still open for your experience are shown.</p>
               <div id="date-list"><p class="fine" role="status">Loading available dates…</p></div>
-              <p class="fine legend">* Studio time on these dates is being finalised. You can still request, and I’ll confirm before you pay the reservation fee.</p>
+              <p class="fine legend" id="pending-legend" hidden>* Studio time on these dates is being finalised. You can still request, and I’ll confirm before you pay the reservation fee.</p>
               <div id="time-block" hidden>
                 <p class="month" id="time-title">Available times</p>
                 <div class="times" id="time-list" role="group" aria-labelledby="time-title"></div>
@@ -357,6 +357,7 @@
         function renderDates() {
           const box = $("date-list");
           if (!state.pkg) return;
+          $("pending-legend").hidden = !sched.days.some((d) => d.status !== "secured");
           if (!sched.days.length) {
             box.innerHTML = `<p class="day-note">New Christmas dates are being added. Please <a href="${ZS.instagramUrl}" target="_blank" rel="noopener" data-track="instagram_click">message me on Instagram</a> and I’ll let you know what’s available.</p>`;
             return;

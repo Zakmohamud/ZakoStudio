@@ -96,6 +96,28 @@
         .block-form .btn, .block-form .note { grid-column: 1 / -1; }
         .slot { grid-template-columns: 1fr; gap: 4px; }
       }
+      .email-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+      .sent { font-size: 12px; color: #2f6b45; }
+      .history { margin-top: 8px; font-size: 12px; }
+      .history summary { cursor: pointer; color: #6b645a; }
+      .history ol { margin: 6px 0 0; padding-left: 18px; }
+      .history li { margin: 2px 0; }
+      .history .failed { color: #812e2b; }
+      .mail-status { font-size: 13px; padding: 10px 12px; border-radius: 8px; margin: 0 0 14px; }
+      .mail-status.on { background: #e8f2ea; color: #24553a; }
+      .mail-status.off { background: #f8ece9; color: #812e2b; }
+      .email-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .email-grid label { display: grid; gap: 4px; font-size: 13px; }
+      .email-grid input, .email-grid textarea { font: inherit; padding: 8px 10px; border: 1px solid #d6d0c4; border-radius: 6px; background: #fff; }
+      .email-grid .wide { grid-column: 1 / -1; }
+      dialog.email-preview { width: min(760px, 94vw); border: 0; border-radius: 12px; padding: 0; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+      dialog.email-preview::backdrop { background: rgba(20,20,20,.45); }
+      .ep-head { padding: 16px 20px; border-bottom: 1px solid #e6e0d4; font-size: 14px; }
+      .ep-head b { display: block; font-size: 16px; margin-top: 2px; }
+      dialog.email-preview iframe { width: 100%; height: 62vh; border: 0; background: #f5f0e7; display: block; }
+      .ep-foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 20px; border-top: 1px solid #e6e0d4; }
+      .ep-foot .message { margin: 0 auto 0 0; }
+      @media (max-width: 700px) { .email-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
@@ -155,6 +177,12 @@
           <h2>Studio days &amp; earnings</h2>
           <div class="stats" id="money-stats"></div>
           <p class="muted">Clients can only pick times on these days, inside these hours. <strong>Pending</strong> days aren’t rented yet: clients can still send requests, and the request says the studio is waiting on confirmation. Marking a day <strong>Secured</strong> counts its rental cost.</p>
+          <form class="block-form" id="auto-form" style="margin-bottom:14px">
+            <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="au-on" /> Show every Saturday &amp; Sunday as pending (people can ask)</label>
+            <label>Until<input type="date" id="au-end" required /></label>
+            <button class="btn ghost small" type="submit">Save</button>
+            <button class="linkish" type="button" id="au-restore" hidden>Bring back removed weekends</button>
+          </form>
           <form class="block-form" id="day-form">
             <label>Date<input type="date" id="dy-date" required /></label>
             <label>Opens<input type="time" id="dy-from" value="10:00" required /></label>
@@ -184,6 +212,19 @@
             <button class="btn red" type="submit">Save</button>
           </form>
           <p class="message" id="settings-message" role="status"></p>
+        </section>
+
+        <section>
+          <h2>Client emails</h2>
+          <p class="mail-status" id="mail-status"></p>
+          <form id="email-settings-form" class="email-grid" style="margin-top:18px">
+            <label class="wide">Studio address (goes in the confirmation email)<input id="es-address" type="text" maxlength="200" required /></label>
+            <label>e-Transfer email<input id="es-payment" type="email" maxlength="120" required /></label>
+            <label>“Payment due” wording for the remaining balance<input id="es-due" type="text" maxlength="200" /></label>
+            <div class="wide"><button class="btn red" type="submit">Save email details</button></div>
+          </form>
+          <p class="message" id="email-settings-message" role="status"></p>
+          <p class="fine">Every new request gets the “We’ve received your request” email automatically. The reservation fee request and the final confirmation are sent from each inquiry below, after you preview them.</p>
         </section>
 
         <section>
@@ -278,6 +319,15 @@
       </div>
     </main>
 
+    <dialog class="email-preview" id="email-dialog">
+      <div class="ep-head"><span id="ep-to"></span><b id="ep-subject"></b></div>
+      <iframe id="ep-frame" title="Email preview" sandbox=""></iframe>
+      <div class="ep-foot">
+        <p class="message" id="ep-message" role="status"></p>
+        <button class="btn ghost small" type="button" id="ep-cancel">Cancel</button>
+        <button class="btn red" type="button" id="ep-send">Send email</button>
+      </div>
+    </dialog>
     <script>
       const $ = (id) => document.getElementById(id);
       let password = "";
@@ -331,8 +381,24 @@
       const inquiryById = (id) => data.inquiries.find((i) => i.id === id);
       const priceOf = (i) => Number(i?.finalPrice ?? i?.price) || 0;
 
+      function renderEmailSettings() {
+        if (!settingsData) return;
+        const s = settingsData.settings;
+        const m = settingsData.mail || {};
+        const st = $("mail-status");
+        st.className = `mail-status ${m.ready ? "on" : "off"}`;
+        st.textContent = m.ready
+          ? `Email sending is on. Emails go out from ${m.user}.`
+          : "Email sending is off. Add GMAIL_USER and GMAIL_APP_PASSWORD in Netlify (Project configuration → Environment variables) to turn it on. Requests still reach you as before.";
+        if (document.activeElement?.closest("#email-settings-form")) return;
+        $("es-address").value = s.studioAddress || "";
+        $("es-payment").value = s.paymentEmail || "";
+        $("es-due").value = s.balanceDue || "";
+      }
+
       function renderSettings() {
         if (!settingsData) return;
+        renderEmailSettings();
         const s = settingsData.settings;
         $("st-buffer").value = s.bufferMinutes;
         $("st-deposit").value = s.depositPercent;
@@ -368,11 +434,18 @@
             <td>${clock(r.d.start)} – ${clock(r.d.end)} <span class="muted">(${r.hours} h)</span></td>
             <td>${r.requests || '<span class="muted">0</span>'}${r.booked.length ? ` · <b>${r.booked.length} booked</b>` : ""}</td>
             <td>${money(r.rent)}</td>
-            <td>${actions(r.d)}</td></tr>`).join("")
+            <td>${actions(r.d)}${r.d.auto ? ' <span class="muted" style="font-size:12px">auto weekend</span>' : ""}</td></tr>`).join("")
           : '<tr><td colspan="5" class="muted">No pending days.</td></tr>';
-        $("days-note").textContent = Array.isArray(s.days)
-          ? ""
-          : "These are the automatic weekend days (all pending). Saving or removing any day turns this into your own list.";
+        if (!document.activeElement?.closest("#auto-form")) {
+          $("au-on").checked = s.autoWeekends !== false;
+          $("au-end").value = s.seasonEnd || "";
+        }
+        const hiddenCount = (s.hiddenDays || []).length;
+        $("au-restore").hidden = !hiddenCount;
+        $("au-restore").textContent = `Bring back ${hiddenCount} removed weekend${hiddenCount === 1 ? "" : "s"}`;
+        $("days-note").textContent = s.autoWeekends !== false
+          ? "Weekends appear automatically as pending. Add any other day above, mark days secured once you’ve rented the studio, or remove a weekend you can’t do."
+          : "Only the days you’ve added are shown on the booking page.";
 
         // Money summary (upcoming)
         const bookedInq = data.inquiries.filter((i) => i.booked && i.bookedDate);
@@ -501,7 +574,30 @@
         renderSettings();
       }
 
+      const fullWhen = (iso) => new Date(iso).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+      function emailCell(i) {
+        const sentAt = (type) => i.emails?.[type]?.sentAt;
+        const hasTime = (i.bookedDate || i.dateISO) && (Number.isInteger(i.bookedStart) || Number.isInteger(i.startMin));
+        const btn = (type, label) => {
+          const at = sentAt(type);
+          return `<button class="btn ghost small" data-act="email" data-type="${type}" data-id="${esc(i.id)}">${at ? "Resend" : label}</button>${at ? ` <span class="sent">✓ ${type === "feeRequest" ? "Fee request" : "Confirmation"} sent ${fullWhen(at)}</span>` : ""}`;
+        };
+        const parts = [];
+        if (hasTime) parts.push(btn("feeRequest", "Send reservation fee request"));
+        if (i.booked && i.bookedDate && i.depositReceived) parts.push(btn("confirmation", "Send booking confirmation"));
+        const log = i.emailLog || (sentAt("acknowledgement") ? [{ label: "Request received", at: sentAt("acknowledgement"), status: "sent", to: i.email }] : []);
+        const history = `<details class="history"><summary>Email history (${log.length})</summary>${log.length
+          ? `<ol>${log.map((e) => `<li class="${e.status === "failed" ? "failed" : ""}">${esc(e.label)} · ${fullWhen(e.at)}${e.status === "failed" ? ` · <b>not sent</b>${e.error ? ` (${esc(e.error)})` : ""}` : ` · to ${esc(e.to || i.email)}`}</li>`).join("")}</ol>`
+          : '<p class="muted" style="margin:6px 0 0">No emails sent yet.</p>'}</details>`;
+        return `${parts.length ? `<div class="email-row">${parts.join("")}</div>` : ""}${history}`;
+      }
+
       function bookingCell(i) {
+        return bookingCore(i) + emailCell(i);
+      }
+
+      function bookingCore(i) {
         if (i.booked && i.bookedDate) {
           const due = Math.round(priceOf(i) * (settingsData?.settings.depositPercent ?? 50)) / 100;
           const dep = i.depositReceived
@@ -656,6 +752,9 @@
               inquiryNote(error.message, "bad");
               return;
             }
+          } else if (el.dataset.act === "email") {
+            await openEmailPreview(el.dataset.id, el.dataset.type);
+            return;
           } else if (el.dataset.act === "deposit") {
             if (el.dataset.received === "1") {
               const amount = prompt("Reservation fee received ($):", el.dataset.due);
@@ -679,6 +778,60 @@
           await load();
         } catch (error) {
           note(error.message, "bad");
+        }
+      });
+
+      let pendingEmail = null;
+      async function openEmailPreview(id, type) {
+        const pv = await api({ action: "previewEmail", id, type }).catch((e) => { inquiryNote(e.message, "bad"); return null; });
+        if (!pv) return;
+        pendingEmail = { id, type };
+        $("ep-to").textContent = `To: ${pv.to}`;
+        $("ep-subject").textContent = pv.subject;
+        $("ep-frame").srcdoc = pv.html;
+        $("ep-message").textContent = pv.mailReady ? "" : "Email sending is off — add the Gmail details in Netlify first.";
+        $("ep-message").className = `message ${pv.mailReady ? "" : "bad"}`;
+        $("ep-send").disabled = !pv.mailReady;
+        $("email-dialog").showModal();
+      }
+      $("ep-cancel").addEventListener("click", () => $("email-dialog").close());
+      $("ep-send").addEventListener("click", async () => {
+        if (!pendingEmail) return;
+        const btn = $("ep-send");
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        try {
+          await api({ action: "sendEmail", ...pendingEmail });
+          $("email-dialog").close();
+          inquiryNote(pendingEmail.type === "feeRequest" ? "Reservation fee request sent." : "Booking confirmation sent.", "ok");
+          await load();
+        } catch (error) {
+          $("ep-message").textContent = error.message;
+          $("ep-message").className = "message bad";
+          await load();
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Send email";
+        }
+      });
+
+      $("email-settings-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("email-settings-message");
+        try {
+          settingsData = await api({
+            action: "saveEmailSettings",
+            studioAddress: $("es-address").value,
+            paymentEmail: $("es-payment").value,
+            balanceDue: $("es-due").value
+          });
+          document.activeElement?.blur();
+          renderEmailSettings();
+          msg.textContent = "Saved. New emails will use these details.";
+          msg.className = "message ok";
+        } catch (error) {
+          msg.textContent = error.message;
+          msg.className = "message bad";
         }
       });
 
@@ -788,6 +941,24 @@
           $("day-message").textContent = error.message;
           $("day-message").className = "message bad";
         }
+      });
+
+      $("auto-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          settingsData = await api({ action: "saveAutoDays", autoWeekends: $("au-on").checked, seasonEnd: $("au-end").value });
+          document.activeElement?.blur();
+          renderSettings();
+          $("day-message").textContent = "Saved. The booking page shows the updated dates now.";
+          $("day-message").className = "message ok";
+        } catch (error) {
+          $("day-message").textContent = error.message;
+          $("day-message").className = "message bad";
+        }
+      });
+      $("au-restore").addEventListener("click", async () => {
+        settingsData = await api({ action: "saveAutoDays", restoreHidden: true });
+        renderSettings();
       });
 
       if (password) load().catch(() => signOut());

@@ -1,6 +1,9 @@
 // Private endpoint for the referral-code manager (referral-admin.html).
 // Every request must send the REFERRAL_ADMIN_PASSWORD in the x-admin-password header.
 import { randomUUID } from "node:crypto";
+import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
+import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
+import { logEmail } from "../lib/emails.mjs";
 import {
   BREAK_MINUTES,
   PACKAGE_PRICES,
@@ -95,7 +98,57 @@ export default async function handler(request) {
 
       case "getSettings": {
         const settings = await readSettings();
-        return jsonResponse(200, { settings, days: sessionDays(settings) });
+        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus() });
+      }
+
+      case "saveEmailSettings": {
+        const settings = await readSettings();
+        const paymentEmail = cleanText(body.paymentEmail, 120);
+        if (paymentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentEmail)) {
+          return jsonResponse(400, { message: "Enter a valid e-Transfer email." });
+        }
+        Object.assign(settings, {
+          studioAddress: cleanText(body.studioAddress, 200),
+          paymentEmail: paymentEmail || settings.paymentEmail,
+          balanceDue: cleanText(body.balanceDue, 200)
+        });
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus() });
+      }
+
+      case "previewEmail":
+      case "sendEmail": {
+        const id = cleanText(body.id, 80);
+        const type = body.type;
+        const build = EMAIL_TYPES[type];
+        if (!build) return jsonResponse(400, { message: "Unknown email." });
+        const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
+        if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
+        const hasTime = (inquiry.bookedDate || inquiry.dateISO) && (Number.isInteger(inquiry.bookedStart) || Number.isInteger(inquiry.startMin));
+        if (type === "feeRequest" && !hasTime) {
+          return jsonResponse(400, { message: "Add a date and start time first (Mark booked), so the email shows the confirmed time." });
+        }
+        if (type === "confirmation" && !(inquiry.booked && inquiry.bookedDate && inquiry.depositReceived)) {
+          return jsonResponse(400, { message: "Mark the session booked and its reservation fee received before sending the confirmation." });
+        }
+        const settings = await readSettings();
+        const mail = build(emailDetails(inquiry, settings));
+        if (body.action === "previewEmail") {
+          return jsonResponse(200, { to: inquiry.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
+        }
+        if (!(await mailReady())) return jsonResponse(503, { message: "Email sending isn’t set up yet. Add GMAIL_USER and GMAIL_APP_PASSWORD in Netlify first." });
+        try {
+          await sendMail({ to: inquiry.email, ...mail });
+        } catch (error) {
+          console.error("Client email failed.", error);
+          const reason = String(error.message || error).slice(0, 160);
+          logEmail(inquiry, { type, to: inquiry.email, subject: mail.subject, error: reason });
+          await inquiries.setJSON(id, inquiry);
+          return jsonResponse(502, { message: `The email couldn’t be sent: ${reason}` });
+        }
+        logEmail(inquiry, { type, to: inquiry.email, subject: mail.subject });
+        await inquiries.setJSON(id, inquiry);
+        return jsonResponse(200, { inquiry });
       }
 
       case "saveSettings": {
@@ -128,20 +181,32 @@ export default async function handler(request) {
         if (!isISODate(date) || !isMinute(start) || !isMinute(end) || end <= start) {
           return jsonResponse(400, { message: "Enter a date and opening hours, with the end after the start." });
         }
-        // First edit turns the automatic weekend list into an editable list.
-        const days = Array.isArray(settings.days) ? [...settings.days] : sessionDays(settings);
+        const days = Array.isArray(settings.days) ? [...settings.days] : [];
         const i = days.findIndex((d) => d.date === date);
         const day = { date, start, end, status };
         if (i >= 0) days[i] = day; else days.push(day);
+        settings.hiddenDays = (settings.hiddenDays || []).filter((d) => d !== date);
         settings.days = days.sort((a, b) => a.date.localeCompare(b.date));
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveAutoDays": {
+        const settings = await readSettings();
+        if (body.seasonEnd !== undefined) {
+          if (!isISODate(body.seasonEnd)) return jsonResponse(400, { message: "Enter the last day of the season." });
+          settings.seasonEnd = body.seasonEnd;
+        }
+        if (body.autoWeekends !== undefined) settings.autoWeekends = Boolean(body.autoWeekends);
+        if (body.restoreHidden) settings.hiddenDays = [];
         await writeSettings(settings);
         return jsonResponse(200, { settings, days: sessionDays(settings) });
       }
 
       case "removeDay": {
         const settings = await readSettings();
-        const days = Array.isArray(settings.days) ? settings.days : sessionDays(settings);
-        settings.days = days.filter((d) => d.date !== body.date);
+        settings.days = (Array.isArray(settings.days) ? settings.days : []).filter((d) => d.date !== body.date);
+        if (isISODate(body.date)) settings.hiddenDays = [...new Set([...(settings.hiddenDays || []), body.date])];
         await writeSettings(settings);
         return jsonResponse(200, { settings, days: sessionDays(settings) });
       }
