@@ -18,7 +18,11 @@ import {
   packageIdFromName,
   passwordMatches,
   readSchedule,
+  readSettings,
   scheduleStore,
+  sessionDays,
+  eventsStore,
+  writeSettings,
   vancouverToday
 } from "../lib/referrals.mjs";
 
@@ -89,6 +93,204 @@ export default async function handler(request) {
         });
       }
 
+      case "getSettings": {
+        const settings = await readSettings();
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveSettings": {
+        const settings = await readSettings();
+        const buffer = Number(body.bufferMinutes);
+        const deposit = Number(body.depositPercent);
+        if (!Number.isInteger(buffer) || buffer < 0 || buffer > 60) {
+          return jsonResponse(400, { message: "Buffer must be 0–60 minutes." });
+        }
+        if (!Number.isFinite(deposit) || deposit < 0 || deposit > 100) {
+          return jsonResponse(400, { message: "Deposit must be 0–100%." });
+        }
+        const durations = { ...settings.durations };
+        for (const id of Object.keys(PACKAGE_PRICES)) {
+          const v = Number(body.durations?.[id]);
+          if (body.durations?.[id] !== undefined) {
+            if (!Number.isInteger(v) || v < 5 || v > 240) return jsonResponse(400, { message: "Session lengths must be 5–240 minutes." });
+            durations[id] = v;
+          }
+        }
+        Object.assign(settings, { bufferMinutes: buffer, depositPercent: deposit, durations });
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "saveDay": {
+        const settings = await readSettings();
+        const { date, start, end } = body;
+        const status = body.status === "secured" ? "secured" : "pending";
+        if (!isISODate(date) || !isMinute(start) || !isMinute(end) || end <= start) {
+          return jsonResponse(400, { message: "Enter a date and opening hours, with the end after the start." });
+        }
+        // First edit turns the automatic weekend list into an editable list.
+        const days = Array.isArray(settings.days) ? [...settings.days] : sessionDays(settings);
+        const i = days.findIndex((d) => d.date === date);
+        const day = { date, start, end, status };
+        if (i >= 0) days[i] = day; else days.push(day);
+        settings.days = days.sort((a, b) => a.date.localeCompare(b.date));
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "removeDay": {
+        const settings = await readSettings();
+        const days = Array.isArray(settings.days) ? settings.days : sessionDays(settings);
+        settings.days = days.filter((d) => d.date !== body.date);
+        await writeSettings(settings);
+        return jsonResponse(200, { settings, days: sessionDays(settings) });
+      }
+
+      case "analytics": {
+        const span = Math.min(Math.max(Number(body.days) || 14, 1), 90);
+        const includePreview = Boolean(body.includePreview);
+        const isLive = (ctx) => includePreview || !ctx || ctx === "production" || ctx === "unknown";
+        const sourceKey = (utm) => [utm?.source, utm?.campaign].filter(Boolean).join(" / ") || "direct / unknown";
+        const store = await eventsStore();
+        const today = vancouverToday();
+        const dates = [];
+        for (let n = 0; n < span; n++) {
+          const d = new Date(`${today}T12:00:00Z`);
+          d.setUTCDate(d.getUTCDate() - n);
+          dates.push(d.toISOString().slice(0, 10));
+        }
+        const since = dates[dates.length - 1];
+        const keys = [];
+        for (const d of dates) keys.push(...(await store.list({ prefix: `${d}/` })).blobs.map((b) => b.key));
+        const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" }))))
+          .filter(Boolean)
+          .filter((ev) => includePreview || ev.ctx === "production");
+
+        const sets = {};                 // event -> Set(session)
+        const bySource = {};             // source -> { visitors:Set, requests, confirmed, revenue }
+        const pkgPicks = {};             // pkg -> unique sessions that picked it
+        const src = (k) => (bySource[k] ||= { visitors: new Set(), clicks: new Set(), starts: new Set(), requests: 0, confirmed: 0, revenue: 0 });
+        for (const ev of events) {
+          (sets[ev.e] ||= new Set()).add(ev.s);
+          const k = sourceKey(ev.utm);
+          if (ev.e === "landing_view" || ev.e === "booking_view") src(k).visitors.add(ev.s);
+          if (ev.e === "cta_click") src(k).clicks.add(ev.s);
+          if (ev.e === "form_start") src(k).starts.add(ev.s);
+          if (ev.e === "package_select" && ev.pkg) (pkgPicks[ev.pkg] ||= new Set()).add(ev.s);
+        }
+        // Funnel is cumulative: anyone who reached a later step also passed the earlier ones
+        // (e.g. a hero date link skips "chose a date").
+        const order = ["booking_view", "package_select", "date_select", "time_select", "form_start", "form_submit"];
+        for (let i = order.length - 2; i >= 0; i--) {
+          const later = sets[order[i + 1]];
+          if (later) sets[order[i]] = new Set([...(sets[order[i]] || []), ...later]);
+        }
+        const u = (e) => sets[e]?.size || 0;
+
+        // Requests and bookings come from the inquiries themselves, not page events.
+        const inqKeys = (await inquiries.list()).blobs.map((b) => b.key);
+        const allInq = (await Promise.all(inqKeys.map((k) => inquiries.get(k, { type: "json" })))).filter(Boolean)
+          .filter((i) => isLive(i.ctx));
+        const periodInq = allInq.filter((i) => (i.createdAt || "").slice(0, 10) >= since);
+        const pkgRequests = {};
+        const pkgBooked = {};
+        for (const i of periodInq) {
+          const k = sourceKey(i.utm);
+          const pid = i.packageId || packageIdFromName(i.package) || "other";
+          src(k).requests += 1;
+          pkgRequests[pid] = (pkgRequests[pid] || 0) + 1;
+          if (i.booked && i.bookedDate) {
+            src(k).confirmed += 1;
+            src(k).revenue += Number(i.finalPrice ?? i.price) || 0;
+            pkgBooked[pid] = (pkgBooked[pid] || 0) + 1;
+          }
+        }
+
+        const settings = await readSettings();
+        const spend = settings.adSpend || {};
+        for (const k of Object.keys(spend)) src(k);
+        const sources = Object.fromEntries(Object.entries(bySource).map(([k, v]) => {
+          const adSpend = Number(spend[k]) || 0;
+          return [k, {
+            visitors: v.visitors.size,
+            reserveClicks: v.clicks.size,
+            formStarts: v.starts.size,
+            requests: v.requests,
+            confirmed: v.confirmed,
+            revenue: Math.round(v.revenue * 100) / 100,
+            adSpend,
+            cac: v.confirmed ? Math.round((adSpend / v.confirmed) * 100) / 100 : null
+          }];
+        }));
+
+        const visitors = new Set([...(sets.landing_view || []), ...(sets.booking_view || [])]).size;
+        const requests = periodInq.length;
+        const confirmed = periodInq.filter((i) => i.booked && i.bookedDate).length;
+        const totalSpend = Object.values(spend).reduce((t, n) => t + (Number(n) || 0), 0);
+        return jsonResponse(200, {
+          span,
+          since,
+          visitors,
+          landingVisitors: u("landing_view"),
+          funnel: [
+            ["Visited the campaign", visitors],
+            ["Opened booking", u("booking_view")],
+            ["Chose an experience", u("package_select")],
+            ["Chose a date", u("date_select")],
+            ["Chose a time", u("time_select")],
+            ["Started their details", u("form_start")],
+            ["Sent a request", u("form_submit")]
+          ],
+          instagramClicks: u("instagram_click"),
+          requests,
+          confirmed,
+          conversion: visitors ? Math.round((requests / visitors) * 1000) / 10 : null,
+          bookingConversion: visitors ? Math.round((confirmed / visitors) * 1000) / 10 : null,
+          packages: Object.fromEntries(Object.keys(PACKAGE_PRICES).map((id) => [id, {
+            name: PACKAGE_PRICES[id].name,
+            picked: pkgPicks[id]?.size || 0,
+            requests: pkgRequests[id] || 0,
+            booked: pkgBooked[id] || 0
+          }])),
+          sources,
+          totalSpend,
+          revenue: Math.round(periodInq.filter((i) => i.booked && i.bookedDate).reduce((t, i) => t + (Number(i.finalPrice ?? i.price) || 0), 0) * 100) / 100,
+          cac: confirmed ? Math.round((totalSpend / confirmed) * 100) / 100 : null
+        });
+      }
+
+      case "saveAdSpend": {
+        const settings = await readSettings();
+        const key = cleanText(body.key, 120);
+        if (!key) return jsonResponse(400, { message: "Enter the source / campaign this spend belongs to." });
+        const amount = Number(body.amount);
+        const adSpend = { ...(settings.adSpend || {}) };
+        if (body.amount === null || body.amount === "" || amount === 0) delete adSpend[key];
+        else if (!Number.isFinite(amount) || amount < 0 || amount > 100000) return jsonResponse(400, { message: "Enter an amount in dollars." });
+        else adSpend[key] = Math.round(amount * 100) / 100;
+        settings.adSpend = adSpend;
+        await writeSettings(settings);
+        return jsonResponse(200, { adSpend });
+      }
+
+      case "setDeposit": {
+        const id = cleanText(body.id, 80);
+        const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
+        if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
+        const received = Boolean(body.received);
+        const amount = body.amount === undefined || body.amount === null || body.amount === "" ? null : Number(body.amount);
+        if (amount !== null && (!Number.isFinite(amount) || amount < 0 || amount > 10000)) {
+          return jsonResponse(400, { message: "Enter the deposit amount in dollars." });
+        }
+        Object.assign(inquiry, {
+          depositReceived: received,
+          depositAmount: amount ?? inquiry.depositAmount ?? null,
+          depositUpdatedAt: new Date().toISOString()
+        });
+        await inquiries.setJSON(id, inquiry);
+        return jsonResponse(200, { inquiry });
+      }
+
       case "saveCode": {
         const code = normalizeCode(body.code);
         const partner = cleanText(body.partner, 80);
@@ -144,16 +346,17 @@ export default async function handler(request) {
           return jsonResponse(400, { message: "Enter the date and start time you agreed with the client." });
         }
         const pkgId = inquiry.packageId || packageIdFromName(inquiry.package);
-        const minutes = PACKAGE_PRICES[pkgId]?.minutes;
+        const settings = await readSettings();
+        const minutes = settings.durations[pkgId] || PACKAGE_PRICES[pkgId]?.minutes;
         if (!minutes) return jsonResponse(400, { message: "Unknown package length for this inquiry." });
         const end = start + minutes;
         if (end > 1440) return jsonResponse(400, { message: "That session would run past midnight." });
 
         const sameDay = (await readSchedule()).filter((e) => e.date === date);
-        const clash = clashes(sameDay, start, end, id);
+        const clash = clashes(sameDay, start, end, id, settings.bufferMinutes);
         if (clash) {
           return jsonResponse(409, {
-            message: `That overlaps ${clash.label || "another booking"} (${formatMinutes(clash.start)}–${formatMinutes(clash.end)}) including your ${BREAK_MINUTES}-minute break.`
+            message: `That overlaps ${clash.label || "another booking"} (${formatMinutes(clash.start)}–${formatMinutes(clash.end)}) including your ${settings.bufferMinutes}-minute buffer.`
           });
         }
 

@@ -81,6 +81,13 @@
       .slot:last-child { border-bottom: 0; }
       .slot .kind { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
       .slot.block { background: #f1ebe2; }
+      .sub { margin: 26px 0 10px; font-family: var(--sans); font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+      .spend-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 12px; }
+      .spend-form label { min-width: 220px; }
+      .stat small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+      .pos { color: var(--green); }
+      .neg { color: var(--red); }
+      .deposit { display: block; margin-top: 6px; font-size: 13px; }
       [hidden] { display: none !important; }
       @media (max-width: 760px) {
         .new-code { grid-template-columns: 1fr 1fr; }
@@ -110,6 +117,75 @@
       </form>
 
       <div id="app" hidden>
+        <section>
+          <h2>Christmas campaign</h2>
+          <div class="filter">
+            <label>Period
+              <select id="an-days">
+                <option value="7">Last 7 days</option>
+                <option value="14" selected>Last 14 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" id="an-preview" /> Include preview/test visits</label>
+            <button class="btn ghost small" type="button" id="an-self"></button>
+          </div>
+          <div class="stats" id="an-stats"><p class="muted">Loading…</p></div>
+
+          <h3 class="sub">Where people drop off</h3>
+          <div class="table-wrap"><table><thead><tr><th>Step</th><th>People</th><th>Of previous step</th><th>Dropped here</th></tr></thead><tbody id="an-funnel"></tbody></table></div>
+
+          <h3 class="sub">Experiences</h3>
+          <div class="table-wrap"><table><thead><tr><th>Experience</th><th>Chosen</th><th>Requests</th><th>Booked</th></tr></thead><tbody id="an-packages"></tbody></table></div>
+
+          <h3 class="sub">Advertising sources</h3>
+          <div class="table-wrap"><table><thead><tr><th>Source / campaign</th><th>Visitors</th><th>Requests</th><th>Booked</th><th>Revenue</th><th>Ad spend</th><th>Cost per booking</th><th>After ad spend</th></tr></thead><tbody id="an-sources"></tbody></table></div>
+          <form class="spend-form" id="spend-form">
+            <label>Source / campaign<input id="sp-key" list="sp-keys" placeholder="instagram / christmas" required /></label>
+            <datalist id="sp-keys"></datalist>
+            <label>Total spent ($)<input id="sp-amount" type="number" min="0" step="0.01" required /></label>
+            <button class="btn small" type="submit">Save ad spend</button>
+          </form>
+          <p class="message" id="spend-message" role="status"></p>
+          <p class="muted" style="font-size:13px">Counted without cookies or personal data, and only on the live site unless you include previews. <b>Requests</b> are booking forms sent; <b>booked</b> means sessions you marked as booked. Revenue uses each booked client’s price after discount. Tag ad links like <code>?utm_source=instagram&amp;utm_campaign=christmas</code> so each ad gets its own row, and enter its spend with the same name.</p>
+        </section>
+
+        <section>
+          <h2>Studio days &amp; earnings</h2>
+          <div class="stats" id="money-stats"></div>
+          <p class="muted">Clients can only pick times on these days, inside these hours. <strong>Pending</strong> days aren’t rented yet: clients can still send requests, and the request says the studio is waiting on confirmation. Marking a day <strong>Secured</strong> counts its rental cost.</p>
+          <form class="block-form" id="day-form">
+            <label>Date<input type="date" id="dy-date" required /></label>
+            <label>Opens<input type="time" id="dy-from" value="10:00" required /></label>
+            <label>Closes<input type="time" id="dy-to" value="14:00" required /></label>
+            <label>Studio
+              <select id="dy-status"><option value="pending">Pending</option><option value="secured">Secured</option></select>
+            </label>
+            <span class="note muted" style="font-size:13px">Saving a date that already exists updates it.</span>
+            <button class="btn red" type="submit">Save day</button>
+          </form>
+          <p class="message" id="day-message" role="status"></p>
+          <h3 class="sub">Secured studio dates</h3>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Rented hours</th><th>Booked</th><th>Booked revenue</th><th>Studio rental</th><th>After rental</th><th></th></tr></thead><tbody id="days-secured"></tbody></table></div>
+          <h3 class="sub">Pending (not rented yet)</h3>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Planned hours</th><th>Requests for this day</th><th>Rental if secured</th><th></th></tr></thead><tbody id="days-pending"></tbody></table></div>
+          <p class="muted" style="font-size:13px" id="days-note"></p>
+        </section>
+
+        <section>
+          <h2>Booking settings</h2>
+          <form class="new-code" id="settings-form" style="grid-template-columns: repeat(5, minmax(0,1fr)) auto">
+            <label>Buffer between sessions (min)<input id="st-buffer" type="number" min="0" max="60" step="1" required /></label>
+            <label>Deposit %<input id="st-deposit" type="number" min="0" max="100" step="1" required /></label>
+            <label>Keepsake length (min)<input id="st-quick" type="number" min="5" max="240" step="5" required /></label>
+            <label>Story length (min)<input id="st-mini" type="number" min="5" max="240" step="5" required /></label>
+            <label>Heirloom length (min)<input id="st-extended" type="number" min="5" max="240" step="5" required /></label>
+            <button class="btn red" type="submit">Save</button>
+          </form>
+          <p class="message" id="settings-message" role="status"></p>
+        </section>
+
         <section>
           <h2>Inquiries</h2>
           <div class="stats" id="stats"></div>
@@ -209,7 +285,7 @@
       let data = { codes: [], inquiries: [] };
 
       const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-      const money = (n) => `$${Number.isInteger(n) ? n : Number(n).toFixed(2)}`;
+      const money = (n) => { n = Number(n) || 0; const a = Math.abs(n); return `${n < 0 ? "−" : ""}$${Number.isInteger(a) ? a : a.toFixed(2)}`; };
       const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
       const fromHHMM = (v) => { const [h, m] = String(v).split(":").map(Number); return Number.isInteger(h) && Number.isInteger(m) ? h * 60 + m : null; };
       const clock = (m) => { if (m >= 1440) return "midnight"; const h = Math.floor(m / 60), mm = m % 60; return `${h % 12 === 0 ? 12 : h % 12}:${String(mm).padStart(2, "0")} ${h >= 12 ? "p.m." : "a.m."}`; };
@@ -239,12 +315,124 @@
         $("login").hidden = false;
       }
 
+      let settingsData = null;
+      const STUDIO_RATE = 125; // $ per studio hour
+
       async function load() {
         data = await api({ action: "list" });
         $("login").hidden = true;
         $("app").hidden = false;
         $("sign-out").hidden = false;
+        settingsData = await api({ action: "getSettings" });
         render();
+        loadAnalytics();
+      }
+
+      const inquiryById = (id) => data.inquiries.find((i) => i.id === id);
+      const priceOf = (i) => Number(i?.finalPrice ?? i?.price) || 0;
+
+      function renderSettings() {
+        if (!settingsData) return;
+        const s = settingsData.settings;
+        $("st-buffer").value = s.bufferMinutes;
+        $("st-deposit").value = s.depositPercent;
+        $("st-quick").value = s.durations.quick;
+        $("st-mini").value = s.durations.mini;
+        $("st-extended").value = s.durations.extended;
+
+        const sessions = (data.schedule || []).filter((e) => e.kind === "session");
+        const rows = settingsData.days.map((d) => {
+          const booked = sessions.filter((e) => e.date === d.date);
+          const revenue = booked.reduce((t, e) => t + priceOf(inquiryById(e.id)), 0);
+          const hours = (d.end - d.start) / 60;
+          const rent = hours * STUDIO_RATE;
+          const requests = data.inquiries.filter((i) => i.dateISO === d.date && !i.booked).length;
+          return { d, booked, revenue, hours, rent, requests };
+        });
+        const actions = (d) => `<div class="actions">
+            <button class="btn ghost small" data-act="day-toggle" data-date="${d.date}">${d.status === "secured" ? "Mark pending" : "Mark secured"}</button>
+            <button class="linkish" data-act="day-remove" data-date="${d.date}">Remove</button></div>`;
+        const secured = rows.filter((r) => r.d.status === "secured");
+        const pending = rows.filter((r) => r.d.status !== "secured");
+        $("days-secured").innerHTML = secured.length ? secured.map((r) => `<tr>
+            <td>${esc(dayLabel(r.d.date))}</td>
+            <td>${clock(r.d.start)} – ${clock(r.d.end)} <span class="muted">(${r.hours} h)</span></td>
+            <td>${r.booked.length ? `${r.booked.length} · ${r.booked.reduce((t, e) => t + e.end - e.start, 0)} min` : '<span class="muted">—</span>'}</td>
+            <td>${money(r.revenue)}</td>
+            <td>${money(r.rent)}</td>
+            <td class="${r.revenue - r.rent >= 0 ? "pos" : "neg"}">${money(r.revenue - r.rent)}</td>
+            <td>${actions(r.d)}</td></tr>`).join("")
+          : '<tr><td colspan="7" class="muted">No secured days yet. Mark a day secured once you’ve rented the studio.</td></tr>';
+        $("days-pending").innerHTML = pending.length ? pending.map((r) => `<tr>
+            <td>${esc(dayLabel(r.d.date))}</td>
+            <td>${clock(r.d.start)} – ${clock(r.d.end)} <span class="muted">(${r.hours} h)</span></td>
+            <td>${r.requests || '<span class="muted">0</span>'}${r.booked.length ? ` · <b>${r.booked.length} booked</b>` : ""}</td>
+            <td>${money(r.rent)}</td>
+            <td>${actions(r.d)}</td></tr>`).join("")
+          : '<tr><td colspan="5" class="muted">No pending days.</td></tr>';
+        $("days-note").textContent = Array.isArray(s.days)
+          ? ""
+          : "These are the automatic weekend days (all pending). Saving or removing any day turns this into your own list.";
+
+        // Money summary (upcoming)
+        const bookedInq = data.inquiries.filter((i) => i.booked && i.bookedDate);
+        const confirmedRevenue = bookedInq.reduce((t, i) => t + priceOf(i), 0);
+        const rentSecured = secured.reduce((t, r) => t + r.rent, 0);
+        const depositsIn = bookedInq.filter((i) => i.depositReceived).reduce((t, i) => t + (Number(i.depositAmount) || 0), 0);
+        const depositDue = (i) => Math.round(priceOf(i) * s.depositPercent) / 100;
+        const outstanding = bookedInq.filter((i) => !i.depositReceived);
+        const stat = (n, label, note) => `<div class="stat"><b>${n}</b>${label}${note ? `<small>${note}</small>` : ""}</div>`;
+        $("money-stats").innerHTML =
+          stat(money(confirmedRevenue), "Confirmed revenue", `${bookedInq.length} booked session${bookedInq.length === 1 ? "" : "s"}`) +
+          stat(money(rentSecured), "Studio rental", `${secured.reduce((t, r) => t + r.hours, 0)} secured hours × $${STUDIO_RATE}`) +
+          `<div class="stat"><b class="${confirmedRevenue - rentSecured >= 0 ? "pos" : "neg"}">${money(confirmedRevenue - rentSecured)}</b>After rental<small>projected from confirmed bookings</small></div>` +
+          stat(money(depositsIn), "Deposits received") +
+          stat(money(outstanding.reduce((t, i) => t + depositDue(i), 0)), "Deposits outstanding", `${outstanding.length} booking${outstanding.length === 1 ? "" : "s"} without a deposit`);
+      }
+
+      const SELF_KEY = "zs_internal";
+      const isSelf = () => { try { return localStorage.getItem(SELF_KEY) === "1"; } catch { return false; } };
+      function renderSelf() {
+        $("an-self").textContent = isSelf() ? "This device isn’t counted ✓ (undo)" : "Don’t count my visits on this device";
+      }
+
+      async function loadAnalytics() {
+        renderSelf();
+        try {
+          const a = await api({ action: "analytics", days: Number($("an-days").value), includePreview: $("an-preview").checked });
+          const pct = (n) => (n === null || n === undefined ? "—" : `${n}%`);
+          const stat = (n, label, note) => `<div class="stat"><b>${n}</b>${label}${note ? `<small>${note}</small>` : ""}</div>`;
+          $("an-stats").innerHTML =
+            stat(a.visitors, "Visitors", `${a.landingVisitors} saw the landing page`) +
+            stat(a.requests, "Reservation requests", `${pct(a.conversion)} of visitors`) +
+            stat(a.confirmed, "Confirmed bookings", `${pct(a.bookingConversion)} of visitors`) +
+            stat(money(a.revenue), "Revenue from bookings") +
+            stat(money(a.totalSpend), "Ad spend", "entered by you") +
+            stat(a.cac === null ? "—" : money(a.cac), "Cost per booking", a.confirmed ? "" : "needs a confirmed booking");
+
+          let prev = null;
+          $("an-funnel").innerHTML = a.funnel.map(([label, n]) => {
+            const of = prev ? (prev ? Math.round((n / prev) * 100) : 0) : null;
+            const lost = prev !== null ? Math.max(prev - n, 0) : null;
+            const row = `<tr><td>${esc(label)}</td><td>${n}</td><td>${of === null ? "—" : `${of}%`}</td><td>${lost === null ? "—" : lost ? `<span class="neg">${lost}</span>` : "0"}</td></tr>`;
+            prev = n;
+            return row;
+          }).join("");
+
+          $("an-packages").innerHTML = Object.values(a.packages).map((p) =>
+            `<tr><td>${esc(p.name)}</td><td>${p.picked}</td><td>${p.requests}</td><td>${p.booked}</td></tr>`).join("");
+
+          const rows = Object.entries(a.sources).sort((x, y) => y[1].visitors - x[1].visitors);
+          $("an-sources").innerHTML = rows.length
+            ? rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${v.visitors}</td><td>${v.requests}</td><td>${v.confirmed}</td><td>${money(v.revenue)}</td>
+                <td>${v.adSpend ? money(v.adSpend) : '<span class="muted">—</span>'}</td>
+                <td>${v.cac === null ? '<span class="muted">—</span>' : money(v.cac)}</td>
+                <td class="${v.revenue - v.adSpend >= 0 ? "pos" : "neg"}">${money(v.revenue - v.adSpend)}</td></tr>`).join("")
+            : '<tr><td colspan="8" class="muted">No visits recorded in this period yet.</td></tr>';
+          $("sp-keys").innerHTML = rows.map(([k]) => `<option value="${esc(k)}"></option>`).join("");
+        } catch (error) {
+          $("an-stats").innerHTML = `<p class="message bad">${esc(error.message)}</p>`;
+        }
       }
 
       function render() {
@@ -300,9 +488,9 @@
               <td>${when(i.createdAt)}</td>
               <td>${esc(i.name)}<br><span class="muted">${esc(i.email)}${i.phone ? " · " + esc(i.phone) : ""}</span></td>
               <td>${esc(i.package)}</td>
-              <td>${esc(i.date)}<br><span class="muted">${esc(i.time)}</span></td>
+              <td>${esc(i.date)}<br><span class="muted">${esc(i.time)}${i.dayStatus === "pending" ? " · studio pending" : ""}</span>${i.notes ? `<br><span class="muted" title="${esc(i.notes)}">“${esc(i.notes.slice(0, 60))}${i.notes.length > 60 ? "…" : ""}”</span>` : ""}</td>
               <td>${i.code ? `<span class="code">${esc(i.code)}</span><br><span class="muted">${esc(i.partner)}</span>` : '<span class="muted">—</span>'}</td>
-              <td>${i.heardFrom ? esc(i.heardFrom) : '<span class="muted">—</span>'}</td>
+              <td>${i.heardFrom ? esc(i.heardFrom) : i.utm?.source ? esc([i.utm.source, i.utm.campaign].filter(Boolean).join(" · ")) : '<span class="muted">—</span>'}</td>
               <td>${i.finalPrice !== i.price ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> ${esc(i.discountLabel || `${i.percent}% off`)}</span>` : money(i.price)}</td>
               <td>${bookingCell(i)}</td>
               <td><button class="linkish" data-act="remove" data-id="${esc(i.id)}">Remove</button></td>
@@ -310,12 +498,17 @@
           : '<tr><td colspan="9" class="muted">Nothing here.</td></tr>';
 
         renderSchedule();
+        renderSettings();
       }
 
       function bookingCell(i) {
         if (i.booked && i.bookedDate) {
-          return `<span class="booked-tag">✓ ${esc(dayLabel(i.bookedDate))}<br>${clock(i.bookedStart)}–${clock(i.bookedEnd)}</span><br>
-            <button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo</button>`;
+          const due = Math.round(priceOf(i) * (settingsData?.settings.depositPercent ?? 50)) / 100;
+          const dep = i.depositReceived
+            ? `<span class="deposit pos">Deposit received${i.depositAmount ? ` · ${money(i.depositAmount)}` : ""} · <button class="linkish" data-act="deposit" data-id="${esc(i.id)}" data-received="0">undo</button></span>`
+            : `<span class="deposit neg">Deposit outstanding · ${money(due)}</span><button class="btn small" data-act="deposit" data-id="${esc(i.id)}" data-received="1" data-due="${due}">Deposit received</button>`;
+          return `<span class="booked-tag">✓ ${esc(dayLabel(i.bookedDate))}<br>${clock(i.bookedStart)}–${clock(i.bookedEnd)}</span>
+            ${dep}<br><button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo booking</button>`;
         }
         const date = i.bookedDate || i.dateISO || "";
         const time = Number.isInteger(i.startMin) ? toHHMM(i.startMin) : "";
@@ -454,12 +647,22 @@
               inquiryNote("Enter the date and start time first.", "bad");
               return;
             }
+            const day = settingsData?.days.find((d) => d.date === date);
+            if (day && day.status !== "secured" && !confirm(`The studio for ${dayLabel(date)} is still pending. Mark this session booked anyway?`)) return;
             try {
               await api({ action: "book", id: el.dataset.id, date, start });
               inquiryNote("Booked — that time is now blocked on your booking page.", "ok");
             } catch (error) {
               inquiryNote(error.message, "bad");
               return;
+            }
+          } else if (el.dataset.act === "deposit") {
+            if (el.dataset.received === "1") {
+              const amount = prompt("Deposit amount received ($):", el.dataset.due);
+              if (amount === null) return;
+              await api({ action: "setDeposit", id: el.dataset.id, received: true, amount: Number(amount) });
+            } else {
+              await api({ action: "setDeposit", id: el.dataset.id, received: false });
             }
           } else if (el.dataset.act === "unbook") {
             if (!confirm("Undo this booking? The time will open up again on the booking page.")) return;
@@ -507,6 +710,83 @@
         } catch (error) {
           msg.textContent = error.message;
           msg.className = "message bad";
+        }
+      });
+
+      $("an-days").addEventListener("change", loadAnalytics);
+      $("an-self").addEventListener("click", () => {
+        try { isSelf() ? localStorage.removeItem(SELF_KEY) : localStorage.setItem(SELF_KEY, "1"); } catch {}
+        renderSelf();
+      });
+      $("spend-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          await api({ action: "saveAdSpend", key: $("sp-key").value.trim(), amount: $("sp-amount").value });
+          $("spend-message").textContent = "Saved.";
+          $("spend-message").className = "message ok";
+          event.target.reset();
+          loadAnalytics();
+        } catch (error) {
+          $("spend-message").textContent = error.message;
+          $("spend-message").className = "message bad";
+        }
+      });
+      $("an-preview").addEventListener("change", loadAnalytics);
+
+      $("day-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("day-message");
+        try {
+          settingsData = await api({
+            action: "saveDay",
+            date: $("dy-date").value,
+            start: fromHHMM($("dy-from").value),
+            end: fromHHMM($("dy-to").value),
+            status: $("dy-status").value
+          });
+          msg.textContent = "Saved. The booking page now uses this day.";
+          msg.className = "message ok";
+          renderSettings();
+        } catch (error) {
+          msg.textContent = error.message;
+          msg.className = "message bad";
+        }
+      });
+
+      $("settings-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = $("settings-message");
+        try {
+          settingsData = await api({
+            action: "saveSettings",
+            bufferMinutes: Number($("st-buffer").value),
+            depositPercent: Number($("st-deposit").value),
+            durations: { quick: Number($("st-quick").value), mini: Number($("st-mini").value), extended: Number($("st-extended").value) }
+          });
+          msg.textContent = "Saved. New requests use these settings straight away.";
+          msg.className = "message ok";
+          renderSettings();
+        } catch (error) {
+          msg.textContent = error.message;
+          msg.className = "message bad";
+        }
+      });
+
+      document.addEventListener("click", async (event) => {
+        const el = event.target.closest("[data-act^='day-']");
+        if (!el) return;
+        const d = settingsData?.days.find((x) => x.date === el.dataset.date);
+        if (!d) return;
+        try {
+          if (el.dataset.act === "day-toggle") {
+            settingsData = await api({ action: "saveDay", ...d, status: d.status === "secured" ? "pending" : "secured" });
+          } else if (confirm(`Remove ${dayLabel(d.date)} from the booking page? Existing bookings stay in your schedule.`)) {
+            settingsData = await api({ action: "removeDay", date: d.date });
+          }
+          renderSettings();
+        } catch (error) {
+          $("day-message").textContent = error.message;
+          $("day-message").className = "message bad";
         }
       });
 
