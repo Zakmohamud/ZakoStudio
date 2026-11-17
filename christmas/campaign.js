@@ -2,7 +2,7 @@
    Edit CAMPAIGN below to update details shown on the landing and booking pages. */
 
 window.CAMPAIGN = {
-  instagram: "zakarymaxamed",
+  instagram: "zakostudi0",
   city: "Vancouver",
   fromPrice: 190,
 
