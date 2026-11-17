@@ -466,7 +466,7 @@
               <p>Tiny hands, new beginnings and the magic of celebrating a baby’s first Christmas.</p>
             </div>
             <div class="gallery">
-              <figure class="g-a"><img src="/christmas/img/overhead-family.jpg" srcset="/christmas/img/overhead-family-sm.jpg 800w, /christmas/img/overhead-family-md.jpg 1200w, /christmas/img/overhead-family.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Seen from above: parents lying on a rug either side of their baby in a Santa suit, smiling up at the camera" loading="lazy" /></figure>
+              <figure class="g-a"><img src="/christmas/img/overhead-family-upright.jpg" srcset="/christmas/img/overhead-family-upright-sm.jpg 800w, /christmas/img/overhead-family-upright-md.jpg 1200w, /christmas/img/overhead-family-upright.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Seen from above: parents lying on a rug either side of their baby in a Santa suit, smiling up at the camera" loading="lazy" /></figure>
               <figure class="g-b"><img src="/christmas/img/baby-close-sm.jpg" alt="A baby in a Santa suit and hat held by his parents" loading="lazy" style="object-position: 50% 30%" /></figure>
               <figure class="g-c"><img src="/christmas/img/baby-cookie-sm.jpg" alt="Tiny hands reaching for a Christmas cookie" loading="lazy" /></figure>
               <figure class="g-d"><img src="/christmas/img/baby-and-parents.jpg" srcset="/christmas/img/baby-and-parents-sm.jpg 800w, /christmas/img/baby-and-parents-md.jpg 1200w, /christmas/img/baby-and-parents.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Parents lying on the rug smiling beside their baby" loading="lazy" style="object-position: 50% 45%" /></figure>
@@ -526,7 +526,7 @@
           <div class="experiences" id="experience-list"></div>
           <p class="collection-note" id="collection-note">
             Settings and moments are planned with you before your session and depend on its length. Shorter sessions focus on one or two scenes.
-            A deposit reserves your time once availability is confirmed; the remaining balance is arranged with you directly.
+            A reservation fee reserves your time once availability is confirmed; the remaining balance is arranged with you directly.
           </p>
         </div>
       </section>
@@ -610,7 +610,7 @@
           ["When will we receive our photographs?", C.deliveryTime
             ? `Your edited photographs are delivered ${C.deliveryTime}.`
             : "Your delivery date is confirmed with you when your session is booked."],
-          ["How do we reserve a session?", "Choose your experience, pick an available date and time, and send your request. I’ll confirm availability by email and arrange your deposit. Your session is reserved once the deposit is received."],
+          ["How do we reserve a session?", "Choose your experience, pick an available date and time, and send your request. I’ll confirm availability by email and arrange your reservation fee. Your session is reserved once the reservation fee is received."],
           ["What happens if we need to reschedule?", C.reschedulePolicy
             ? C.reschedulePolicy
             : "Message me as soon as you know and we’ll look at the available dates together. Rescheduling terms are confirmed with you when you book."]
@@ -647,7 +647,7 @@
           if (typeof s.depositPercent !== "number") return;
           document.getElementById("collection-note").textContent =
             `Settings and moments are planned with you before your session and depend on its length; shorter sessions focus on one or two scenes. ` +
-            `A ${s.depositPercent}% deposit reserves your time once availability is confirmed.`;
+            `A ${s.depositPercent}% reservation fee reserves your time once availability is confirmed.`;
         }).catch(() => {
           datesEl.innerHTML = `<a href="/christmas/book/" data-track="cta_click">See available dates</a>`;
         });
