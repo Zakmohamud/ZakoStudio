@@ -87,7 +87,9 @@
       .chip small { font-size: 11px; color: var(--ink-soft); }
       .chip:disabled { cursor: not-allowed; opacity: 0.45; border-style: dashed; background: transparent; }
       .times { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-      .times .chip { min-height: 52px; font-size: 16px; }
+      .times .chip { min-height: 58px; font-size: 17px; }
+      .times .chip small { font-size: 11px; }
+      .fine.legend { margin: -12px 0 24px; }
       .day-note { margin: 14px 0 0; padding: 12px 14px; border-left: 2px solid var(--gold); background: rgba(173, 147, 97, 0.1); font-size: 14px; color: var(--ink); }
       .other-time { margin-top: 16px; }
 
@@ -95,6 +97,7 @@
       .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .fields .full { grid-column: 1 / -1; }
       label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0.04em; }
+      .opt { font-weight: 400; color: var(--ink-soft); }
       input, textarea {
         width: 100%;
         min-height: 52px;
@@ -152,6 +155,7 @@
       .bar .btn { flex: 0 0 auto; min-height: 48px; padding: 0 18px; font-size: 13px; }
 
       .sent { padding: 26px; border: 1px solid var(--forest); background: #fff; }
+      .next-steps { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 8px; }
       .sent .panel-title { color: var(--forest); }
 
       .mobile-summary { display: none; }
@@ -188,7 +192,7 @@
     <header class="masthead">
       <a class="wordmark" href="/christmas/">Zako Studio</a>
       <span class="masthead-issue">The Christmas Collection · 2026</span>
-      <a class="masthead-link" href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Questions?</a>
+      <a class="masthead-link" href="https://ig.me/m/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Questions?</a>
     </header>
 
     <main class="book">
@@ -204,9 +208,14 @@
         </div>
 
         <div class="sent" id="sent" role="status" hidden>
-          <h2 class="panel-title">Thank you, your request has been received.</h2>
-          <p>Your session is <strong>not confirmed yet</strong>. I’ll check availability and email you to confirm your time and arrange your deposit. Your session is reserved once the deposit is received.</p>
-          <p class="fine">Can’t see my email? Check your spam folder, or message me on <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Instagram</a>.</p>
+          <h2 class="panel-title">Request received. Not confirmed yet.</h2>
+          <p>Thank you! Here’s what happens next:</p>
+          <ol class="next-steps">
+            <li><b>I check availability</b> and reply by email to confirm your time.</li>
+            <li><b>You pay the deposit</b> using the details in that email.</li>
+            <li><b>Your session is confirmed</b> once the deposit is received. Only then is the time held for you.</li>
+          </ol>
+          <p class="fine">Can’t see my email? Check your spam folder, or message me on <a href="https://ig.me/m/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Instagram</a>.</p>
           <div class="actions"><a class="text-link" href="/christmas/"><span>Back to the Christmas Collection</span></a></div>
         </div>
 
@@ -237,14 +246,15 @@
             <!-- Step 2 -->
             <section id="step-2" aria-labelledby="t2" hidden>
               <h2 class="panel-title" id="t2">Select a date and time</h2>
-              <p class="panel-sub">Weekend sessions. Times shown are the ones still open for your experience.</p>
-              <div id="date-list"><p class="fine">Loading available dates…</p></div>
+              <p class="panel-sub">Weekend sessions in Vancouver. Only times still open for your experience are shown.</p>
+              <div id="date-list"><p class="fine" role="status">Loading available dates…</p></div>
+              <p class="fine legend">* Studio time on these dates is being finalised. You can still request, and I’ll confirm before any deposit.</p>
               <div id="time-block" hidden>
                 <p class="month" id="time-title">Available times</p>
                 <div class="times" id="time-list" role="group" aria-labelledby="time-title"></div>
                 <p class="day-note" id="day-note"></p>
               </div>
-              <p class="fine other-time">Don’t see a time that works? Choose the closest one and tell me your preference in the next step, or <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">message me</a>.</p>
+              <p class="fine other-time">Don’t see a time that works? Choose the closest one and tell me your preference in the next step, or <a href="https://ig.me/m/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">message me on Instagram</a>.</p>
               <p class="error" id="e2" role="alert" hidden></p>
             </section>
 
@@ -256,7 +266,7 @@
               <div class="fields">
                 <label class="f full" for="name">Full name<input id="name" name="Name" autocomplete="name" required /></label>
                 <label class="f" for="email">Email<input id="email" name="email" type="email" autocomplete="email" inputmode="email" required /></label>
-                <label class="f" for="phone">Phone<input id="phone" name="Phone" type="tel" autocomplete="tel" inputmode="tel" required /></label>
+                <label class="f" for="phone">Phone <span class="opt">(optional)</span><input id="phone" name="Phone" type="tel" autocomplete="tel" inputmode="tel" /></label>
               </div>
               <div style="margin-top:18px">
                 <details class="more">
@@ -323,24 +333,7 @@
         // ---- Times: keep families back to back so each rented studio hour is used well ----
         // Offer the start of the day, and the slots right before/after existing bookings (with the buffer).
         // On an empty day, offer the first few consecutive slots from opening.
-        function openTimes(day, pkg) {
-          const dur = minutesOf(pkg);
-          const buf = sched.bufferMinutes ?? 10;
-          const taken = (sched.busy[day.date] || []).filter(([s, e]) => e > day.start && s < day.end);
-          const fits = (s) => s >= day.start && s + dur <= day.end && !taken.some(([bs, be]) => s < be + buf && bs < s + dur + buf);
-          const cands = new Set();
-          if (!taken.length) {
-            for (let k = 0; k < 3; k++) cands.add(day.start + k * (dur + buf));
-          } else {
-            cands.add(day.start);
-            for (const [bs, be] of taken) {
-              cands.add(be + buf);
-              cands.add(be + buf + dur + buf);
-              cands.add(bs - buf - dur);
-            }
-          }
-          return [...cands].filter(fits).sort((a, b) => a - b);
-        }
+        const openTimes = (day, pkg) => ZS.openTimes(day, sched.busy, minutesOf(pkg), sched.bufferMinutes ?? 10);
 
         // ---- Step 1 ----
         function renderExperiences() {
@@ -377,11 +370,12 @@
             <p class="month">${m}</p>
             <div class="dates" role="group" aria-label="${m}">
               ${days.map((d) => {
-                const full = openTimes(d, state.pkg).length === 0;
+                const n = openTimes(d, state.pkg).length;
+                const full = n === 0;
                 return `<button type="button" class="chip" data-date="${d.date}" aria-pressed="${state.date === d.date}" ${full ? "disabled" : ""}>
                   <span class="dow">${fmt(d.date, { weekday: "short" })}</span>
                   <span class="day">${fmt(d.date, { day: "numeric" })}</span>
-                  ${full ? "<small>Full</small>" : ""}
+                  <small>${full ? "Full" : d.status === "secured" ? `${n} time${n > 1 ? "s" : ""}` : `${n} time${n > 1 ? "s" : ""}*`}</small>
                 </button>`;
               }).join("")}
             </div>`).join("");
@@ -406,7 +400,9 @@
           if (!times.includes(state.start)) state.start = null;
           $("time-title").textContent = `Available times · ${longDate(day.date)}`;
           $("time-list").innerHTML = times.map((m) => `
-            <button type="button" class="chip" data-start="${m}" aria-pressed="${state.start === m}">${clock(m)}</button>`).join("");
+            <button type="button" class="chip" data-start="${m}" aria-pressed="${state.start === m}" aria-label="${clock(m)} to ${clock(m + dur)}">
+              <span>${clock(m)}</span><small>until ${clock(m + dur)}</small>
+            </button>`).join("");
           $("time-list").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => {
             state.start = Number(b.dataset.start);
             ZS.track("time_select", { pkg: state.pkg });
@@ -432,7 +428,7 @@
         }
 
         // ---- Summary (desktop sidebar + mobile bar) ----
-        function render() {
+        let render = function () {
           const p = C.packages[state.pkg];
           const pr = prices();
           const day = state.date && dayOf(state.date);
@@ -461,7 +457,7 @@
             </dl>`;
 
           // mobile bar
-          const labels = { 1: "Continue", 2: "Continue", 3: "Send request" };
+          const labels = { 1: "Continue", 2: "Continue", 3: "Send reservation request" };
           $("bar-text").innerHTML = !p
             ? `<strong>Christmas sessions</strong>from $${C.fromPrice} · Vancouver`
             : `<strong>${p.name} · ${money(pr.total)}</strong>${day ? when : `${minutesOf(state.pkg)} min · choose a date`}`;
@@ -477,6 +473,7 @@
           });
         }
 
+        ;
         const maxStep = () => (!state.pkg ? 1 : state.date && state.start !== null ? 3 : 2);
         const canContinue = () => (state.step === 1 ? !!state.pkg : state.step === 2 ? state.date && state.start !== null : true);
 
@@ -486,7 +483,7 @@
           [1, 2, 3].forEach((i) => ($(`step-${i}`).hidden = i !== n));
           $("back").hidden = n === 1;
           if (n === 2) { renderDates(); renderTimes(); }
-          if (n === 3 && !state.formStarted) { state.formStarted = true; ZS.track("form_start", { pkg: state.pkg }); }
+          if (n === 3 && !state.formStarted) { state.formStarted = true; ZS.track("form_start", {}, true); }
           render();
           const top = document.querySelector(".book-head").getBoundingClientRect().top;
           if (top < -20) window.scrollTo({ top: window.scrollY + top - 10, behavior: "smooth" });
@@ -545,10 +542,10 @@
           e.preventDefault();
           if (state.sending) return;
           hideErr("e3");
-          const req = ["name", "email", "phone"].map($);
+          const req = ["name", "email"].map($);
           const bad = req.find((f) => !f.checkValidity());
           if (bad) {
-            showErr("e3", bad.id === "email" && bad.value ? "Please check your email address." : "Please add your name, email and phone number.");
+            showErr("e3", bad.id === "email" && bad.value ? "Please check your email address." : "Please add your name and email.");
             bad.focus();
             return;
           }
@@ -577,6 +574,7 @@
           $("bar-next").disabled = true;
           $("next").disabled = true;
           ZS.track("form_submit", { pkg: state.pkg });
+          try { sessionStorage.removeItem(SAVE); } catch {}
           try {
             const ctl = new AbortController();
             const t = setTimeout(() => ctl.abort(), 3000);
@@ -606,6 +604,31 @@
           e.target.submit();
         });
 
+        // ---- Keep progress if the page reloads (common in Instagram's browser) ----
+        const SAVE = "zs_booking";
+        const fields = ["name", "email", "phone", "notes", "code"];
+        function save() {
+          try {
+            sessionStorage.setItem(SAVE, JSON.stringify({
+              pkg: state.pkg, date: state.date, start: state.start, step: state.step,
+              f: Object.fromEntries(fields.map((k) => [k, $(k).value]))
+            }));
+          } catch {}
+        }
+        function restore() {
+          try {
+            const v = JSON.parse(sessionStorage.getItem(SAVE) || "null");
+            if (!v) return null;
+            fields.forEach((k) => { if (v.f?.[k]) $(k).value = v.f[k]; });
+            if (v.f?.notes) $("notes").closest("details").open = true;
+            if (v.f?.code) $("code").closest("details").open = true;
+            return v;
+          } catch { return null; }
+        }
+        fields.forEach((k) => $(k).addEventListener("input", save));
+        const _render = render;
+        render = function () { _render(); save(); };
+
         // ---- Start ----
         if (params.get("sent") === "1") {
           $("sent").hidden = false;
@@ -614,17 +637,36 @@
           $("bar").style.display = "none";
           return;
         }
+        const saved = restore();
+        let pendingDate = /^\d{4}-\d{2}-\d{2}$/.test(params.get("date") || "") ? params.get("date") : null;
+        if (saved) {
+          state.pkg = saved.pkg || null;
+          if (!pendingDate) pendingDate = saved.date || null;
+          if (saved.date === pendingDate) state.start = saved.start ?? null;
+        }
         if (C.packages[params.get("package")]) state.pkg = params.get("package");
         renderExperiences();
         go(state.pkg ? 2 : 1);
         ZS.track("booking_view", {}, true);
 
-        fetch("/api/schedule", { headers: { accept: "application/json" } })
-          .then((r) => (r.ok ? r.json() : Promise.reject()))
-          .then((s) => { sched = { ...sched, ...s }; renderExperiences(); renderDates(); renderTimes(); render(); })
-          .catch(() => {
-            $("date-list").innerHTML = `<p class="day-note">Dates couldn’t load just now. Please refresh, or <a href="${ZS.instagramUrl}" target="_blank" rel="noopener">message me on Instagram</a>.</p>`;
-          });
+        function loadSchedule() {
+          $("date-list").innerHTML = `<p class="fine" role="status">Loading available dates…</p>`;
+          fetch("/api/schedule", { headers: { accept: "application/json" } })
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((s) => {
+              sched = { ...sched, ...s, loaded: true };
+              if (pendingDate && dayOf(pendingDate)) state.date = pendingDate;
+              renderExperiences(); renderDates(); renderTimes(); render();
+              if (saved?.step === 3 && state.date && state.start !== null && state.step === 2) go(3);
+            })
+            .catch(() => {
+              $("date-list").innerHTML = `<div class="day-note" role="alert">Available dates couldn’t load just now.
+                <div class="actions" style="margin-top:10px"><button type="button" class="btn btn-ghost" id="retry">Try again</button>
+                <a class="text-link" href="https://ig.me/m/zakarymaxamed" data-track="instagram_click"><span>Message me instead</span></a></div></div>`;
+              $("retry").addEventListener("click", loadSchedule);
+            });
+        }
+        loadSchedule();
       })();
     </script>
   </body>

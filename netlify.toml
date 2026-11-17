@@ -42,3 +42,20 @@
   for = "/christmas/img/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# Private admin pages: never indexed, never framed, never cached, no referrer leaks.
+[[headers]]
+  for = "/referral-admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/christmas-admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"

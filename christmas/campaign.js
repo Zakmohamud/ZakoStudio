@@ -77,8 +77,12 @@ window.CAMPAIGN = {
   }
   const utm = (() => { try { return JSON.parse(get("zs_utm") || "{}"); } catch { return {}; } })();
 
+  // Devices marked "don't count me" on the bookings page are never tracked.
+  const internal = (() => { try { return localStorage.getItem("zs_internal") === "1"; } catch { return false; } })();
+
   const sent = new Set();
   function track(e, extra = {}, once = false) {
+    if (internal) return;
     if (once) {
       const key = `${e}:${extra.pkg || ""}`;
       if (sent.has(key) || get(`zs_once_${key}`)) return;
@@ -100,5 +104,33 @@ window.CAMPAIGN = {
 
   const money = (n) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 
-  window.ZS = { track, utm, sid, money, instagramUrl: `https://instagram.com/${window.CAMPAIGN.instagram}` };
+  // Open start times on a session day, kept next to existing bookings so families are
+  // booked back to back (each rented studio hour is used well). On an empty day the
+  // first few consecutive slots from opening are offered.
+  function openTimes(day, busy, dur, buf) {
+    const taken = (busy[day.date] || []).filter(([s, e]) => e > day.start && s < day.end);
+    const fits = (s) => s >= day.start && s + dur <= day.end && !taken.some(([bs, be]) => s < be + buf && bs < s + dur + buf);
+    const cands = new Set();
+    if (!taken.length) {
+      for (let k = 0; k < 3; k++) cands.add(day.start + k * (dur + buf));
+    } else {
+      cands.add(day.start);
+      for (const [bs, be] of taken) {
+        cands.add(be + buf);
+        cands.add(be + buf + dur + buf);
+        cands.add(bs - buf - dur);
+      }
+    }
+    return [...cands].filter(fits).sort((a, b) => a - b);
+  }
+
+  const clock = (m) => { const h = Math.floor(m / 60), mm = m % 60; return `${h % 12 === 0 ? 12 : h % 12}:${String(mm).padStart(2, "0")} ${h >= 12 ? "p.m." : "a.m."}`; };
+  const fmtDate = (iso, o) => new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", ...o }).format(new Date(`${iso}T12:00:00Z`));
+
+  window.ZS = {
+    track, utm, sid, money, openTimes, clock, fmtDate,
+    instagramUrl: `https://instagram.com/${window.CAMPAIGN.instagram}`,
+    // Opens a direct message in the Instagram app (works inside Instagram's in-app browser too).
+    dmUrl: `https://ig.me/m/${window.CAMPAIGN.instagram}`
+  };
 })();

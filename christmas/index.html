@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="preload" as="image" href="/christmas/img/first-christmas-kiss-sm.jpg" media="(max-width: 760px)" />
+    <link rel="preload" as="image" href="/christmas/img/first-christmas-kiss-md.jpg" imagesrcset="/christmas/img/first-christmas-kiss-sm.jpg 800w, /christmas/img/first-christmas-kiss-md.jpg 1200w" imagesizes="100vw" media="(max-width: 760px)" />
     <link rel="preload" as="image" href="/christmas/img/reading-by-the-fire.jpg" media="(min-width: 761px)" />
     <link rel="stylesheet" href="/christmas/campaign.css" />
     <style>
@@ -48,14 +48,23 @@
 
       .hero .display { margin: 0 0 22px; font-size: clamp(46px, 6.4vw, 96px); }
 
-      .hero .lede { margin-bottom: 30px; }
+      .hero .lede { margin-bottom: 28px; }
+
+      .welcome { margin: 22px 0 0; font-family: var(--serif); font-style: italic; font-size: 19px; color: var(--ink); }
+
+      .hero-foot { display: grid; gap: 16px; }
+
+      .hero-dates { padding-top: 16px; border-top: 1px solid var(--line); }
+      .hero-dates-label { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+      .hero-dates-list { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--serif); font-size: 20px; }
+      .hero-dates-list a { text-decoration: none; border-bottom: 1px solid var(--line-strong); }
+      .hero-dates-list a:hover { border-color: var(--cranberry); color: var(--cranberry); }
+      .hero-dates-list .more { font-family: var(--sans); font-size: 13px; letter-spacing: 0.08em; align-self: center; }
 
       .hero-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; }
 
       .hero-meta {
         margin: 0;
-        padding-top: 18px;
-        border-top: 1px solid var(--line);
         font-size: 13px;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -200,6 +209,16 @@
       .collection-head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 60px); }
       .collection-head .h2 { margin-bottom: 18px; }
 
+      .compare { width: 100%; margin: 0 0 clamp(36px, 5vw, 56px); border-collapse: collapse; table-layout: fixed; }
+      .compare th, .compare td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: baseline; }
+      .compare thead th { padding-top: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(20px, 2.2vw, 28px); border-bottom: 1px solid var(--ink); }
+      .compare tbody th { width: 22%; font-weight: 400; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); }
+      .compare td { font-size: 16px; }
+      .compare tr.price td { font-family: var(--serif); font-size: clamp(22px, 2.2vw, 28px); color: var(--cranberry); }
+      .compare tr.cta td { border-bottom: 0; padding-top: 14px; }
+      .compare tr.cta a { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cranberry); text-decoration: none; border-bottom: 1px solid currentColor; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
       .experiences {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -221,8 +240,7 @@
       .exp-price { font-family: var(--serif); font-size: 26px; color: var(--cranberry); white-space: nowrap; }
       .exp-price small { font-family: var(--sans); font-size: 12px; letter-spacing: 0.1em; color: var(--ink-soft); }
 
-      .exp ul { margin: 0 0 14px; padding: 12px 0 0; list-style: none; border-top: 1px solid var(--line); }
-      .exp li { padding: 4px 0; font-size: 15px; }
+      .exp-facts { margin: 0 0 10px !important; padding-top: 10px; border-top: 1px solid var(--line); color: var(--ink) !important; font-size: 14px !important; letter-spacing: 0.02em; }
       .exp p { margin: 0 0 18px; color: var(--ink-soft); font-size: 15px; }
       .exp .text-link { margin-top: auto; align-self: flex-start; color: var(--cranberry); }
 
@@ -315,11 +333,11 @@
       /* ---------- Mobile ---------- */
       @media (max-width: 760px) {
         .masthead-issue { display: none; }
-        .hero-photo { aspect-ratio: 4 / 3.5; }
+        .hero-photo { aspect-ratio: 4 / 3.1; }
         .hero-photo img { object-position: 50% 30%; }
-        .hero-copy { gap: 22px; padding-top: 26px; padding-bottom: 30px; }
-        .hero-issue { font-size: 10px; letter-spacing: 0.2em; color: var(--gold); }
-        .hero-issue::after { display: none; }
+        .hero-copy { gap: 18px; padding-top: 22px; padding-bottom: 26px; }
+        .hero .lede { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
+        .hero-issue { display: none; }
         .hero .display { font-size: clamp(44px, 12.6vw, 60px); margin-bottom: 16px; }
         .hero .lede { margin-bottom: 22px; }
         .hero-ctas .btn, .closing-copy .btn { width: 100%; font-size: 13px; letter-spacing: 0.08em; padding: 0 16px; }
@@ -329,7 +347,19 @@
         .chapter, .chapter:nth-of-type(even) { grid-template-columns: 1fr; gap: 18px; }
         .chapter:nth-of-type(even) .chapter-text { order: 0; }
 
-        .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 31vw); gap: 6px; }
+        .gallery { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 31vw); gap: 6px; }
+        .gallery .g-d { display: none; }
+        .chapter { padding: 30px 0; }
+        .stories { padding-top: 52px; }
+        .stories-head { margin-bottom: 28px; }
+        .welcome { font-size: 17px; margin-top: 10px; }
+        .hero-dates-list { font-size: 18px; gap: 4px 14px; }
+        .compare th, .compare td { padding: 10px 4px; }
+        .compare thead th { font-size: 17px; line-height: 1.15; }
+        .compare tbody th { width: 24%; font-size: 10px; letter-spacing: 0.1em; }
+        .compare td { font-size: 14px; }
+        .compare tr.price td { font-size: 21px; }
+        .compare tr.cta a { font-size: 10px; letter-spacing: 0.08em; }
         .g-a, .gallery.alt .g-a { grid-column: 1 / 3; grid-row: 1 / 3; }
         .g-b, .gallery.alt .g-b { grid-column: 1 / 2; grid-row: 3 / 4; }
         .g-c, .gallery.alt .g-c { grid-column: 2 / 3; grid-row: 3 / 4; }
@@ -342,7 +372,8 @@
 
         .experiences { grid-template-columns: 1fr; gap: 44px; }
         .experiences .exp:last-child { grid-column: auto; }
-        .exp-photo, .exp:nth-child(2) .exp-photo, .experiences .exp:last-child .exp-photo { aspect-ratio: 4 / 3.4; }
+        .exp-photo, .exp:nth-child(2) .exp-photo, .experiences .exp:last-child .exp-photo { aspect-ratio: 3 / 2; margin-bottom: 14px; }
+        .experiences { gap: 34px; }
 
         .closing-copy { text-align: left; padding-bottom: 48px; }
         .closing-copy .btn { width: 100%; }
@@ -371,13 +402,20 @@
               <a class="btn" href="/christmas/book/" data-track="cta_click">Reserve your Christmas session</a>
               <a class="text-link" href="#stories"><span>Discover the collection</span> <span aria-hidden="true" style="border:0">↓</span></a>
             </div>
+            <p class="welcome">Families, couples, babies and children of all ages are welcome.</p>
           </div>
-          <p class="hero-meta">Vancouver · Christmas 2026 · Sessions from $190</p>
+          <div class="hero-foot">
+            <div class="hero-dates" id="hero-dates" aria-live="polite">
+              <span class="hero-dates-label">Upcoming sessions</span>
+              <span class="hero-dates-list" id="hero-dates-list">Loading dates…</span>
+            </div>
+            <p class="hero-meta">Vancouver · Christmas 2026 · Sessions from $190</p>
+          </div>
         </div>
         <figure class="hero-photo" style="margin:0">
           <picture>
-            <source media="(max-width: 760px)" srcset="/christmas/img/first-christmas-kiss-sm.jpg 800w, /christmas/img/first-christmas-kiss.jpg 1600w" sizes="100vw" />
-            <img src="/christmas/img/reading-by-the-fire.jpg" srcset="/christmas/img/reading-by-the-fire-sm.jpg 800w, /christmas/img/reading-by-the-fire.jpg 1600w" sizes="(max-width: 980px) 100vw, 60vw" alt="A brother and sister reading a storybook together by the fireplace, surrounded by Christmas trees" fetchpriority="high" />
+            <source media="(max-width: 760px)" srcset="/christmas/img/first-christmas-kiss-sm.jpg 800w, /christmas/img/first-christmas-kiss-md.jpg 1200w, /christmas/img/first-christmas-kiss.jpg 1600w" sizes="100vw" />
+            <img src="/christmas/img/reading-by-the-fire.jpg" srcset="/christmas/img/reading-by-the-fire-sm.jpg 800w, /christmas/img/reading-by-the-fire-md.jpg 1200w, /christmas/img/reading-by-the-fire.jpg 1600w" sizes="(max-width: 980px) 100vw, 60vw" alt="A brother and sister reading a storybook together by the fireplace, surrounded by Christmas trees" fetchpriority="high" />
           </picture>
         </figure>
       </section>
@@ -400,10 +438,10 @@
               <p>The magic of childhood. Storybooks, little adventures, laughter and endless imagination.</p>
             </div>
             <div class="gallery">
-              <figure class="g-a"><img src="/christmas/img/storybook.jpg" srcset="/christmas/img/storybook-sm.jpg 800w, /christmas/img/storybook.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A little girl in a white dress lying back with a storybook in a fairy-lit reading nook" loading="lazy" /></figure>
+              <figure class="g-a"><img src="/christmas/img/storybook.jpg" srcset="/christmas/img/storybook-sm.jpg 800w, /christmas/img/storybook-md.jpg 1200w, /christmas/img/storybook.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A little girl in a white dress lying back with a storybook in a fairy-lit reading nook" loading="lazy" /></figure>
               <figure class="g-b"><img src="/christmas/img/rocking-horse-sm.jpg" alt="A boy in a tartan blazer laughing on a rocking horse" loading="lazy" style="object-position: 40% 50%" /></figure>
               <figure class="g-c"><img src="/christmas/img/toy-car-sm.jpg" alt="A girl riding a red vintage toy car" loading="lazy" /></figure>
-              <figure class="g-d"><img src="/christmas/img/cookies-and-cocoa.jpg" srcset="/christmas/img/cookies-and-cocoa-sm.jpg 800w, /christmas/img/cookies-and-cocoa.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Siblings sharing cookies and hot chocolate on a snowy rug" loading="lazy" style="object-position: 50% 60%" /></figure>
+              <figure class="g-d"><img src="/christmas/img/cookies-and-cocoa.jpg" srcset="/christmas/img/cookies-and-cocoa-sm.jpg 800w, /christmas/img/cookies-and-cocoa-md.jpg 1200w, /christmas/img/cookies-and-cocoa.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Siblings sharing cookies and hot chocolate on a snowy rug" loading="lazy" style="object-position: 50% 60%" /></figure>
             </div>
           </article>
 
@@ -414,10 +452,10 @@
               <p>The warmth of family, the closeness of loved ones and the joy of simply being together.</p>
             </div>
             <div class="gallery alt">
-              <figure class="g-a"><img src="/christmas/img/family-hug.jpg" srcset="/christmas/img/family-hug-sm.jpg 800w, /christmas/img/family-hug.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Parents wrapping their son in a hug beside a gold-and-white Christmas tree" loading="lazy" /></figure>
+              <figure class="g-a"><img src="/christmas/img/family-hug.jpg" srcset="/christmas/img/family-hug-sm.jpg 800w, /christmas/img/family-hug-md.jpg 1200w, /christmas/img/family-hug.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Parents wrapping their son in a hug beside a gold-and-white Christmas tree" loading="lazy" /></figure>
               <figure class="g-b"><img src="/christmas/img/couple-laughing-sm.jpg" alt="A couple in evening wear laughing together" loading="lazy" style="object-position: 45% 30%" /></figure>
               <figure class="g-c"><img src="/christmas/img/sibling-kiss-sm.jpg" alt="A little sister kissing her brother on the cheek on the sofa" loading="lazy" /></figure>
-              <figure class="g-d"><img src="/christmas/img/cocoa-mugs.jpg" srcset="/christmas/img/cocoa-mugs-sm.jpg 800w, /christmas/img/cocoa-mugs.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A mother and son holding cocoa mugs and smiling" loading="lazy" style="object-position: 50% 40%" /></figure>
+              <figure class="g-d"><img src="/christmas/img/cocoa-mugs.jpg" srcset="/christmas/img/cocoa-mugs-sm.jpg 800w, /christmas/img/cocoa-mugs-md.jpg 1200w, /christmas/img/cocoa-mugs.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A mother and son holding cocoa mugs and smiling" loading="lazy" style="object-position: 50% 40%" /></figure>
             </div>
           </article>
 
@@ -428,10 +466,10 @@
               <p>Tiny hands, new beginnings and the magic of celebrating a baby’s first Christmas.</p>
             </div>
             <div class="gallery">
-              <figure class="g-a"><img src="/christmas/img/overhead-family.jpg" srcset="/christmas/img/overhead-family-sm.jpg 800w, /christmas/img/overhead-family.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Overhead view of parents lying head to head with their baby in a Santa suit" loading="lazy" /></figure>
+              <figure class="g-a"><img src="/christmas/img/overhead-family.jpg" srcset="/christmas/img/overhead-family-sm.jpg 800w, /christmas/img/overhead-family-md.jpg 1200w, /christmas/img/overhead-family.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="Seen from above: parents lying on a rug either side of their baby in a Santa suit, smiling up at the camera" loading="lazy" /></figure>
               <figure class="g-b"><img src="/christmas/img/baby-close-sm.jpg" alt="A baby in a Santa suit and hat held by his parents" loading="lazy" style="object-position: 50% 30%" /></figure>
               <figure class="g-c"><img src="/christmas/img/baby-cookie-sm.jpg" alt="Tiny hands reaching for a Christmas cookie" loading="lazy" /></figure>
-              <figure class="g-d"><img src="/christmas/img/baby-and-parents.jpg" srcset="/christmas/img/baby-and-parents-sm.jpg 800w, /christmas/img/baby-and-parents.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Parents lying on the rug smiling beside their baby" loading="lazy" style="object-position: 50% 45%" /></figure>
+              <figure class="g-d"><img src="/christmas/img/baby-and-parents.jpg" srcset="/christmas/img/baby-and-parents-sm.jpg 800w, /christmas/img/baby-and-parents-md.jpg 1200w, /christmas/img/baby-and-parents.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="Parents lying on the rug smiling beside their baby" loading="lazy" style="object-position: 50% 45%" /></figure>
             </div>
           </article>
 
@@ -442,10 +480,10 @@
               <p>Matching pyjamas, freshly baked cookies, playful moments and the traditions that become lifelong memories.</p>
             </div>
             <div class="gallery alt">
-              <figure class="g-a"><img src="/christmas/img/christmas-cracker.jpg" srcset="/christmas/img/christmas-cracker-sm.jpg 800w, /christmas/img/christmas-cracker.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A mother and son in pyjamas pulling a Christmas cracker in the kitchen" loading="lazy" /></figure>
+              <figure class="g-a"><img src="/christmas/img/christmas-cracker.jpg" srcset="/christmas/img/christmas-cracker-sm.jpg 800w, /christmas/img/christmas-cracker-md.jpg 1200w, /christmas/img/christmas-cracker.jpg 1600w" sizes="(max-width: 760px) 100vw, 45vw" alt="A mother and son in pyjamas pulling a Christmas cracker in the kitchen" loading="lazy" /></figure>
               <figure class="g-b"><img src="/christmas/img/flour-on-the-nose-sm.jpg" alt="A mother dabbing flour on the dad’s nose while baking with their baby" loading="lazy" style="object-position: 45% 50%" /></figure>
               <figure class="g-c"><img src="/christmas/img/kids-baking-sm.jpg" alt="Siblings in matching pyjamas baking together" loading="lazy" /></figure>
-              <figure class="g-d"><img src="/christmas/img/sifting-flour.jpg" srcset="/christmas/img/sifting-flour-sm.jpg 800w, /christmas/img/sifting-flour.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A boy laughing while sifting flour, his sister beside him" loading="lazy" style="object-position: 50% 35%" /></figure>
+              <figure class="g-d"><img src="/christmas/img/sifting-flour.jpg" srcset="/christmas/img/sifting-flour-sm.jpg 800w, /christmas/img/sifting-flour-md.jpg 1200w, /christmas/img/sifting-flour.jpg 1600w" sizes="(max-width: 760px) 100vw, 60vw" alt="A boy laughing while sifting flour, his sister beside him" loading="lazy" style="object-position: 50% 35%" /></figure>
             </div>
           </article>
         </div>
@@ -466,9 +504,9 @@
             </ul>
           </div>
           <div class="collage">
-            <figure class="c-1"><img src="/christmas/img/reading-siblings.jpg" srcset="/christmas/img/reading-siblings-sm.jpg 800w, /christmas/img/reading-siblings.jpg 1600w" sizes="(max-width: 980px) 70vw, 30vw" alt="A sister reading aloud to her brother by the fire" loading="lazy" /></figure>
+            <figure class="c-1"><img src="/christmas/img/reading-siblings.jpg" srcset="/christmas/img/reading-siblings-sm.jpg 800w, /christmas/img/reading-siblings-md.jpg 1200w, /christmas/img/reading-siblings.jpg 1600w" sizes="(max-width: 980px) 70vw, 30vw" alt="A sister reading aloud to her brother by the fire" loading="lazy" /></figure>
             <figure class="c-2"><img src="/christmas/img/the-gift-sm.jpg" alt="A boy holding a wrapped present beside his mother" loading="lazy" style="object-position: 35% 50%" /></figure>
-            <figure class="c-3"><img src="/christmas/img/candy-canes.jpg" srcset="/christmas/img/candy-canes-sm.jpg 800w, /christmas/img/candy-canes.jpg 1600w" sizes="(max-width: 980px) 70vw, 28vw" alt="Siblings in pyjamas holding candy canes in the Christmas kitchen" loading="lazy" style="object-position: 50% 60%" /></figure>
+            <figure class="c-3"><img src="/christmas/img/candy-canes.jpg" srcset="/christmas/img/candy-canes-sm.jpg 800w, /christmas/img/candy-canes-md.jpg 1200w, /christmas/img/candy-canes.jpg 1600w" sizes="(max-width: 980px) 70vw, 28vw" alt="Siblings in pyjamas holding candy canes in the Christmas kitchen" loading="lazy" style="object-position: 50% 60%" /></figure>
           </div>
         </div>
       </section>
@@ -481,6 +519,10 @@
             <h2 class="h2" id="col-title">Choose how much of <em>your story</em> to tell.</h2>
             <p class="lede">Three ways to spend time with us this Christmas. Every session takes place in our decorated studio in Vancouver.</p>
           </div>
+          <table class="compare" aria-label="The three experiences at a glance">
+            <thead><tr><th scope="col"><span class="sr">Detail</span></th><th scope="col">The Keepsake</th><th scope="col">The Story</th><th scope="col">The Heirloom</th></tr></thead>
+            <tbody id="compare-body"></tbody>
+          </table>
           <div class="experiences" id="experience-list"></div>
           <p class="collection-note" id="collection-note">
             Settings and moments are planned with you before your session and depend on its length. Shorter sessions focus on one or two scenes.
@@ -503,14 +545,14 @@
       <!-- 06 — Closing invitation -->
       <section class="closing" aria-labelledby="close-title">
         <figure class="closing-photo" style="margin:0">
-          <img src="/christmas/img/overhead-kiss.jpg" srcset="/christmas/img/overhead-kiss-sm.jpg 800w, /christmas/img/overhead-kiss.jpg 1600w" sizes="(max-width: 980px) 100vw, 58vw" alt="Parents curled around their baby, kissing his cheeks, seen from above" loading="lazy" />
+          <img src="/christmas/img/overhead-kiss.jpg" srcset="/christmas/img/overhead-kiss-sm.jpg 800w, /christmas/img/overhead-kiss-md.jpg 1200w, /christmas/img/overhead-kiss.jpg 1600w" sizes="(max-width: 980px) 100vw, 58vw" alt="Parents curled around their baby, kissing his cheeks, seen from above" loading="lazy" />
         </figure>
         <div class="closing-copy" id="closing">
           <p class="kicker">Christmas 2026</p>
           <h2 class="h2" id="close-title">One day, these will be <em>the good old days.</em></h2>
           <p class="lede">Make this Christmas a memory you can return to, year after year.</p>
           <div><a class="btn" href="/christmas/book/" data-track="cta_click">Reserve your Christmas session</a></div>
-          <p class="closing-ig">Questions first? <a href="https://instagram.com/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Message me on Instagram</a>.</p>
+          <p class="closing-ig">Questions first? <a href="https://ig.me/m/zakarymaxamed" target="_blank" rel="noopener" data-track="instagram_click">Message me on Instagram</a>.</p>
         </div>
       </section>
     </main>
@@ -535,18 +577,27 @@
         document.getElementById("experience-list").innerHTML = Object.entries(C.packages).map(([id, p], i) => `
           <article class="exp">
             <a class="exp-photo" href="/christmas/book/?package=${id}" data-track="package_select" data-pkg="${id}" tabindex="-1" aria-hidden="true">
-              <img src="${p.photo}.jpg" srcset="${p.photo}-sm.jpg 800w, ${p.photo}.jpg 1600w" sizes="(max-width: 760px) 100vw, (max-width: 980px) 50vw, 33vw" alt="${p.alt}" loading="lazy" />
+              <img src="${p.photo}.jpg" srcset="${p.photo}-sm.jpg 800w, ${p.photo}-md.jpg 1200w, ${p.photo}.jpg 1600w" sizes="(max-width: 760px) 100vw, (max-width: 980px) 50vw, 33vw" alt="${p.alt}" loading="lazy" />
             </a>
             <span class="exp-no">${roman[i]}</span>
             <div class="exp-title"><h3 class="h3">${p.name}</h3><span class="exp-price">$${p.price} <small>CAD</small></span></div>
-            <ul>
-              <li>${p.minutes}-minute photography session</li>
-              <li>${p.images} professionally edited photographs</li>
-              <li>Up to ${p.people} people</li>
-            </ul>
+            <p class="exp-facts">${p.minutes} minutes · ${p.images} edited photographs · up to ${p.people} people</p>
             <p>${p.line}</p>
             <a class="text-link" href="/christmas/book/?package=${id}" data-track="package_select" data-pkg="${id}"><span>Reserve ${p.name}</span> <span aria-hidden="true" style="border:0">→</span></a>
           </article>`).join("");
+
+        // At-a-glance comparison
+        const P = Object.entries(C.packages);
+        const cell = (fn) => P.map(([id, p]) => `<td>${fn(p, id)}</td>`).join("");
+        const renderCompare = (durations = {}) => {
+          document.getElementById("compare-body").innerHTML = `
+            <tr><th scope="row">Session</th>${cell((p, id) => `${durations[id] || p.minutes} min`)}</tr>
+            <tr><th scope="row">Edited photos</th>${cell((p) => p.images)}</tr>
+            <tr><th scope="row">People</th>${cell((p) => `Up to ${p.people}`)}</tr>
+            <tr class="price"><th scope="row">Price</th>${cell((p) => `$${p.price}`)}</tr>
+            <tr class="cta"><th scope="row"><span class="sr">Reserve</span></th>${cell((p, id) => `<a href="/christmas/book/?package=${id}" data-track="package_select" data-pkg="${id}">Reserve</a>`)}</tr>`;
+        };
+        renderCompare();
 
         // FAQ — only states what's confirmed; fill the blanks in campaign.js.
         const faq = [
@@ -582,13 +633,24 @@
         addEventListener("scroll", update, { passive: true });
         update();
 
-        // Deposit wording from the live settings (falls back to the text above).
+        // Live settings: upcoming dates near the hero, deposit wording, session lengths.
+        const datesEl = document.getElementById("hero-dates-list");
         fetch("/api/schedule").then((r) => (r.ok ? r.json() : null)).then((s) => {
-          if (!s || typeof s.depositPercent !== "number") return;
+          if (!s) throw new Error();
+          const shortest = Math.min(...Object.keys(C.packages).map((id) => s.durations?.[id] || C.packages[id].minutes));
+          const open = (s.days || []).filter((d) => ZS.openTimes(d, s.busy || {}, shortest, s.bufferMinutes ?? 10).length);
+          datesEl.innerHTML = open.length
+            ? open.slice(0, 6).map((d) => `<a href="/christmas/book/?date=${d.date}" data-track="cta_click">${ZS.fmtDate(d.date, { weekday: "short", month: "short", day: "numeric" })}</a>`).join("")
+              + (open.length > 6 ? `<a class="more" href="/christmas/book/" data-track="cta_click">+${open.length - 6} more</a>` : "")
+            : `<span>New dates coming soon. <a href="https://ig.me/m/zakarymaxamed" data-track="instagram_click">Ask on Instagram</a></span>`;
+          renderCompare(s.durations || {});
+          if (typeof s.depositPercent !== "number") return;
           document.getElementById("collection-note").textContent =
             `Settings and moments are planned with you before your session and depend on its length; shorter sessions focus on one or two scenes. ` +
             `A ${s.depositPercent}% deposit reserves your time once availability is confirmed.`;
-        }).catch(() => {});
+        }).catch(() => {
+          datesEl.innerHTML = `<a href="/christmas/book/" data-track="cta_click">See available dates</a>`;
+        });
 
         ZS.track("landing_view", {}, true);
       })();

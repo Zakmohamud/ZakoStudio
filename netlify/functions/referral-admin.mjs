@@ -147,8 +147,10 @@ export default async function handler(request) {
       }
 
       case "analytics": {
-        const span = Math.min(Math.max(Number(body.days) || 14, 1), 60);
+        const span = Math.min(Math.max(Number(body.days) || 14, 1), 90);
         const includePreview = Boolean(body.includePreview);
+        const isLive = (ctx) => includePreview || !ctx || ctx === "production" || ctx === "unknown";
+        const sourceKey = (utm) => [utm?.source, utm?.campaign].filter(Boolean).join(" / ") || "direct / unknown";
         const store = await eventsStore();
         const today = vancouverToday();
         const dates = [];
@@ -157,24 +159,136 @@ export default async function handler(request) {
           d.setUTCDate(d.getUTCDate() - n);
           dates.push(d.toISOString().slice(0, 10));
         }
+        const since = dates[dates.length - 1];
         const keys = [];
         for (const d of dates) keys.push(...(await store.list({ prefix: `${d}/` })).blobs.map((b) => b.key));
-        const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" })))).filter(Boolean)
+        const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" }))))
+          .filter(Boolean)
           .filter((ev) => includePreview || ev.ctx === "production");
-        const counts = {};
-        const sessions = {};
-        const sources = {};
+
+        const sets = {};                 // event -> Set(session)
+        const bySource = {};             // source -> { visitors:Set, requests, confirmed, revenue }
+        const pkgPicks = {};             // pkg -> unique sessions that picked it
+        const src = (k) => (bySource[k] ||= { visitors: new Set(), clicks: new Set(), starts: new Set(), requests: 0, confirmed: 0, revenue: 0 });
         for (const ev of events) {
-          counts[ev.e] = (counts[ev.e] || 0) + 1;
-          (sessions[ev.e] ||= new Set()).add(ev.s);
-          const src = [ev.utm?.source, ev.utm?.campaign].filter(Boolean).join(" / ") || "direct / unknown";
-          (sources[src] ||= {});
-          sources[src][ev.e] = (sources[src][ev.e] || 0) + 1;
+          (sets[ev.e] ||= new Set()).add(ev.s);
+          const k = sourceKey(ev.utm);
+          if (ev.e === "landing_view" || ev.e === "booking_view") src(k).visitors.add(ev.s);
+          if (ev.e === "cta_click") src(k).clicks.add(ev.s);
+          if (ev.e === "form_start") src(k).starts.add(ev.s);
+          if (ev.e === "package_select" && ev.pkg) (pkgPicks[ev.pkg] ||= new Set()).add(ev.s);
         }
-        const uniques = Object.fromEntries(Object.entries(sessions).map(([k, v]) => [k, v.size]));
-        // Bookings come from the schedule you mark, never from page events.
-        const booked = (await readSchedule()).filter((e) => e.kind === "session").length;
-        return jsonResponse(200, { span, counts, uniques, sources, booked, total: events.length });
+        // Funnel is cumulative: anyone who reached a later step also passed the earlier ones
+        // (e.g. a hero date link skips "chose a date").
+        const order = ["booking_view", "package_select", "date_select", "time_select", "form_start", "form_submit"];
+        for (let i = order.length - 2; i >= 0; i--) {
+          const later = sets[order[i + 1]];
+          if (later) sets[order[i]] = new Set([...(sets[order[i]] || []), ...later]);
+        }
+        const u = (e) => sets[e]?.size || 0;
+
+        // Requests and bookings come from the inquiries themselves, not page events.
+        const inqKeys = (await inquiries.list()).blobs.map((b) => b.key);
+        const allInq = (await Promise.all(inqKeys.map((k) => inquiries.get(k, { type: "json" })))).filter(Boolean)
+          .filter((i) => isLive(i.ctx));
+        const periodInq = allInq.filter((i) => (i.createdAt || "").slice(0, 10) >= since);
+        const pkgRequests = {};
+        const pkgBooked = {};
+        for (const i of periodInq) {
+          const k = sourceKey(i.utm);
+          const pid = i.packageId || packageIdFromName(i.package) || "other";
+          src(k).requests += 1;
+          pkgRequests[pid] = (pkgRequests[pid] || 0) + 1;
+          if (i.booked && i.bookedDate) {
+            src(k).confirmed += 1;
+            src(k).revenue += Number(i.finalPrice ?? i.price) || 0;
+            pkgBooked[pid] = (pkgBooked[pid] || 0) + 1;
+          }
+        }
+
+        const settings = await readSettings();
+        const spend = settings.adSpend || {};
+        for (const k of Object.keys(spend)) src(k);
+        const sources = Object.fromEntries(Object.entries(bySource).map(([k, v]) => {
+          const adSpend = Number(spend[k]) || 0;
+          return [k, {
+            visitors: v.visitors.size,
+            reserveClicks: v.clicks.size,
+            formStarts: v.starts.size,
+            requests: v.requests,
+            confirmed: v.confirmed,
+            revenue: Math.round(v.revenue * 100) / 100,
+            adSpend,
+            cac: v.confirmed ? Math.round((adSpend / v.confirmed) * 100) / 100 : null
+          }];
+        }));
+
+        const visitors = new Set([...(sets.landing_view || []), ...(sets.booking_view || [])]).size;
+        const requests = periodInq.length;
+        const confirmed = periodInq.filter((i) => i.booked && i.bookedDate).length;
+        const totalSpend = Object.values(spend).reduce((t, n) => t + (Number(n) || 0), 0);
+        return jsonResponse(200, {
+          span,
+          since,
+          visitors,
+          landingVisitors: u("landing_view"),
+          funnel: [
+            ["Visited the campaign", visitors],
+            ["Opened booking", u("booking_view")],
+            ["Chose an experience", u("package_select")],
+            ["Chose a date", u("date_select")],
+            ["Chose a time", u("time_select")],
+            ["Started their details", u("form_start")],
+            ["Sent a request", u("form_submit")]
+          ],
+          instagramClicks: u("instagram_click"),
+          requests,
+          confirmed,
+          conversion: visitors ? Math.round((requests / visitors) * 1000) / 10 : null,
+          bookingConversion: visitors ? Math.round((confirmed / visitors) * 1000) / 10 : null,
+          packages: Object.fromEntries(Object.keys(PACKAGE_PRICES).map((id) => [id, {
+            name: PACKAGE_PRICES[id].name,
+            picked: pkgPicks[id]?.size || 0,
+            requests: pkgRequests[id] || 0,
+            booked: pkgBooked[id] || 0
+          }])),
+          sources,
+          totalSpend,
+          revenue: Math.round(periodInq.filter((i) => i.booked && i.bookedDate).reduce((t, i) => t + (Number(i.finalPrice ?? i.price) || 0), 0) * 100) / 100,
+          cac: confirmed ? Math.round((totalSpend / confirmed) * 100) / 100 : null
+        });
+      }
+
+      case "saveAdSpend": {
+        const settings = await readSettings();
+        const key = cleanText(body.key, 120);
+        if (!key) return jsonResponse(400, { message: "Enter the source / campaign this spend belongs to." });
+        const amount = Number(body.amount);
+        const adSpend = { ...(settings.adSpend || {}) };
+        if (body.amount === null || body.amount === "" || amount === 0) delete adSpend[key];
+        else if (!Number.isFinite(amount) || amount < 0 || amount > 100000) return jsonResponse(400, { message: "Enter an amount in dollars." });
+        else adSpend[key] = Math.round(amount * 100) / 100;
+        settings.adSpend = adSpend;
+        await writeSettings(settings);
+        return jsonResponse(200, { adSpend });
+      }
+
+      case "setDeposit": {
+        const id = cleanText(body.id, 80);
+        const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
+        if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
+        const received = Boolean(body.received);
+        const amount = body.amount === undefined || body.amount === null || body.amount === "" ? null : Number(body.amount);
+        if (amount !== null && (!Number.isFinite(amount) || amount < 0 || amount > 10000)) {
+          return jsonResponse(400, { message: "Enter the deposit amount in dollars." });
+        }
+        Object.assign(inquiry, {
+          depositReceived: received,
+          depositAmount: amount ?? inquiry.depositAmount ?? null,
+          depositUpdatedAt: new Date().toISOString()
+        });
+        await inquiries.setJSON(id, inquiry);
+        return jsonResponse(200, { inquiry });
       }
 
       case "saveCode": {

@@ -90,6 +90,7 @@ export default async function handler(request) {
             }
           : null,
         notes: cleanText(body.notes, 600),
+        ctx: process.env.CONTEXT || "unknown",
         booked: false
       };
       const store = await inquiriesStore();

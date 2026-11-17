@@ -198,8 +198,40 @@ test("tracking stores anonymous events and the admin sees totals", async () => {
   await send("form_submit", "s1");
   assert.equal((await send("hack", "s1")).status, 400);
   const a = await (await adminCall({ action: "analytics", days: 7 })).json();
-  assert.equal(a.uniques.landing_view, 2);
-  assert.equal(a.counts.form_submit, 1);
-  assert.equal(a.sources["instagram / xmas"].cta_click, 1);
-  assert.equal(a.booked, 0);
+  assert.equal(a.landingVisitors, 2);
+  assert.equal(a.funnel.at(-1)[1], 1);
+  assert.equal(a.sources["instagram / xmas"].reserveClicks, 1);
+  assert.equal(a.confirmed, 0);
+
+  // preview traffic is left out unless asked for
+  process.env.CONTEXT = "deploy-preview";
+  await send("landing_view", "s9");
+  const live = await (await adminCall({ action: "analytics", days: 7 })).json();
+  assert.equal(live.landingVisitors, 2);
+  const all = await (await adminCall({ action: "analytics", days: 7, includePreview: true })).json();
+  assert.equal(all.landingVisitors, 3);
+  process.env.CONTEXT = "production";
+});
+
+test("revenue, ad spend and cost per booking per campaign", async () => {
+  process.env.CONTEXT = "production";
+  const utm = { source: "instagram", campaign: "christmas" };
+  for (const n of ["P", "Q"]) {
+    await referral(new Request("https://x.test/api/referral", { method: "POST", body: JSON.stringify({ package: "mini", name: n, email: `${n}@x.com`, utm }) }));
+  }
+  const { inquiries } = await (await adminCall({ action: "list" })).json();
+  const p = inquiries.find((i) => i.name === "P");
+  await adminCall({ action: "book", id: p.id, date: "2030-12-14", start: 600 });
+  let res = await adminCall({ action: "setDeposit", id: p.id, received: true, amount: 150 });
+  assert.equal((await res.json()).inquiry.depositReceived, true);
+  await adminCall({ action: "saveAdSpend", key: "instagram / christmas", amount: 50 });
+  const a = await (await adminCall({ action: "analytics", days: 7 })).json();
+  const row = a.sources["instagram / christmas"];
+  assert.equal(row.requests, 2);
+  assert.equal(row.confirmed, 1);
+  assert.equal(row.revenue, 300);
+  assert.equal(row.adSpend, 50);
+  assert.equal(row.cac, 50);
+  assert.equal(a.packages.mini.requests, 2);
+  assert.equal(a.packages.mini.booked, 1);
 });
