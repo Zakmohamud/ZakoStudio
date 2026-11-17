@@ -212,29 +212,26 @@
           <p>Thank you! Here’s what happens next:</p>
           <ol class="next-steps">
             <li><b>I check availability</b> and reply by email to confirm your time.</li>
-            <li><b>You pay the deposit</b> using the details in that email.</li>
-            <li><b>Your session is confirmed</b> once the deposit is received. Only then is the time held for you.</li>
+            <li><b>You pay the reservation fee</b> using the details in that email.</li>
+            <li><b>Your session is confirmed</b> once the reservation fee is received. Only then is the time held for you.</li>
           </ol>
           <p class="fine">Can’t see my email? Check your spam folder, or message me on <a href="https://ig.me/m/zakostudi0" target="_blank" rel="noopener" data-track="instagram_click">Instagram</a>.</p>
           <div class="actions"><a class="text-link" href="/christmas/"><span>Back to the Christmas Collection</span></a></div>
         </div>
 
         <div class="layout" id="layout">
-          <form id="form" action="https://formsubmit.co/zakotarastudio@gmail.com" method="POST" novalidate>
-            <input type="hidden" name="_subject" value="New Christmas session request" />
-            <input type="hidden" name="_template" value="table" />
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_next" id="f-next" />
+          <form id="form" name="christmas-request" method="POST" action="/christmas/book/?sent=1" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+            <input type="hidden" name="form-name" value="christmas-request" />
             <input type="hidden" name="Experience" id="f-exp" />
             <input type="hidden" name="Requested date" id="f-date" />
             <input type="hidden" name="Requested time" id="f-time" />
             <input type="hidden" name="Studio date status" id="f-status" />
             <input type="hidden" name="Price" id="f-price" />
-            <input type="hidden" name="Deposit" id="f-deposit" />
+            <input type="hidden" name="Reservation fee" id="f-deposit" />
             <input type="hidden" name="Referral code" id="f-code" value="None" />
             <input type="hidden" name="Discount" id="f-discount" value="None" />
             <input type="hidden" name="Source" id="f-source" value="Direct" />
-            <div class="form-trap" aria-hidden="true"><label for="hp">Leave blank</label><input id="hp" name="_honey" tabindex="-1" autocomplete="off" /></div>
+            <div class="form-trap" aria-hidden="true"><label for="hp">Leave blank</label><input id="hp" name="bot-field" tabindex="-1" autocomplete="off" /></div>
 
             <!-- Step 1 -->
             <section id="step-1" aria-labelledby="t1">
@@ -248,7 +245,7 @@
               <h2 class="panel-title" id="t2">Select a date and time</h2>
               <p class="panel-sub">Weekend sessions in Vancouver. Only times still open for your experience are shown.</p>
               <div id="date-list"><p class="fine" role="status">Loading available dates…</p></div>
-              <p class="fine legend">* Studio time on these dates is being finalised. You can still request, and I’ll confirm before any deposit.</p>
+              <p class="fine legend">* Studio time on these dates is being finalised. You can still request, and I’ll confirm before you pay the reservation fee.</p>
               <div id="time-block" hidden>
                 <p class="month" id="time-title">Available times</p>
                 <div class="times" id="time-list" role="group" aria-labelledby="time-title"></div>
@@ -261,7 +258,7 @@
             <!-- Step 3 -->
             <section id="step-3" aria-labelledby="t3" hidden>
               <h2 class="panel-title" id="t3">Your details</h2>
-              <p class="panel-sub">I’ll reply by email to confirm your time and arrange the deposit.</p>
+              <p class="panel-sub">I’ll reply by email to confirm your time and arrange the reservation fee.</p>
               <div class="mobile-summary" id="mobile-summary"></div>
               <div class="fields">
                 <label class="f full" for="name">Full name<input id="name" name="Name" autocomplete="name" required /></label>
@@ -285,7 +282,7 @@
                 </details>
               </div>
               <p class="error" id="e3" role="alert" hidden></p>
-              <p class="fine">Sending this form is a reservation request. Nothing is charged, and your time is not confirmed until I confirm availability by email and your deposit is received.</p>
+              <p class="fine">Sending this form is a reservation request. Nothing is charged, and your time is not confirmed until I confirm availability by email and your reservation fee is received.</p>
             </section>
 
             <div class="actions">
@@ -412,7 +409,7 @@
           }));
           $("day-note").textContent = day.status === "secured"
             ? `Sessions run ${dur} minutes. This time is open now; I’ll confirm it by email.`
-            : `Sessions run ${dur} minutes. Studio time for this date is still being finalised, so I’ll confirm your time by email before any deposit is taken.`;
+            : `Sessions run ${dur} minutes. Studio time for this date is still being finalised, so I’ll confirm your time by email before the reservation fee is paid.`;
         }
 
         // ---- Prices ----
@@ -441,19 +438,19 @@
                <dl class="s-rows">
                  <div><dt>When</dt><dd>${when}</dd></div>
                  <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
-                 <div><dt>Deposit (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
+                 <div><dt>Reservation fee (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
                  <div class="s-total"><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
                </dl>
-               <p class="s-status"><b>Status: not reserved yet</b>Send your request and I’ll confirm availability by email. Your time is reserved once your deposit is received.</p>`;
+               <p class="s-status"><b>Status: not reserved yet</b>Send your request and I’ll confirm availability by email. Your time is reserved once your reservation fee is received.</p>`;
 
           $("mobile-summary").innerHTML = !p ? "" : `
             <dl>
               <div><dt>Experience</dt><dd>${p.name}</dd></div>
               <div><dt>When</dt><dd>${when}</dd></div>
               <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
-              <div><dt>Deposit (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
+              <div><dt>Reservation fee (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
               <div><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
-              <p class="s-status"><b>Status: not reserved yet</b>Reserved once availability is confirmed and your deposit is received.</p>
+              <p class="s-status"><b>Status: not reserved yet</b>Reserved once availability is confirmed and your reservation fee is received.</p>
             </dl>`;
 
           // mobile bar
@@ -566,19 +563,20 @@
           $("f-code").value = state.discount?.code || "None";
           $("f-discount").value = state.discount ? (state.discount.type === "amount" ? `$${state.discount.amount} off` : `${state.discount.percent}% off`) : "None";
           $("f-source").value = [ZS.utm.source, ZS.utm.campaign, ZS.utm.content].filter(Boolean).join(" / ") || "Direct";
-          const next = new URL("/christmas/book/", location.origin);
-          next.searchParams.set("sent", "1");
-          $("f-next").value = next.toString();
 
           state.sending = true;
           $("bar-next").disabled = true;
           $("next").disabled = true;
-          ZS.track("form_submit", { pkg: state.pkg });
-          try { sessionStorage.removeItem(SAVE); } catch {}
-          try {
-            const ctl = new AbortController();
-            const t = setTimeout(() => ctl.abort(), 3000);
-            await fetch("/api/referral", {
+          $("bar-next").textContent = $("next").textContent = "Sending…";
+
+          const withTimeout = (promise, ms) => Promise.race([promise, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
+          const formBody = new URLSearchParams(new FormData(e.target)).toString();
+          const [emailed, recorded] = await Promise.allSettled([
+            // Netlify Forms: emails you and keeps a copy in the Netlify dashboard.
+            withTimeout(fetch("/", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: formBody }), 15000)
+              .then((r) => { if (!r.ok) throw new Error(String(r.status)); }),
+            // Your bookings page record (for scheduling, codes and analytics).
+            withTimeout(fetch("/api/referral", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({
@@ -595,13 +593,20 @@
                 startMin: state.start,
                 dayStatus: day?.status || null,
                 utm: ZS.utm
-              }),
-              keepalive: true,
-              signal: ctl.signal
-            });
-            clearTimeout(t);
-          } catch {}
-          e.target.submit();
+              })
+            }), 15000).then((r) => { if (!r.ok) throw new Error(String(r.status)); })
+          ]);
+
+          if (emailed.status === "fulfilled" || recorded.status === "fulfilled") {
+            ZS.track("form_submit", { pkg: state.pkg });
+            try { sessionStorage.removeItem(SAVE); } catch {}
+            location.href = "/christmas/book/?sent=1";
+            return;
+          }
+          state.sending = false;
+          $("next").disabled = false;
+          render();
+          showErr("e3", "Your request couldn’t be sent just now. Please check your connection and try again, or message me on Instagram @zakostudi0.");
         });
 
         // ---- Keep progress if the page reloads (common in Instagram's browser) ----

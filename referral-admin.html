@@ -177,7 +177,7 @@
           <h2>Booking settings</h2>
           <form class="new-code" id="settings-form" style="grid-template-columns: repeat(5, minmax(0,1fr)) auto">
             <label>Buffer between sessions (min)<input id="st-buffer" type="number" min="0" max="60" step="1" required /></label>
-            <label>Deposit %<input id="st-deposit" type="number" min="0" max="100" step="1" required /></label>
+            <label>Reservation fee %<input id="st-deposit" type="number" min="0" max="100" step="1" required /></label>
             <label>Keepsake length (min)<input id="st-quick" type="number" min="5" max="240" step="5" required /></label>
             <label>Story length (min)<input id="st-mini" type="number" min="5" max="240" step="5" required /></label>
             <label>Heirloom length (min)<input id="st-extended" type="number" min="5" max="240" step="5" required /></label>
@@ -386,8 +386,8 @@
           stat(money(confirmedRevenue), "Confirmed revenue", `${bookedInq.length} booked session${bookedInq.length === 1 ? "" : "s"}`) +
           stat(money(rentSecured), "Studio rental", `${secured.reduce((t, r) => t + r.hours, 0)} secured hours × $${STUDIO_RATE}`) +
           `<div class="stat"><b class="${confirmedRevenue - rentSecured >= 0 ? "pos" : "neg"}">${money(confirmedRevenue - rentSecured)}</b>After rental<small>projected from confirmed bookings</small></div>` +
-          stat(money(depositsIn), "Deposits received") +
-          stat(money(outstanding.reduce((t, i) => t + depositDue(i), 0)), "Deposits outstanding", `${outstanding.length} booking${outstanding.length === 1 ? "" : "s"} without a deposit`);
+          stat(money(depositsIn), "Reservation fees received") +
+          stat(money(outstanding.reduce((t, i) => t + depositDue(i), 0)), "Reservation fees outstanding", `${outstanding.length} booking${outstanding.length === 1 ? "" : "s"} without a reservation fee`);
       }
 
       const SELF_KEY = "zs_internal";
@@ -505,8 +505,8 @@
         if (i.booked && i.bookedDate) {
           const due = Math.round(priceOf(i) * (settingsData?.settings.depositPercent ?? 50)) / 100;
           const dep = i.depositReceived
-            ? `<span class="deposit pos">Deposit received${i.depositAmount ? ` · ${money(i.depositAmount)}` : ""} · <button class="linkish" data-act="deposit" data-id="${esc(i.id)}" data-received="0">undo</button></span>`
-            : `<span class="deposit neg">Deposit outstanding · ${money(due)}</span><button class="btn small" data-act="deposit" data-id="${esc(i.id)}" data-received="1" data-due="${due}">Deposit received</button>`;
+            ? `<span class="deposit pos">Reservation fee received${i.depositAmount ? ` · ${money(i.depositAmount)}` : ""} · <button class="linkish" data-act="deposit" data-id="${esc(i.id)}" data-received="0">undo</button></span>`
+            : `<span class="deposit neg">Reservation fee outstanding · ${money(due)}</span><button class="btn small" data-act="deposit" data-id="${esc(i.id)}" data-received="1" data-due="${due}">Reservation fee received</button>`;
           return `<span class="booked-tag">✓ ${esc(dayLabel(i.bookedDate))}<br>${clock(i.bookedStart)}–${clock(i.bookedEnd)}</span>
             ${dep}<br><button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo booking</button>`;
         }
@@ -658,7 +658,7 @@
             }
           } else if (el.dataset.act === "deposit") {
             if (el.dataset.received === "1") {
-              const amount = prompt("Deposit amount received ($):", el.dataset.due);
+              const amount = prompt("Reservation fee received ($):", el.dataset.due);
               if (amount === null) return;
               await api({ action: "setDeposit", id: el.dataset.id, received: true, amount: Number(amount) });
             } else {
