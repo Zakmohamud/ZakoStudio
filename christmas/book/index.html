@@ -440,7 +440,7 @@
                  <div><dt>When</dt><dd>${when}</dd></div>
                  <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
                  <div><dt>Reservation fee (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
-                 <div class="s-total"><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
+                 <div class="s-total"><dt>Remaining balance, after your session</dt><dd>${money(pr.balance)}</dd></div>
                </dl>
                <p class="s-status"><b>Status: not reserved yet</b>Send your request and I’ll confirm availability by email. Your time is reserved once your reservation fee is received.</p>`;
 
@@ -450,7 +450,7 @@
               <div><dt>When</dt><dd>${when}</dd></div>
               <div><dt>Price</dt><dd>${state.discount ? `<s style="color:var(--ink-soft)">${money(pr.list)}</s> ` : ""}${money(pr.total)} CAD</dd></div>
               <div><dt>Reservation fee (${sched.depositPercent ?? 50}%)</dt><dd>${money(pr.deposit)}</dd></div>
-              <div><dt>Remaining balance</dt><dd>${money(pr.balance)}</dd></div>
+              <div><dt>Remaining balance, after your session</dt><dd>${money(pr.balance)}</dd></div>
               <p class="s-status"><b>Status: not reserved yet</b>Reserved once availability is confirmed and your reservation fee is received.</p>
             </dl>`;
 

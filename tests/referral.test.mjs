@@ -270,7 +270,7 @@ test("client emails: acknowledgement is automatic, fee request and confirmation 
 
   await adminCall({ action: "book", id: ana.id, date: "2030-12-21", start: 600 });
   await adminCall({ action: "setDeposit", id: ana.id, received: true, amount: 150 });
-  await adminCall({ action: "saveEmailSettings", studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7", paymentEmail: "zakotarastudio@gmail.com", balanceDue: "Upon receiving this confirmation" });
+  await adminCall({ action: "saveEmailSettings", studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7", paymentEmail: "zakotarastudio@gmail.com", balanceDue: "After your session, by Interac e-Transfer to zakotarastudio@gmail.com" });
   res = await adminCall({ action: "previewEmail", id: ana.id, type: "confirmation" });
   const pv = await res.json();
   assert.match(pv.html, /1909 Lilac Dr, Surrey/);
@@ -280,6 +280,10 @@ test("client emails: acknowledgement is automatic, fee request and confirmation 
   assert.match(sent.at(-1).text, /Reservation fee received: \$150 CAD/);
   assert.match(sent.at(-1).text, /Remaining balance: \$150 CAD/);
   assert.match(sent.at(-1).text, /Wear your favourite festive attire/);
+  assert.match(sent.at(-1).text, /Remaining balance due: After your session/);
+  assert.match(sent.at(-1).text, /through my lens\./);
+  assert.match(sent.at(-1).text, /With warm regards,/);
+  assert.doesNotMatch(sent.at(-1).text, /Upon receiving|warm wishes|photographs\./i);
 
   // email history: every email, in order, with when and to whom
   const after = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === ana.id);

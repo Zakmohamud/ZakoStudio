@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS = {
   // Client emails
   studioAddress: "1909 Lilac Dr, Surrey, BC V4A 6C7",
   paymentEmail: "zakotarastudio@gmail.com",
-  balanceDue: "Upon receiving this confirmation, by Interac e-Transfer to zakotarastudio@gmail.com",
+  balanceDue: "After your session, by Interac e-Transfer to zakotarastudio@gmail.com",
   // Every weekend until seasonEnd is offered as "pending" unless autoWeekends is off.
   autoWeekends: true,
   // Days you added or changed yourself (any day of the week, pending or secured).
@@ -47,6 +47,8 @@ export const DEFAULT_SETTINGS = {
 export async function readSettings() {
   const store = await openStore(SETTINGS_STORE);
   const saved = (await store.get("christmas", { type: "json" })) || {};
+  // The balance is paid after the shoot: replace the old "upon confirmation" wording.
+  if (/^upon receiving this confirmation/i.test(saved.balanceDue || "")) delete saved.balanceDue;
   return {
     ...DEFAULT_SETTINGS,
     ...saved,
