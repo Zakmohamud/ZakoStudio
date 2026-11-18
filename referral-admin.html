@@ -190,8 +190,8 @@
             <label>Studio
               <select id="dy-status"><option value="pending">Pending</option><option value="secured">Secured</option></select>
             </label>
-            <span class="note muted" style="font-size:13px">Saving a date that already exists updates it.</span>
-            <button class="btn red" type="submit">Save day</button>
+            <span class="note muted" style="font-size:13px">Add a day that isn’t listed (e.g. a weekday). To change a listed day, use its Change hours button below.</span>
+            <button class="btn red" type="submit">Add day</button>
           </form>
           <p class="message" id="day-message" role="status"></p>
           <h3 class="sub">Secured studio dates</h3>
@@ -366,6 +366,7 @@
       }
 
       let settingsData = null;
+      let editingDay = null; // { date, secure }
       const STUDIO_RATE = 125; // $ per studio hour
 
       async function load() {
@@ -416,8 +417,23 @@
           return { d, booked, revenue, hours, rent, requests };
         });
         const actions = (d) => `<div class="actions">
-            <button class="btn ghost small" data-act="day-toggle" data-date="${d.date}">${d.status === "secured" ? "Mark pending" : "Mark secured"}</button>
+            ${d.status === "secured"
+              ? `<button class="btn ghost small" data-act="day-edit" data-date="${d.date}">Change hours</button>
+                 <button class="linkish" data-act="day-toggle" data-date="${d.date}">Mark pending</button>`
+              : `<button class="btn small" data-act="day-secure" data-date="${d.date}">Mark secured…</button>
+                 <button class="btn ghost small" data-act="day-edit" data-date="${d.date}">Change hours</button>`}
             <button class="linkish" data-act="day-remove" data-date="${d.date}">Remove</button></div>`;
+        const editor = (d, cols) => editingDay?.date !== d.date ? "" : `<tr class="day-editor"><td colspan="${cols}">
+            <div class="block-form" style="margin:0">
+              <strong style="align-self:center">${editingDay.secure ? `Which hours did you rent on ${esc(dayLabel(d.date))}?` : `Hours for ${esc(dayLabel(d.date))}`}</strong>
+              <label>From<input type="time" id="de-from" value="${toHHMM(d.start)}" step="900"></label>
+              <label>To<input type="time" id="de-to" value="${toHHMM(d.end)}" step="900"></label>
+              <span class="muted" id="de-cost" style="align-self:center;font-size:13px"></span>
+              <button class="btn red small" data-act="day-edit-save" data-date="${d.date}">${editingDay.secure ? "Save as secured" : "Save hours"}</button>
+              <button class="linkish" data-act="day-edit-cancel" data-date="${d.date}">Cancel</button>
+            </div>
+            <p class="muted" style="font-size:12px;margin:6px 0 0">Clients can only pick times inside these hours. Studio rental is worked out from these hours × $${STUDIO_RATE}.</p>
+          </td></tr>`;
         const secured = rows.filter((r) => r.d.status === "secured");
         const pending = rows.filter((r) => r.d.status !== "secured");
         $("days-secured").innerHTML = secured.length ? secured.map((r) => `<tr>
@@ -427,14 +443,14 @@
             <td>${money(r.revenue)}</td>
             <td>${money(r.rent)}</td>
             <td class="${r.revenue - r.rent >= 0 ? "pos" : "neg"}">${money(r.revenue - r.rent)}</td>
-            <td>${actions(r.d)}</td></tr>`).join("")
+            <td>${actions(r.d)}</td></tr>${editor(r.d, 7)}`).join("")
           : '<tr><td colspan="7" class="muted">No secured days yet. Mark a day secured once you’ve rented the studio.</td></tr>';
         $("days-pending").innerHTML = pending.length ? pending.map((r) => `<tr>
             <td>${esc(dayLabel(r.d.date))}</td>
             <td>${clock(r.d.start)} – ${clock(r.d.end)} <span class="muted">(${r.hours} h)</span></td>
             <td>${r.requests || '<span class="muted">0</span>'}${r.booked.length ? ` · <b>${r.booked.length} booked</b>` : ""}</td>
             <td>${money(r.rent)}</td>
-            <td>${actions(r.d)}${r.d.auto ? ' <span class="muted" style="font-size:12px">auto weekend</span>' : ""}</td></tr>`).join("")
+            <td>${actions(r.d)}${r.d.auto ? ' <span class="muted" style="font-size:12px">auto weekend</span>' : ""}</td></tr>${editor(r.d, 5)}`).join("")
           : '<tr><td colspan="5" class="muted">No pending days.</td></tr>';
         if (!document.activeElement?.closest("#auto-form")) {
           $("au-on").checked = s.autoWeekends !== false;
@@ -931,6 +947,36 @@
         const d = settingsData?.days.find((x) => x.date === el.dataset.date);
         if (!d) return;
         try {
+          if (el.dataset.act === "day-edit" || el.dataset.act === "day-secure") {
+            editingDay = { date: d.date, secure: el.dataset.act === "day-secure" };
+            renderSettings();
+            updateEditorCost();
+            $("de-from")?.focus();
+            return;
+          }
+          if (el.dataset.act === "day-edit-cancel") {
+            editingDay = null;
+            renderSettings();
+            return;
+          }
+          if (el.dataset.act === "day-edit-save") {
+            const start = fromHHMM($("de-from").value);
+            const end = fromHHMM($("de-to").value);
+            if (start === null || end === null || end <= start) {
+              $("day-message").textContent = "Pick a start and end time, with the end after the start.";
+              $("day-message").className = "message bad";
+              return;
+            }
+            const outside = (data.schedule || []).filter((e) => e.kind === "session" && e.date === d.date && (e.start < start || e.end > end));
+            if (outside.length && !confirm(`${outside.length} booked session${outside.length > 1 ? "s are" : " is"} outside ${clock(start)}–${clock(end)} on this day (${outside.map((e) => clock(e.start)).join(", ")}). Save these hours anyway?`)) return;
+            const status = editingDay?.secure ? "secured" : d.status;
+            settingsData = await api({ action: "saveDay", date: d.date, start, end, status });
+            editingDay = null;
+            renderSettings();
+            $("day-message").textContent = `${dayLabel(d.date)}: ${clock(start)}–${clock(end)}${status === "secured" ? ", secured" : ""}. The booking page uses these hours now.`;
+            $("day-message").className = "message ok";
+            return;
+          }
           if (el.dataset.act === "day-toggle") {
             settingsData = await api({ action: "saveDay", ...d, status: d.status === "secured" ? "pending" : "secured" });
           } else if (confirm(`Remove ${dayLabel(d.date)} from the booking page? Existing bookings stay in your schedule.`)) {
@@ -941,6 +987,14 @@
           $("day-message").textContent = error.message;
           $("day-message").className = "message bad";
         }
+      });
+
+      function updateEditorCost() {
+        const a = fromHHMM($("de-from")?.value || ""), b = fromHHMM($("de-to")?.value || "");
+        if ($("de-cost")) $("de-cost").textContent = a !== null && b !== null && b > a ? `${(b - a) / 60} h · ${money(((b - a) / 60) * STUDIO_RATE)} rental` : "";
+      }
+      document.addEventListener("input", (event) => {
+        if (event.target.id === "de-from" || event.target.id === "de-to") updateEditorCost();
       });
 
       $("auto-form").addEventListener("submit", async (event) => {
