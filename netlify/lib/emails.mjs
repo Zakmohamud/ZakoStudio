@@ -119,7 +119,7 @@ export function acknowledgementEmail(d) {
       p(`<span style="font-size:14px;color:${C.soft};">This is a request, not a confirmed booking. Your session is reserved only once availability is verified and your reservation fee is received.</span>`, "margin-top:14px;") +
       p("Once availability is verified, you'll receive an email with your session details and instructions for securing your reservation.") +
       p("We look forward to creating something beautiful with you and your loved ones.") +
-      signoff(["Warm wishes,", "Zako Studio", "The Christmas Collection · 2026"])
+      signoff(["With warm regards,", "Zako Studio", "The Christmas Collection · 2026"])
   });
   const text = `Christmas, as we remember it.
 
@@ -138,7 +138,7 @@ This is a request, not a confirmed booking. Your session is reserved only once a
 Once availability is verified, you'll receive an email with your session details and instructions for securing your reservation.
 We look forward to creating something beautiful with you and your loved ones.
 
-Warm wishes,
+With warm regards,
 Zako Studio
 The Christmas Collection · 2026`;
   return { subject, html, text };
@@ -162,7 +162,7 @@ export function feeRequestEmail(d) {
       p(`To secure your session, please send your reservation fee via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;") +
       p("Once your payment has been received, I'll send your official booking confirmation.") +
       p("I look forward to welcoming you and your loved ones.") +
-      signoff(["Warm wishes,", "Zako Studio", "The Christmas Collection · 2026"])
+      signoff(["With warm regards,", "Zako Studio", "The Christmas Collection · 2026"])
   });
   const text = `Dear ${d.firstName},
 
@@ -184,7 +184,7 @@ Once your payment has been received, I'll send your official booking confirmatio
 
 I look forward to welcoming you and your loved ones.
 
-Warm wishes,
+With warm regards,
 Zako Studio
 The Christmas Collection · 2026`;
   return { subject, html, text };
@@ -207,9 +207,9 @@ export function confirmationEmail(d) {
       p("Wear your favourite festive attire, cosy Christmas pyjamas or something a little more elegant. Most importantly, come as yourselves.") +
       p("Please arrive 10 minutes before your scheduled session.") +
       h2("Payment summary") +
-      rows([["Reservation fee received", d.fee], ["Remaining balance", d.balance, true], ["Payment due", d.balanceDue]]) +
-      p("I can't wait to tell your Christmas story through photographs.", "margin-top:18px;") +
-      signoff(["With warm wishes,", "Zako Studio", "Christmas, as we remember it."])
+      rows([["Reservation fee received", d.fee], ["Remaining balance", d.balance, true], ["Remaining balance due", d.balanceDue]]) +
+      p("I can't wait to tell your Christmas story through my lens.", "margin-top:18px;") +
+      signoff(["With warm regards,", "Zako Studio", "Christmas, as we remember it."])
   });
   const text = `Dear ${d.firstName},
 
@@ -227,11 +227,11 @@ Please arrive 10 minutes before your scheduled session.
 
 Payment summary
 Reservation fee received: ${d.fee}
-Remaining balance: ${d.balance}${d.balanceDue ? `\nPayment due: ${d.balanceDue}` : ""}
+Remaining balance: ${d.balance}${d.balanceDue ? `\nRemaining balance due: ${d.balanceDue}` : ""}
 
-I can't wait to tell your Christmas story through photographs.
+I can't wait to tell your Christmas story through my lens.
 
-With warm wishes,
+With warm regards,
 Zako Studio
 Christmas, as we remember it.`;
   return { subject, html, text };
