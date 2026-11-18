@@ -185,8 +185,8 @@
           </form>
           <form class="block-form" id="day-form">
             <label>Date<input type="date" id="dy-date" required /></label>
-            <label>Opens<input type="time" id="dy-from" value="10:00" required /></label>
-            <label>Closes<input type="time" id="dy-to" value="14:00" required /></label>
+            <label>Opens<input type="time" id="dy-from" value="10:00" step="60" required /></label>
+            <label>Closes<input type="time" id="dy-to" value="14:00" step="60" required /></label>
             <label>Studio
               <select id="dy-status"><option value="pending">Pending</option><option value="secured">Secured</option></select>
             </label>
@@ -426,13 +426,13 @@
         const editor = (d, cols) => editingDay?.date !== d.date ? "" : `<tr class="day-editor"><td colspan="${cols}">
             <div class="block-form" style="margin:0">
               <strong style="align-self:center">${editingDay.secure ? `Which hours did you rent on ${esc(dayLabel(d.date))}?` : `Hours for ${esc(dayLabel(d.date))}`}</strong>
-              <label>From<input type="time" id="de-from" value="${toHHMM(d.start)}" step="900"></label>
-              <label>To<input type="time" id="de-to" value="${toHHMM(d.end)}" step="900"></label>
+              <label>From<input type="time" id="de-from" value="${toHHMM(d.start)}" step="60"></label>
+              <label>To<input type="time" id="de-to" value="${toHHMM(d.end)}" step="60"></label>
               <span class="muted" id="de-cost" style="align-self:center;font-size:13px"></span>
               <button class="btn red small" data-act="day-edit-save" data-date="${d.date}">${editingDay.secure ? "Save as secured" : "Save hours"}</button>
               <button class="linkish" data-act="day-edit-cancel" data-date="${d.date}">Cancel</button>
             </div>
-            <p class="muted" style="font-size:12px;margin:6px 0 0">Clients can only pick times inside these hours. Studio rental is worked out from these hours × $${STUDIO_RATE}.</p>
+            <p class="muted" style="font-size:12px;margin:6px 0 0">Clients can only pick times inside these hours. Studio rental is worked out from these hours × $${STUDIO_RATE}. Any minute works (e.g. 12:10). You don’t need to add the break after the last session of the day.</p>
           </td></tr>`;
         const secured = rows.filter((r) => r.d.status === "secured");
         const pending = rows.filter((r) => r.d.status !== "secured");
@@ -627,7 +627,7 @@
         return `<div class="book-form">
             ${i.needsTime ? '<span class="needs-time">Ticked earlier without a time — add one to block it.</span>' : ""}
             <input type="date" aria-label="Session date" id="bd-${esc(i.id)}" value="${esc(date)}">
-            <input type="time" aria-label="Start time" id="bt-${esc(i.id)}" value="${esc(time)}" step="300">
+            <input type="time" aria-label="Start time" id="bt-${esc(i.id)}" value="${esc(time)}" step="60">
             <button class="btn small" data-act="book" data-id="${esc(i.id)}">Mark booked</button>
           </div>`;
       }
@@ -973,7 +973,7 @@
             settingsData = await api({ action: "saveDay", date: d.date, start, end, status });
             editingDay = null;
             renderSettings();
-            $("day-message").textContent = `${dayLabel(d.date)}: ${clock(start)}–${clock(end)}${status === "secured" ? ", secured" : ""}. The booking page uses these hours now.`;
+            $("day-message").textContent = `${dayLabel(d.date)}: ${clock(start)}–${clock(end)}${status === "secured" ? ", secured" : ""}. Booking page updated.`.replace("..", ".");
             $("day-message").className = "message ok";
             return;
           }
