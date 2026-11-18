@@ -17,7 +17,8 @@ import {
   isMinute,
   jsonResponse,
   normalizeCode,
-  readSettings
+  readSettings,
+  deployContext
 } from "../lib/referrals.mjs";
 
 export default async function handler(request) {
@@ -93,7 +94,7 @@ export default async function handler(request) {
             }
           : null,
         notes: cleanText(body.notes, 600),
-        ctx: process.env.CONTEXT || "unknown",
+        ctx: deployContext(request),
         booked: false
       };
       const store = await inquiriesStore();

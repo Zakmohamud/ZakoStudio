@@ -2,7 +2,7 @@
 // No cookies, no IP addresses, no personal details. Each event is stored as its own record:
 // { e: event, t: ISO time, s: random per-tab session id, p: page, pkg, utm: { source, medium, campaign, content }, ctx }
 import { randomUUID } from "node:crypto";
-import { cleanText, eventsStore, jsonResponse, vancouverToday } from "../lib/referrals.mjs";
+import { cleanText, deployContext, eventsStore, jsonResponse, vancouverToday } from "../lib/referrals.mjs";
 
 export const EVENTS = [
   "landing_view",
@@ -40,7 +40,7 @@ export default async function handler(request) {
       content: cleanText(utm.content, 80) || null
     },
     // Netlify sets CONTEXT to production / deploy-preview / branch-deploy, so preview tests stay separate.
-    ctx: process.env.CONTEXT || "unknown"
+    ctx: deployContext(request)
   };
   try {
     const store = await eventsStore();
