@@ -87,6 +87,18 @@ export function sessionDays(settings, today = vancouverToday()) {
 
 export const eventsStore = () => openStore(EVENTS_STORE);
 
+// Which copy of the site a request came from. Netlify's CONTEXT variable isn't always
+// present while a function runs, so fall back to the address the visitor used.
+export function deployContext(request) {
+  if (process.env.CONTEXT) return process.env.CONTEXT;
+  let host = "";
+  try { host = new URL(request.url).hostname; } catch {}
+  if (/^deploy-preview-\d+--/.test(host)) return "deploy-preview";
+  if (/--/.test(host)) return "branch-deploy";
+  if (!host || host === "localhost" || host === "127.0.0.1") return "dev";
+  return "production";
+}
+
 export function isISODate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }

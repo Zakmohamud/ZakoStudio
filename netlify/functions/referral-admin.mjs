@@ -229,7 +229,7 @@ export default async function handler(request) {
         for (const d of dates) keys.push(...(await store.list({ prefix: `${d}/` })).blobs.map((b) => b.key));
         const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" }))))
           .filter(Boolean)
-          .filter((ev) => includePreview || ev.ctx === "production");
+          .filter((ev) => isLive(ev.ctx));
 
         const sets = {};                 // event -> Set(session)
         const bySource = {};             // source -> { visitors:Set, requests, confirmed, revenue }

@@ -320,3 +320,22 @@ test("studio days: weekends always show, plus days you add; removed weekends sta
   days = sessionDays({ ...base, autoWeekends: false, days: [{ date: "2026-11-25", start: 960, end: 1140, status: "secured" }] }, "2026-11-17");
   assert.deepEqual(days.map((d) => d.date), ["2026-11-25"]);
 });
+
+test("visitor tracking: live visits are counted even without Netlify's CONTEXT variable", async () => {
+  const { deployContext } = await import("../netlify/lib/referrals.mjs");
+  const saved = process.env.CONTEXT;
+  delete process.env.CONTEXT;
+  assert.equal(deployContext(new Request("https://zako-studio.netlify.app/api/track")), "production");
+  assert.equal(deployContext(new Request("https://deploy-preview-6--zako-studio.netlify.app/api/track")), "deploy-preview");
+  assert.equal(deployContext(new Request("https://main--zako-studio.netlify.app/api/track")), "branch-deploy");
+
+  const track = (await import("../netlify/functions/track.mjs")).default;
+  const send = (host, s) => track(new Request(`https://${host}/api/track`, { method: "POST", body: JSON.stringify({ e: "landing_view", s, p: "/christmas/" }) }));
+  await send("zako-studio.netlify.app", "phone-1");
+  await send("deploy-preview-9--zako-studio.netlify.app", "preview-1");
+  const live = await (await adminCall({ action: "analytics", days: 14 })).json();
+  const withPreview = await (await adminCall({ action: "analytics", days: 14, includePreview: true })).json();
+  assert.equal(withPreview.visitors - live.visitors, 1, "the preview visit only counts when previews are included");
+  assert.ok(live.visitors >= 1, "the live phone visit is counted");
+  if (saved !== undefined) process.env.CONTEXT = saved;
+});
