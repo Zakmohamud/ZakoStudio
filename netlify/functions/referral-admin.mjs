@@ -5,6 +5,7 @@ import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
 import { logEmail, galleryEmail } from "../lib/emails.mjs";
 import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, r2Enabled, r2Size, readGallery, uploadUrls, writeGallery } from "../lib/gallery.mjs";
+import { r2Url } from "../lib/r2.mjs";
 import {
   BREAK_MINUTES,
   PACKAGE_PRICES,
@@ -87,6 +88,20 @@ export default async function handler(request) {
         });
         await writeGallery(g);
         return jsonResponse(200, { gallery: { ...g, token: accessToken(g) } });
+      }
+
+      case "storageCheck": {
+        // Writes, reads and deletes a tiny file in Cloudflare R2 to prove the keys work.
+        if (!r2Enabled()) return jsonResponse(200, { r2: false });
+        const key = `healthcheck/${newId()}`;
+        const step = async (method, body) => {
+          const res = await fetch(r2Url(method, key, { expires: 120 }), { method, body, headers: body ? { "content-type": "text/plain" } : {} });
+          return { status: res.status, body: method === "GET" ? await res.text() : (res.ok ? "" : (await res.text()).slice(0, 300)) };
+        };
+        const put = await step("PUT", "zako");
+        const get = await step("GET");
+        const del = await step("DELETE");
+        return jsonResponse(200, { r2: true, ok: put.status === 200 && get.body === "zako" && del.status < 300, put, get, del });
       }
 
       case "galleryUploadUrls": {
