@@ -422,3 +422,54 @@ test("client galleries: create, upload in parts, private access, PIN, favourites
   await adminCall({ action: "deleteGallery", id: g.id });
   assert.equal((await view(`g=${g.id}`)).status, 404);
 });
+
+test("client galleries on Cloudflare R2: signed upload links, size check, signed viewing redirect, delete", async () => {
+  const file = (await import("../netlify/functions/gallery-file.mjs")).default;
+  const env = { R2_ACCOUNT_ID: "acct123", R2_ACCESS_KEY_ID: "AKID", R2_SECRET_ACCESS_KEY: "SECRET", R2_BUCKET: "zako-galleries" };
+  const saved = Object.fromEntries(Object.keys(env).map((k) => [k, process.env[k]]));
+  Object.assign(process.env, env);
+  const realFetch = globalThis.fetch;
+  const objects = new Map([["full", 9000000], ["web", 800000], ["thumb", 90000]]);
+  const calls = [];
+  globalThis.fetch = async (url, opts = {}) => {
+    calls.push({ url: String(url), method: opts.method });
+    const v = String(url).split("?")[0].split("/").pop();
+    if (opts.method === "HEAD") return objects.has(v) ? new Response(null, { status: 200, headers: { "content-length": String(objects.get(v)) } }) : new Response(null, { status: 404 });
+    if (opts.method === "DELETE") return new Response(null, { status: 204 });
+    return new Response(null, { status: 500 });
+  };
+  try {
+    const g = (await (await adminCall({ action: "createGallery", clientName: "The Lee family", email: "lee@example.com" })).json()).gallery;
+    const pid = "photo_r2abcdefghijklm";
+    const u = await (await adminCall({ action: "galleryUploadUrls", id: g.id, photo: pid })).json();
+    assert.equal(u.r2, true);
+    for (const v of ["thumb", "web", "full"]) {
+      assert.match(u.urls[v], new RegExp(`^https://acct123\\.r2\\.cloudflarestorage\\.com/zako-galleries/galleries/${g.id}/${pid}/${v}\\?`));
+      assert.match(u.urls[v], /X-Amz-Signature=[0-9a-f]{64}$/);
+    }
+    const meta = { store: "r2", parts: 1, size: 1, type: "image/jpeg" };
+    let res = await adminCall({ action: "addGalleryPhoto", id: g.id, photo: { id: pid, name: "lee-01.jpg", w: 700, h: 467, files: { thumb: meta, web: meta, full: meta } } });
+    assert.equal(res.status, 200);
+    const stored = (await (await adminCall({ action: "listGalleries" })).json()).galleries.find((x) => x.id === g.id);
+    assert.ok(stored, "gallery listed");
+
+    // missing object -> refused
+    objects.delete("web");
+    res = await adminCall({ action: "addGalleryPhoto", id: g.id, photo: { id: "photo_r2missingxxxxxx", name: "x.jpg", files: { thumb: meta, web: meta, full: meta } } });
+    assert.equal(res.status, 400);
+
+    res = await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=full&t=${g.token}&dl=1`));
+    assert.equal(res.status, 302);
+    const loc = res.headers.get("location");
+    assert.match(loc, /\/galleries\/.+\/full\?/);
+    assert.match(decodeURIComponent(loc), /response-content-disposition=attachment; filename="lee-01.jpg"/);
+    assert.equal((await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=thumb&t=wrong`))).status, 404);
+
+    calls.length = 0;
+    await adminCall({ action: "deleteGallery", id: g.id });
+    assert.equal(calls.filter((c) => c.method === "DELETE").length, 3, "all three R2 files deleted");
+  } finally {
+    globalThis.fetch = realFetch;
+    for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
+});

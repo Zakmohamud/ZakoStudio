@@ -1,12 +1,16 @@
 // Client galleries: private, unguessable links to a family's finished photographs.
 //
-// Storage (Netlify Blobs for now; the file functions are the only place that touch files,
-// so moving the photos to Cloudflare R2 later only changes this module):
+// Storage: photo files go to Cloudflare R2 when the R2_* environment variables are set (the browser uploads straight
+// to R2 with a short-lived signed link, and viewing redirects to a short-lived signed link). Without them, and for
+// photos uploaded before the switch, files live in Netlify Blobs:
 //   client-galleries        g/<id>                       gallery record (JSON)
 //   client-gallery-files    <id>/<photo>/<variant>/<n>   file bytes, split into ≤4 MB parts
 // variants: thumb (≈600 px), web (≈2048 px) — made in the browser on upload — and full (the export as is).
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { galleriesStore, galleryFilesStore } from "./referrals.mjs";
+import { r2Delete, r2Enabled, r2Url } from "./r2.mjs";
+
+export { r2Enabled };
 
 export const CHUNK_BYTES = 4 * 1024 * 1024;
 export const VARIANTS = ["thumb", "web", "full"];
@@ -63,11 +67,34 @@ export async function getChunk(g, p, v, n) {
   return store.get(fileKey(g, p, v, n), { type: "arrayBuffer" });
 }
 
+// R2 object key for one variant of one photo.
+export const r2Key = (g, p, v) => `galleries/${g}/${p}/${v}`;
+
+// Signed upload links (15 minutes) for the three variants of a new photo.
+export function uploadUrls(g, p) {
+  return Object.fromEntries(VARIANTS.map((v) => [v, r2Url("PUT", r2Key(g, p, v), { expires: 900 })]));
+}
+
+// Checks an uploaded R2 object exists and returns its size (null if missing).
+export async function r2Size(g, p, v) {
+  const res = await fetch(r2Url("HEAD", r2Key(g, p, v), { expires: 120 }), { method: "HEAD" });
+  return res.ok ? Number(res.headers.get("content-length")) : null;
+}
+
+// Signed viewing/download link (1 hour).
+export function viewUrl(g, photo, v, { download = false } = {}) {
+  const name = (photo.name || `photo-${photo.id}.jpg`).replace(/[^\w.\- ]+/g, "_");
+  return r2Url("GET", r2Key(g, photo.id, v), { expires: 3600, downloadName: download ? name : undefined });
+}
+
 export async function deletePhotoFiles(g, photo) {
-  const store = await galleryFilesStore();
+  let store = null;
   for (const v of VARIANTS) {
-    const parts = photo.files?.[v]?.parts || 0;
-    for (let n = 0; n < parts; n++) await store.delete(fileKey(g, photo.id, v, n));
+    const f = photo.files?.[v];
+    if (!f) continue;
+    if (f.store === "r2") { await r2Delete(r2Key(g, photo.id, v)); continue; }
+    store ||= await galleryFilesStore();
+    for (let n = 0; n < (f.parts || 0); n++) await store.delete(fileKey(g, photo.id, v, n));
   }
 }
 

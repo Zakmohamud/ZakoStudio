@@ -1189,7 +1189,17 @@
         const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", quality));
         return { blob, w: bmp.width, h: bmp.height };
       }
-      async function putFile(g, pid, v, blob) {
+      async function putFile(g, pid, v, blob, r2url) {
+        if (r2url) {
+          // Straight to Cloudflare R2 with a signed link, in one piece.
+          for (let attempt = 0; ; attempt++) {
+            const res = await fetch(r2url, { method: "PUT", headers: { "content-type": blob.type || "image/jpeg" }, body: blob }).catch(() => null);
+            if (res?.ok) break;
+            if (attempt >= 2) throw new Error("Upload to storage failed.");
+            await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+          }
+          return { store: "r2", parts: 1, size: blob.size, type: blob.type || "image/jpeg" };
+        }
         const CH = 4 * 1024 * 1024; const parts = Math.max(1, Math.ceil(blob.size / CH));
         for (let n = 0; n < parts; n++) {
           for (let attempt = 0; ; attempt++) {
@@ -1215,7 +1225,9 @@
               const pid = randId();
               const thumb = await resized(f, 700, 0.8), web = await resized(f, 2048, 0.86);
               fig.innerHTML = `<img src="${URL.createObjectURL(thumb.blob)}" alt=""><div class="up" style="position:absolute;inset:auto 0 0 0;background:rgba(255,255,255,.85);padding:2px">Uploading…</div>`;
-              const filesMeta = { thumb: await putFile(g, pid, "thumb", thumb.blob), web: await putFile(g, pid, "web", web.blob), full: await putFile(g, pid, "full", f) };
+              const dest = await api({ action: "galleryUploadUrls", id: g.id, photo: pid });
+              const u = dest.r2 ? dest.urls : {};
+              const filesMeta = { thumb: await putFile(g, pid, "thumb", thumb.blob, u.thumb), web: await putFile(g, pid, "web", web.blob, u.web), full: await putFile(g, pid, "full", f, u.full) };
               await api({ action: "addGalleryPhoto", id: g.id, photo: { id: pid, name: f.name, w: thumb.w, h: thumb.h, files: filesMeta } });
               fig.querySelector(".up")?.remove(); done++;
             } catch (e) { failed++; fig.innerHTML = `<div class="up" style="color:var(--red)">Failed: ${esc(f.name)}</div>`; }
