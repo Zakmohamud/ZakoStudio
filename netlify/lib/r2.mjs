@@ -31,15 +31,26 @@ export function presign({ method, host, path, accessKey, secretKey, region = "au
   return `https://${host}${path}?${query}&X-Amz-Signature=${sig}`;
 }
 
+const env = (k) => String(process.env[k] || "").trim();
+
+// Describes the configured keys without revealing them (length and character set only).
+export function keyShape() {
+  const id = env("R2_ACCESS_KEY_ID"), secret = env("R2_SECRET_ACCESS_KEY");
+  return {
+    accessKeyId: { length: id.length, hex: /^[0-9a-f]+$/i.test(id), hadSpaces: id !== String(process.env.R2_ACCESS_KEY_ID || "") },
+    secret: { length: secret.length, hex: /^[0-9a-f]+$/i.test(secret), hadSpaces: secret !== String(process.env.R2_SECRET_ACCESS_KEY || "") }
+  };
+}
+
 function target(key) {
-  const host = `${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  return { host, path: `/${enc(process.env.R2_BUCKET)}/${encPath(key)}` };
+  const host = `${env("R2_ACCOUNT_ID")}.r2.cloudflarestorage.com`;
+  return { host, path: `/${enc(env("R2_BUCKET"))}/${encPath(key)}` };
 }
 
 export function r2Url(method, key, { expires = 900, downloadName } = {}) {
   const { host, path } = target(key);
   const extraQuery = downloadName ? { "response-content-disposition": `attachment; filename="${downloadName.replace(/"/g, "")}"` } : {};
-  return presign({ method, host, path, accessKey: process.env.R2_ACCESS_KEY_ID, secretKey: process.env.R2_SECRET_ACCESS_KEY, expires, extraQuery });
+  return presign({ method, host, path, accessKey: env("R2_ACCESS_KEY_ID"), secretKey: env("R2_SECRET_ACCESS_KEY"), expires, extraQuery });
 }
 
 export async function r2Delete(key) {

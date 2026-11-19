@@ -5,7 +5,7 @@ import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
 import { logEmail, galleryEmail } from "../lib/emails.mjs";
 import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, r2Enabled, r2Size, readGallery, uploadUrls, writeGallery } from "../lib/gallery.mjs";
-import { r2Url } from "../lib/r2.mjs";
+import { keyShape, r2Url } from "../lib/r2.mjs";
 import {
   BREAK_MINUTES,
   PACKAGE_PRICES,
@@ -101,7 +101,7 @@ export default async function handler(request) {
         const put = await step("PUT", "zako");
         const get = await step("GET");
         const del = await step("DELETE");
-        return jsonResponse(200, { r2: true, ok: put.status === 200 && get.body === "zako" && del.status < 300, put, get, del });
+        return jsonResponse(200, { r2: true, ok: put.status === 200 && get.body === "zako" && del.status < 300, keys: keyShape(), put: put.status, get: get.status, del: del.status, error: (put.body.match(/<Code>(\w+)/) || [])[1] || null });
       }
 
       case "galleryUploadUrls": {
