@@ -171,16 +171,28 @@
           <div class="filter">
             <label>Period
               <select id="an-days">
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
                 <option value="7">Last 7 days</option>
                 <option value="14" selected>Last 14 days</option>
                 <option value="30">Last 30 days</option>
                 <option value="90">Last 90 days</option>
+                <option value="day">Pick a day…</option>
+                <option value="range">Pick dates…</option>
               </select>
             </label>
+            <label id="an-day-wrap" hidden>Day <input type="date" id="an-day" /></label>
+            <label id="an-from-wrap" hidden>From <input type="date" id="an-from" /></label>
+            <label id="an-to-wrap" hidden>To <input type="date" id="an-to" /></label>
             <label class="check"><input type="checkbox" id="an-preview" /> Include preview/test visits</label>
             <button class="btn ghost small" type="button" id="an-self"></button>
           </div>
           <div class="stats" id="an-stats"><p class="muted">Loading…</p></div>
+
+          <p class="muted" id="an-range" style="font-size:13px;margin-top:6px"></p>
+
+          <h3 class="sub">Day by day</h3>
+          <div class="table-wrap"><table><thead><tr><th>Day</th><th>Visitors</th><th>Requests</th><th></th></tr></thead><tbody id="an-daily"></tbody></table></div>
 
           <h3 class="sub">Where people drop off</h3>
           <div class="table-wrap"><table><thead><tr><th>Step</th><th>People</th><th>Of previous step</th><th>Dropped here</th></tr></thead><tbody id="an-funnel"></tbody></table></div>
@@ -536,13 +548,42 @@
       async function loadAnalytics() {
         renderSelf();
         try {
-          const a = await api({ action: "analytics", days: Number($("an-days").value), includePreview: $("an-preview").checked });
+          const sel = $("an-days").value;
+          $("an-day-wrap").hidden = sel !== "day";
+          $("an-from-wrap").hidden = $("an-to-wrap").hidden = sel !== "range";
+          const req = { action: "analytics", includePreview: $("an-preview").checked };
+          const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Vancouver" }).format(new Date());
+          const back = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+          if (sel === "today") req.day = todayIso;
+          else if (sel === "yesterday") req.day = back(todayIso, 1);
+          else if (sel === "day") { if (!$("an-day").value) $("an-day").value = back(todayIso, 1); req.day = $("an-day").value; }
+          else if (sel === "range") {
+            if (!$("an-from").value) $("an-from").value = back(todayIso, 6);
+            if (!$("an-to").value) $("an-to").value = todayIso;
+            req.from = $("an-from").value; req.to = $("an-to").value;
+          } else req.days = Number(sel);
+          const a = await api(req);
           const pct = (n) => (n === null || n === undefined ? "—" : `${n}%`);
-          const stat = (n, label, note) => `<div class="stat"><b>${n}</b>${label}${note ? `<small>${note}</small>` : ""}</div>`;
+          const p = a.previous || {};
+          const single = a.span === 1;
+          const vsLabel = single ? (a.since === todayIso ? "yesterday" : dayLabel(p.since)) : `the ${a.span} days before`;
+          const diff = (now, before, fmt = (x) => x) => {
+            if (before === undefined) return "";
+            const d = Math.round((now - before) * 100) / 100;
+            const cls = d > 0 ? "pos" : d < 0 ? "neg" : "muted";
+            return `<span class="${cls}">${d > 0 ? "▲ " : d < 0 ? "▼ " : ""}${d === 0 ? "same" : fmt(Math.abs(d))}</span> vs ${vsLabel} (${fmt(before)})`;
+          };
+          const stat = (n, label, note, cmp) => `<div class="stat"><b>${n}</b>${label}${note ? `<small>${note}</small>` : ""}${cmp ? `<small>${cmp}</small>` : ""}</div>`;
+          $("an-range").textContent = single
+            ? `Showing ${a.since === todayIso ? "today so far" : dayLabel(a.since)}${a.since === todayIso ? " (" + dayLabel(a.since) + ")" : ""}.`
+            : `Showing ${dayLabel(a.since)} to ${dayLabel(a.until)}.`;
+          const maxV = Math.max(1, ...a.daily.map((d) => d.visitors));
+          $("an-daily").innerHTML = a.daily.map((d) => `<tr><td style="white-space:nowrap">${d.date === todayIso ? "Today" : d.date === back(todayIso, 1) ? "Yesterday" : dayLabel(d.date)}</td><td>${d.visitors}</td><td>${d.requests}</td>
+            <td style="width:40%"><div style="height:8px;border-radius:4px;background:var(--ink);opacity:.75;width:${Math.round((d.visitors / maxV) * 100)}%"></div></td></tr>`).join("");
           $("an-stats").innerHTML =
-            stat(a.visitors, "Visitors", `${a.landingVisitors} saw the landing page`) +
-            stat(a.requests, "Reservation requests", `${pct(a.conversion)} of visitors`) +
-            stat(a.confirmed, "Confirmed bookings", `${pct(a.bookingConversion)} of visitors`) +
+            stat(a.visitors, "Visitors", `${a.landingVisitors} saw the landing page`, diff(a.visitors, p.visitors)) +
+            stat(a.requests, "Reservation requests", `${pct(a.conversion)} of visitors`, diff(a.requests, p.requests)) +
+            stat(a.confirmed, "Confirmed bookings", `${pct(a.bookingConversion)} of visitors`, diff(a.confirmed, p.confirmed)) +
             stat(money(a.revenue), "Revenue from bookings") +
             stat(money(a.totalSpend), "Ad spend", "entered by you") +
             stat(a.cac === null ? "—" : money(a.cac), "Cost per booking", a.confirmed ? "" : "needs a confirmed booking");
@@ -938,6 +979,7 @@
       });
 
       $("an-days").addEventListener("change", loadAnalytics);
+      for (const id of ["an-day", "an-from", "an-to"]) $(id).addEventListener("change", loadAnalytics);
       $("an-self").addEventListener("click", () => {
         try { isSelf() ? localStorage.removeItem(SELF_KEY) : localStorage.setItem(SELF_KEY, "1"); } catch {}
         renderSelf();

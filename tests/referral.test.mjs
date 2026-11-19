@@ -473,3 +473,29 @@ test("client galleries on Cloudflare R2: signed upload links, size check, signed
     for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });
+
+test("visitor tracker: pick a single day or a range, compare with the period before, day-by-day counts", async () => {
+  const { eventsStore, vancouverToday } = await import("../netlify/lib/referrals.mjs");
+  const store = await eventsStore();
+  const today = vancouverToday();
+  const back = (n) => { const d = new Date(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+  const add = (day, s) => store.setJSON(`${day}/${Math.random()}`, { e: "landing_view", s: `${day}-${s}`, ctx: "production" });
+  const base = await (await adminCall({ action: "analytics", day: today })).json();
+  await add(today, "a"); await add(today, "b"); await add(today, "c");
+  await add(back(1), "a");
+  const t = await (await adminCall({ action: "analytics", day: today })).json();
+  assert.equal(t.span, 1);
+  assert.equal(t.visitors - base.visitors, 3);
+  assert.equal(t.previous.since, back(1));
+  assert.ok(t.previous.visitors >= 1);
+  const y = await (await adminCall({ action: "analytics", day: back(1) })).json();
+  assert.equal(y.since, back(1));
+  assert.equal(y.previous.since, back(2));
+  const r = await (await adminCall({ action: "analytics", from: back(2), to: today })).json();
+  assert.equal(r.span, 3);
+  assert.deepEqual(r.daily.map((d) => d.date), [today, back(1), back(2)]);
+  assert.equal(r.previous.since, back(5));
+  assert.equal(r.previous.until, back(3));
+  const future = await (await adminCall({ action: "analytics", day: "2099-01-01" })).json();
+  assert.equal(future.since, today, "future days are clamped to today");
+});
