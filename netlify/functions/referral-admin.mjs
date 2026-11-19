@@ -4,7 +4,8 @@ import { randomUUID } from "node:crypto";
 import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
 import { logEmail, galleryEmail } from "../lib/emails.mjs";
-import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, readGallery, writeGallery } from "../lib/gallery.mjs";
+import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, r2Enabled, r2Size, readGallery, uploadUrls, writeGallery } from "../lib/gallery.mjs";
+import { keyShape, r2Url } from "../lib/r2.mjs";
 import {
   BREAK_MINUTES,
   PACKAGE_PRICES,
@@ -89,6 +90,29 @@ export default async function handler(request) {
         return jsonResponse(200, { gallery: { ...g, token: accessToken(g) } });
       }
 
+      case "storageCheck": {
+        // Writes, reads and deletes a tiny file in Cloudflare R2 to prove the keys work.
+        if (!r2Enabled()) return jsonResponse(200, { r2: false });
+        const key = `healthcheck/${newId()}`;
+        const step = async (method, body) => {
+          const res = await fetch(r2Url(method, key, { expires: 120 }), { method, body, headers: body ? { "content-type": "text/plain" } : {} });
+          return { status: res.status, body: method === "GET" ? await res.text() : (res.ok ? "" : (await res.text()).slice(0, 300)) };
+        };
+        const put = await step("PUT", "zako");
+        const get = await step("GET");
+        const del = await step("DELETE");
+        return jsonResponse(200, { r2: true, ok: put.status === 200 && get.body === "zako" && del.status < 300, keys: keyShape(), put: put.status, get: get.status, del: del.status, error: (put.body.match(/<Code>(\w+)/) || [])[1] || null });
+      }
+
+      case "galleryUploadUrls": {
+        // Where the browser should send a new photo's files: signed Cloudflare R2 links, or (if R2 isn't set up) nothing.
+        const g = await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        if (!isId(body.photo)) return jsonResponse(400, { message: "Bad photo." });
+        if (!r2Enabled()) return jsonResponse(200, { r2: false });
+        return jsonResponse(200, { r2: true, urls: uploadUrls(g.id, body.photo) });
+      }
+
       case "addGalleryPhoto": {
         const g = await readGallery(body.id);
         if (!g) return jsonResponse(404, { message: "Gallery not found." });
@@ -99,7 +123,15 @@ export default async function handler(request) {
         for (const v of VARIANTS) {
           const f = ph.files?.[v];
           if (!f || !Number.isInteger(f.parts) || f.parts < 1 || !Number.isInteger(f.size)) return jsonResponse(400, { message: "Upload incomplete." });
-          files[v] = { parts: f.parts, size: f.size, type: /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/jpeg" };
+          const type = /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/jpeg";
+          if (f.store === "r2") {
+            if (!r2Enabled()) return jsonResponse(400, { message: "Cloudflare R2 isn't set up." });
+            const size = await r2Size(g.id, ph.id, v);
+            if (size === null) return jsonResponse(400, { message: "Upload incomplete." });
+            files[v] = { store: "r2", parts: 1, size, type };
+          } else {
+            files[v] = { parts: f.parts, size: f.size, type };
+          }
         }
         g.photos = [...(g.photos || []).filter((x) => x.id !== ph.id),
           { id: ph.id, name: cleanText(ph.name, 120), w: Number(ph.w) || 0, h: Number(ph.h) || 0, files, addedAt: new Date().toISOString() }];

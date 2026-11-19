@@ -2,7 +2,7 @@
 // Streams the stored parts of one photo. Needs the gallery's secret token (only handed out by /api/gallery once the
 // gallery is visible to the client, or to the bookings page), and the gallery must not have closed.
 import { jsonResponse } from "../lib/referrals.mjs";
-import { VARIANTS, getChunk, isExpired, isId, readGallery, tokenOk } from "../lib/gallery.mjs";
+import { VARIANTS, getChunk, isExpired, isId, readGallery, tokenOk, viewUrl } from "../lib/gallery.mjs";
 
 export default async function handler(request) {
   const url = new URL(request.url);
@@ -17,6 +17,14 @@ export default async function handler(request) {
   const photo = (gallery.photos || []).find((x) => x.id === p);
   const file = photo?.files?.[v];
   if (!file) return jsonResponse(404, { message: "Not found." });
+
+  // Photos in Cloudflare R2: send the browser to a signed link that works for an hour.
+  if (file.store === "r2") {
+    return new Response(null, {
+      status: 302,
+      headers: { location: viewUrl(gallery.id, photo, v, { download }), "cache-control": v === "full" ? "private, no-store" : "private, max-age=1800", "x-robots-tag": "noindex" }
+    });
+  }
 
   let n = 0;
   const stream = new ReadableStream({
