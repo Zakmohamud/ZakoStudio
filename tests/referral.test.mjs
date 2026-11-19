@@ -15,6 +15,7 @@ function memoryStores() {
     return {
       async get(key) { return data.has(key) ? structuredClone(data.get(key)) : null; },
       async setJSON(key, value) { data.set(key, structuredClone(value)); return { modified: true }; },
+      async set(key, value) { data.set(key, value.slice(0)); return { modified: true }; },
       async delete(key) { data.delete(key); },
       async list(opts = {}) { return { blobs: [...data.keys()].filter((k) => !opts.prefix || k.startsWith(opts.prefix)).map((key) => ({ key })) }; }
     };
@@ -338,4 +339,86 @@ test("visitor tracking: live visits are counted even without Netlify's CONTEXT v
   assert.equal(withPreview.visitors - live.visitors, 1, "the preview visit only counts when previews are included");
   assert.ok(live.visitors >= 1, "the live phone visit is counted");
   if (saved !== undefined) process.env.CONTEXT = saved;
+});
+
+test("client galleries: create, upload in parts, private access, PIN, favourites, downloads", async () => {
+  const gallery = (await import("../netlify/functions/gallery.mjs")).default;
+  const file = (await import("../netlify/functions/gallery-file.mjs")).default;
+  const upload = (await import("../netlify/functions/gallery-upload.mjs")).default;
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+
+  let res = await adminCall({ action: "createGallery", clientName: "Ana Lee", email: "ana@example.com", expiresAt: "2030-01-31" });
+  assert.equal(res.status, 200);
+  const g = (await res.json()).gallery;
+  assert.ok(g.id.length >= 16 && g.token);
+
+  // upload one photo: full in two parts, web and thumb in one part each
+  const pid = "photo_abcdefghijklmnop";
+  const full = new Uint8Array(5 * 1024 * 1024).map((_, i) => i % 251);
+  const put = (v, n, bytes, pw = "secret") => upload(new Request(`https://x.test/api/gallery-upload?g=${g.id}&p=${pid}&v=${v}&n=${n}`, { method: "PUT", headers: { "x-admin-password": pw }, body: bytes }));
+  assert.equal((await put("full", 0, full.slice(0, 4 * 1024 * 1024))).status, 200);
+  assert.equal((await put("full", 1, full.slice(4 * 1024 * 1024))).status, 200);
+  assert.equal((await put("web", 0, new Uint8Array([1, 2, 3]))).status, 200);
+  assert.equal((await put("thumb", 0, new Uint8Array([4, 5]))).status, 200);
+  assert.equal((await put("thumb", 0, new Uint8Array([4]), "nope")).status, 401, "uploads need the admin password");
+  res = await adminCall({ action: "addGalleryPhoto", id: g.id, photo: { id: pid, name: "Lee family 01.jpg", w: 6000, h: 4000,
+    files: { full: { parts: 2, size: full.length, type: "image/jpeg" }, web: { parts: 1, size: 3 }, thumb: { parts: 1, size: 2 } } } });
+  assert.equal(res.status, 200);
+
+  const view = (q) => gallery(new Request(`https://x.test/api/gallery?${q}`));
+  // not visible until published
+  assert.equal((await view(`g=${g.id}`)).status, 403);
+  await adminCall({ action: "updateGallery", id: g.id, published: true });
+  res = await view(`g=${g.id}`);
+  assert.equal(res.status, 200);
+  const pub = await res.json();
+  assert.equal(pub.photos.length, 1);
+  assert.equal(pub.clientName, "Ana Lee");
+  assert.ok(!("pin" in pub) && !("email" in pub), "no private fields leak");
+
+  // full-size download streams every part back in order
+  res = await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=full&t=${pub.token}&dl=1`));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-disposition"), /attachment; filename="Lee family 01.jpg"/);
+  const got = new Uint8Array(await res.arrayBuffer());
+  assert.equal(got.length, full.length);
+  assert.equal(got[4 * 1024 * 1024 + 7], full[4 * 1024 * 1024 + 7]);
+  // wrong token or unknown gallery: nothing
+  assert.equal((await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=full&t=wrong`))).status, 404);
+  assert.equal((await view("g=nonexistentgallery123")).status, 404);
+
+  // favourites
+  res = await gallery(new Request("https://x.test/api/gallery", { method: "POST", body: JSON.stringify({ g: g.id, t: pub.token, photo: pid, favourite: true }) }));
+  assert.equal(res.status, 200);
+  const listed = (await (await adminCall({ action: "listGalleries" })).json()).galleries[0];
+  assert.equal(listed.favourites, 1);
+
+  // PIN: old token stops working, the PIN unlocks it
+  await adminCall({ action: "updateGallery", id: g.id, pin: "2468" });
+  assert.equal((await view(`g=${g.id}&t=${pub.token}`)).status, 401);
+  assert.equal((await view(`g=${g.id}&pin=1111`)).status, 401);
+  res = await view(`g=${g.id}&pin=2468`);
+  assert.equal(res.status, 200);
+
+  // downloads can be turned off
+  const t2 = (await res.json()).token;
+  await adminCall({ action: "updateGallery", id: g.id, allowDownload: false });
+  assert.equal((await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=full&t=${t2}`))).status, 403);
+  assert.equal((await file(new Request(`https://x.test/api/gallery-file?g=${g.id}&p=${pid}&v=web&t=${t2}`))).status, 200);
+
+  // email
+  const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  res = await adminCall({ action: "sendGalleryEmail", id: g.id });
+  assert.equal(res.status, 200);
+  assert.match(sent[0].text, /\/gallery\//);
+  assert.match(sent[0].text, /PIN: 2468/);
+  setMailer(null);
+
+  // expired galleries close
+  await adminCall({ action: "updateGallery", id: g.id, expiresAt: "2020-01-01" });
+  assert.equal((await view(`g=${g.id}&pin=2468`)).status, 410);
+
+  // delete removes the files too
+  await adminCall({ action: "deleteGallery", id: g.id });
+  assert.equal((await view(`g=${g.id}`)).status, 404);
 });

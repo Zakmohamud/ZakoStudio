@@ -237,6 +237,40 @@ Christmas, as we remember it.`;
   return { subject, html, text };
 }
 
+// ---------- 4. Gallery ready (sent from Client galleries) ----------
+export function galleryEmail({ firstName, link, pin, expiresAt, photoCount }) {
+  const subject = "Your Christmas photographs are ready";
+  const until = expiresAt ? longDate(expiresAt) : "";
+  const button = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 22px;"><tr>
+    <td style="background:${C.forest};padding:14px 26px;"><a href="${esc(link)}" style="font-family:${SANS};font-size:14px;letter-spacing:2px;text-transform:uppercase;color:${C.ivory};text-decoration:none;">Open your gallery</a></td></tr></table>`;
+  const html = layout({
+    preheader: "Your private gallery is ready to view and download.",
+    kicker: "Your gallery",
+    title: "Your photographs <em>are ready.</em>",
+    body:
+      p(`Dear ${esc(firstName)},`) +
+      p(`Your Christmas photographs are ready${photoCount ? ` (${photoCount} of them)` : ""}. They're waiting in your own private gallery, where you can view them, mark your favourites and download them in full resolution.`) +
+      button +
+      rows([["Gallery", link], ["PIN", pin || ""], ["Open until", until]]) +
+      p("Please download your photographs before the gallery closes, and keep a copy somewhere safe.", "margin-top:18px;") +
+      p("Thank you for letting me be part of your Christmas.") +
+      signoff(["With warm regards,", "Zako Studio", "Christmas, as we remember it."])
+  });
+  const text = `Dear ${firstName},
+
+Your Christmas photographs are ready${photoCount ? ` (${photoCount} of them)` : ""}. View, favourite and download them in your private gallery:
+${link}${pin ? `\nPIN: ${pin}` : ""}${until ? `\nOpen until: ${until}` : ""}
+
+Please download your photographs before the gallery closes, and keep a copy somewhere safe.
+
+Thank you for letting me be part of your Christmas.
+
+With warm regards,
+Zako Studio
+Christmas, as we remember it.`;
+  return { subject, html, text };
+}
+
 export const EMAIL_TYPES = {
   acknowledgement: acknowledgementEmail,
   feeRequest: feeRequestEmail,
@@ -246,7 +280,8 @@ export const EMAIL_TYPES = {
 export const EMAIL_LABELS = {
   acknowledgement: "Request received",
   feeRequest: "Reservation fee request",
-  confirmation: "Booking confirmation"
+  confirmation: "Booking confirmation",
+  gallery: "Gallery ready"
 };
 
 // Adds an entry to the client's email history (newest last) and keeps the

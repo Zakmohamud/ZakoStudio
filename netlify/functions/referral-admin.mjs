@@ -3,7 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
-import { logEmail } from "../lib/emails.mjs";
+import { logEmail, galleryEmail } from "../lib/emails.mjs";
+import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, readGallery, writeGallery } from "../lib/gallery.mjs";
 import {
   BREAK_MINUTES,
   PACKAGE_PRICES,
@@ -54,6 +55,99 @@ export default async function handler(request) {
     const schedule = await scheduleStore();
 
     switch (body?.action) {
+      // ---------- Client galleries ----------
+      case "listGalleries": {
+        const galleries = await listGalleries();
+        return jsonResponse(200, { galleries: galleries.map((g) => ({ ...g, token: accessToken(g), photoCount: (g.photos || []).length,
+          favourites: (g.photos || []).filter((p) => p.favourite).length, bytes: (g.photos || []).reduce((t, p) => t + (p.files?.full?.size || 0), 0) })) });
+      }
+
+      case "createGallery":
+      case "updateGallery": {
+        const isNew = body.action === "createGallery";
+        const g = isNew ? { id: newId(), createdAt: new Date().toISOString(), photos: [], version: 1 } : await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        const clientName = cleanText(body.clientName ?? g.clientName, 80);
+        if (!clientName) return jsonResponse(400, { message: "Add the client's name." });
+        const pin = cleanText(body.pin ?? g.pin ?? "", 12);
+        if (pin && !/^\d{4,8}$/.test(pin)) return jsonResponse(400, { message: "A PIN is 4 to 8 digits (or leave it empty)." });
+        const expiresAt = body.expiresAt === undefined ? g.expiresAt : body.expiresAt || null;
+        if (expiresAt && !isISODate(expiresAt)) return jsonResponse(400, { message: "Pick a valid closing date." });
+        if (!isNew && pin !== (g.pin || "")) g.version = (g.version || 1) + 1; // a new PIN invalidates old links' saved access
+        Object.assign(g, {
+          clientName,
+          title: cleanText(body.title ?? g.title ?? "Christmas 2026", 80) || "Christmas 2026",
+          message: cleanText(body.message ?? g.message ?? "", 400),
+          email: cleanText(body.email ?? g.email ?? "", 120),
+          inquiryId: cleanText(body.inquiryId ?? g.inquiryId ?? "", 80),
+          pin,
+          expiresAt,
+          allowDownload: body.allowDownload === undefined ? g.allowDownload !== false : Boolean(body.allowDownload),
+          published: body.published === undefined ? Boolean(g.published) : Boolean(body.published)
+        });
+        await writeGallery(g);
+        return jsonResponse(200, { gallery: { ...g, token: accessToken(g) } });
+      }
+
+      case "addGalleryPhoto": {
+        const g = await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        const ph = body.photo || {};
+        if (!isId(ph.id)) return jsonResponse(400, { message: "Bad photo." });
+        if ((g.photos || []).length >= MAX_PHOTOS) return jsonResponse(400, { message: `A gallery holds up to ${MAX_PHOTOS} photos.` });
+        const files = {};
+        for (const v of VARIANTS) {
+          const f = ph.files?.[v];
+          if (!f || !Number.isInteger(f.parts) || f.parts < 1 || !Number.isInteger(f.size)) return jsonResponse(400, { message: "Upload incomplete." });
+          files[v] = { parts: f.parts, size: f.size, type: /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/jpeg" };
+        }
+        g.photos = [...(g.photos || []).filter((x) => x.id !== ph.id),
+          { id: ph.id, name: cleanText(ph.name, 120), w: Number(ph.w) || 0, h: Number(ph.h) || 0, files, addedAt: new Date().toISOString() }];
+        await writeGallery(g);
+        return jsonResponse(200, { photoCount: g.photos.length });
+      }
+
+      case "deleteGalleryPhoto": {
+        const g = await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        const ph = (g.photos || []).find((x) => x.id === body.photo);
+        if (ph) await deletePhotoFiles(g.id, ph);
+        g.photos = (g.photos || []).filter((x) => x.id !== body.photo);
+        await writeGallery(g);
+        return jsonResponse(200, { photoCount: g.photos.length });
+      }
+
+      case "deleteGallery": {
+        const g = await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        for (const ph of g.photos || []) await deletePhotoFiles(g.id, ph);
+        const { galleriesStore } = await import("../lib/referrals.mjs");
+        await (await galleriesStore()).delete(`g/${g.id}`);
+        return jsonResponse(200, { deleted: true });
+      }
+
+      case "previewGalleryEmail":
+      case "sendGalleryEmail": {
+        const g = await readGallery(body.id);
+        if (!g) return jsonResponse(404, { message: "Gallery not found." });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email || "")) return jsonResponse(400, { message: "Add the client's email to the gallery first." });
+        const origin = new URL(request.url).origin;
+        const link = `${origin}/gallery/${g.id}`;
+        const mail = galleryEmail({ firstName: /^the\s|family|&| and /i.test(g.clientName) ? g.clientName : g.clientName.split(/\s+/)[0], link, pin: g.pin, expiresAt: g.expiresAt, photoCount: (g.photos || []).length });
+        if (body.action === "previewGalleryEmail") return jsonResponse(200, { to: g.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
+        if (!g.published) return jsonResponse(400, { message: "Turn on “Visible to client” before sending the link." });
+        if (!(await mailReady())) return jsonResponse(503, { message: "Email sending isn’t set up yet." });
+        try { await sendMail({ to: g.email, ...mail }); }
+        catch (error) { return jsonResponse(502, { message: `The email couldn’t be sent: ${String(error.message || error).slice(0, 160)}` }); }
+        g.emailLog = [...(g.emailLog || []), { at: new Date().toISOString(), to: g.email }];
+        if (g.inquiryId) {
+          const inq = await inquiries.get(g.inquiryId, { type: "json" });
+          if (inq) { logEmail(inq, { type: "gallery", to: g.email, subject: mail.subject }); await inquiries.setJSON(g.inquiryId, inq); }
+        }
+        await writeGallery(g);
+        return jsonResponse(200, { sent: true });
+      }
+
       case "list": {
         const codeKeys = (await codes.list()).blobs.map((b) => b.key);
         const codeList = (await Promise.all(codeKeys.map((k) => codes.get(k, { type: "json" })))).filter(Boolean);

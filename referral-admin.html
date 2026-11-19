@@ -118,6 +118,33 @@
       .ep-foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 20px; border-top: 1px solid #e6e0d4; }
       .ep-foot .message { margin: 0 auto 0 0; }
       @media (max-width: 700px) { .email-grid { grid-template-columns: 1fr; } }
+      .gal-form { display: grid; grid-template-columns: 1.2fr 1.3fr 1.2fr 0.7fr 0.9fr auto; gap: 12px; align-items: end; padding: 18px; border: 1px solid var(--line); background: var(--card); }
+      .gal { border: 1px solid var(--line); background: var(--card); margin-top: 12px; }
+      .gal-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; flex-wrap: wrap; }
+      .gal-head .serif { font-family: var(--serif); font-size: 22px; }
+      .gal-body { border-top: 1px solid var(--line); padding: 16px; display: grid; gap: 16px; }
+      .gal-settings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: end; }
+      .gal-settings textarea { grid-column: 1 / -1; min-height: 64px; padding: 9px 12px; border: 1px solid var(--line-strong); font: inherit; }
+      .toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 500; }
+      .toggle input { min-height: 0; width: 18px; height: 18px; }
+      .drop { border: 1.5px dashed var(--line-strong); padding: 26px; text-align: center; background: #fff; color: var(--muted); cursor: pointer; }
+      .drop.over { border-color: var(--green); background: #f1f7f3; }
+      .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+      .thumbs figure { margin: 0; position: relative; aspect-ratio: 1; background: #e8e1d6; overflow: hidden; }
+      .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .thumbs .fav { position: absolute; left: 6px; top: 4px; color: var(--red); font-size: 16px; text-shadow: 0 0 4px #fff; }
+      .thumbs .del { position: absolute; right: 4px; top: 4px; width: 26px; height: 26px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); color: var(--red); }
+      .thumbs .up { display: grid; place-items: center; font-size: 12px; color: var(--muted); }
+      dialog.qr { border: 0; padding: 0; width: min(560px, 94vw); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+      dialog.qr::backdrop { background: rgba(20,20,20,.45); }
+      .qr-card { background: #F5F0E7; padding: 34px 30px 26px; text-align: center; font-family: var(--sans); color: #292622; }
+      .qr-card .k { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: #AD9361; }
+      .qr-card .t { font-family: "Cormorant Garamond", var(--serif); font-size: 36px; line-height: 1.05; margin: 10px 0 18px; }
+      .qr-card .q { width: 210px; height: 210px; margin: 0 auto; background: #fff; padding: 10px; }
+      .qr-card .q svg { width: 100%; height: 100%; display: block; }
+      .qr-card .u { font-size: 12px; color: #6A635A; margin-top: 14px; word-break: break-all; }
+      .qr-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px; flex-wrap: wrap; }
+      @media (max-width: 760px) { .gal-form, .gal-settings { grid-template-columns: 1fr 1fr; } }
     </style>
   </head>
   <body>
@@ -252,6 +279,21 @@
         </section>
 
         <section>
+          <h2>Client galleries</h2>
+          <p class="muted" style="margin-top:-6px">Private galleries on your own site. Create one, drop in the photos you exported from Lightroom, then share the link or QR card. Clients can view, favourite and download.</p>
+          <form class="gal-form" id="gal-form">
+            <label>Client name<input id="gl-name" required maxlength="80" placeholder="e.g. The Lee family" /></label>
+            <label>Booking (optional)<select id="gl-inq"><option value="">Not linked</option></select></label>
+            <label>Client email<input id="gl-email" type="email" maxlength="120" placeholder="for the 'photos are ready' email" /></label>
+            <label>PIN (optional)<input id="gl-pin" inputmode="numeric" maxlength="8" placeholder="4–8 digits" /></label>
+            <label>Open until<input id="gl-exp" type="date" /></label>
+            <button class="btn red" type="submit">Create gallery</button>
+          </form>
+          <p class="message" id="gal-message" role="status"></p>
+          <div id="gal-list"></div>
+        </section>
+
+        <section>
           <h2>Block off time</h2>
           <form class="block-form" id="block-form">
             <label>Date
@@ -319,6 +361,11 @@
       </div>
     </main>
 
+    <dialog class="qr" id="qr-dialog">
+      <div class="qr-card" id="qr-card"></div>
+      <div class="qr-foot"><button class="btn ghost small" type="button" id="qr-close">Close</button><button class="btn ghost small" type="button" id="qr-copy">Copy link</button><button class="btn small" type="button" id="qr-png">Download card (PNG)</button><button class="btn small" type="button" id="qr-print">Print</button></div>
+    </dialog>
+    <script src="/js/qrcode.js"></script>
     <dialog class="email-preview" id="email-dialog">
       <div class="ep-head"><span id="ep-to"></span><b id="ep-subject"></b></div>
       <iframe id="ep-frame" title="Email preview" sandbox=""></iframe>
@@ -377,6 +424,7 @@
         settingsData = await api({ action: "getSettings" });
         render();
         loadAnalytics();
+        loadGalleries();
       }
 
       const inquiryById = (id) => data.inquiries.find((i) => i.id === id);
@@ -817,6 +865,13 @@
         btn.disabled = true;
         btn.textContent = "Sending…";
         try {
+          if (pendingEmail.gallery) {
+            await api({ action: "sendGalleryEmail", id: pendingEmail.gallery });
+            $("email-dialog").close();
+            galNote("Gallery email sent.", "ok");
+            await loadGalleries();
+            return;
+          }
           await api({ action: "sendEmail", ...pendingEmail });
           $("email-dialog").close();
           inquiryNote(pendingEmail.type === "feeRequest" ? "Reservation fee request sent." : "Booking confirmation sent.", "ok");
@@ -1014,6 +1069,196 @@
         settingsData = await api({ action: "saveAutoDays", restoreHidden: true });
         renderSettings();
       });
+
+
+      // ================= Client galleries =================
+      let galleries = [];
+      let openGallery = null;
+      const galNote = (t, k) => { $("gal-message").textContent = t; $("gal-message").className = `message ${k || ""}`; };
+      const galLink = (g) => `${location.origin}/gallery/${g.id}`;
+      const galFile = (g, p, v) => `/api/gallery-file?g=${g.id}&p=${p.id}&v=${v}&t=${g.token}`;
+      const mbText = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + " GB" : Math.max(0, Math.round(b / 1e6)) + " MB";
+      const randId = () => { const a = new Uint8Array(15); crypto.getRandomValues(a); return btoa(String.fromCharCode(...a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+      (() => { const d = new Date(); d.setDate(d.getDate() + 60); $("gl-exp").value = d.toISOString().slice(0, 10); })();
+
+      async function loadGalleries() {
+        try { galleries = (await api({ action: "listGalleries" })).galleries; } catch (e) { galNote(e.message, "bad"); return; }
+        const sel = $("gl-inq"), cur = sel.value;
+        sel.innerHTML = '<option value="">Not linked</option>' + (data?.inquiries || []).filter((i) => i.booked).map((i) => `<option value="${esc(i.id)}">${esc(i.name)} · ${esc(i.bookedDate || i.date || "")}</option>`).join("");
+        sel.value = cur;
+        renderGalleries();
+      }
+      $("gl-inq").addEventListener("change", () => { const i = (data?.inquiries || []).find((x) => x.id === $("gl-inq").value); if (i) { if (!$("gl-name").value) $("gl-name").value = i.name; if (!$("gl-email").value) $("gl-email").value = i.email || ""; } });
+
+      function renderGalleries() {
+        $("gal-list").innerHTML = galleries.length ? galleries.map((g) => {
+          const inq = g.inquiryId ? (data?.inquiries || []).find((i) => i.id === g.inquiryId) : null;
+          const feeNote = inq ? (inq.depositReceived ? "" : ' <span class="pill off">reservation fee not marked received</span>') : "";
+          const isOpen = openGallery === g.id;
+          return `<div class="gal" data-gal="${g.id}">
+            <div class="gal-head"><div><div class="serif">${esc(g.clientName)}</div>
+              <div class="muted" style="font-size:13px">${g.photoCount} photo${g.photoCount === 1 ? "" : "s"} · ${mbText(g.bytes)}${g.favourites ? ` · ♥ ${g.favourites} favourite${g.favourites === 1 ? "" : "s"}` : ""}${g.expiresAt ? ` · open until ${esc(g.expiresAt)}` : ""}${g.pin ? " · PIN " + esc(g.pin) : ""}${g.emailLog?.length ? ` · emailed ${new Date(g.emailLog.at(-1).at).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}` : ""}</div></div>
+              <div class="actions">${g.published ? '<span class="pill on">Visible to client</span>' : '<span class="pill off">Hidden from client</span>'}${feeNote}
+                <button class="btn ghost small" data-gact="toggle">${isOpen ? "Close" : "Manage"}</button>
+                <button class="btn ghost small" data-gact="qr">QR card</button>
+                <button class="btn ghost small" data-gact="copy">Copy link</button>
+                <a class="btn ghost small" style="display:inline-flex;align-items:center;text-decoration:none" href="${galLink(g)}${g.pin ? "" : ""}" target="_blank" rel="noopener">View as client</a></div></div>
+            ${isOpen ? `<div class="gal-body">
+              <div class="gal-settings">
+                <label>Client name<input data-gf="clientName" value="${esc(g.clientName)}" maxlength="80"></label>
+                <label>Client email<input data-gf="email" type="email" value="${esc(g.email || "")}" maxlength="120"></label>
+                <label>PIN (optional)<input data-gf="pin" inputmode="numeric" maxlength="8" value="${esc(g.pin || "")}"></label>
+                <label>Open until<input data-gf="expiresAt" type="date" value="${esc(g.expiresAt || "")}"></label>
+                <label>Title<input data-gf="title" value="${esc(g.title || "Christmas 2026")}" maxlength="80"></label>
+                <label class="toggle"><input type="checkbox" data-gf="published" ${g.published ? "checked" : ""}> Visible to client</label>
+                <label class="toggle"><input type="checkbox" data-gf="allowDownload" ${g.allowDownload !== false ? "checked" : ""}> Allow downloads</label>
+                <div class="actions" style="justify-content:flex-end"><button class="btn small" data-gact="save">Save settings</button></div>
+                <textarea data-gf="message" maxlength="400" placeholder="Optional note shown at the top of their gallery (a default thank-you is shown if empty)">${esc(g.message || "")}</textarea>
+              </div>
+              <div class="drop" data-drop><b>Drop exported photos here</b> or click to choose · JPEGs from Lightroom, any size<input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden data-files></div>
+              <div class="thumbs" data-thumbs>${(g.photos || []).map((p) => `<figure title="${esc(p.name)}"><img src="${galFile(g, p, "thumb")}" loading="lazy" alt="">${p.favourite ? '<span class="fav">♥</span>' : ""}<button class="del" data-del="${p.id}" aria-label="Remove photo">×</button></figure>`).join("")}</div>
+              <div class="actions" style="justify-content:space-between">
+                <div class="actions"><button class="btn small red" data-gact="email" ${g.email ? "" : "disabled"}>Email “your photos are ready”…</button></div>
+                <button class="linkish" data-gact="delete">Delete this gallery</button></div>
+            </div>` : ""}</div>`;
+        }).join("") : '<p class="muted">No galleries yet. Create one above.</p>';
+        bindGallery();
+      }
+
+      function bindGallery() {
+        document.querySelectorAll("[data-gal]").forEach((box) => {
+          const g = galleries.find((x) => x.id === box.dataset.gal);
+          box.querySelectorAll("[data-gact]").forEach((b) => b.onclick = () => galAction(g, b.dataset.gact, box));
+          box.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+            if (!confirm("Remove this photo from the gallery?")) return;
+            await api({ action: "deleteGalleryPhoto", id: g.id, photo: b.dataset.del }); await loadGalleries();
+          });
+          const drop = box.querySelector("[data-drop]");
+          if (drop) {
+            const input = drop.querySelector("[data-files]");
+            drop.onclick = () => input.click();
+            input.onchange = () => uploadFiles(g, [...input.files], box);
+            drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+            drop.ondragleave = () => drop.classList.remove("over");
+            drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); uploadFiles(g, [...e.dataTransfer.files].filter((f) => f.type.startsWith("image/")), box); };
+          }
+        });
+      }
+
+      async function galAction(g, act, box) {
+        try {
+          if (act === "toggle") { openGallery = openGallery === g.id ? null : g.id; return renderGalleries(); }
+          if (act === "copy") { await navigator.clipboard.writeText(galLink(g)); return galNote(`Link copied${g.pin ? ` (PIN ${g.pin})` : ""}.`, "ok"); }
+          if (act === "qr") return showQr(g);
+          if (act === "save") {
+            const v = {}; box.querySelectorAll("[data-gf]").forEach((i) => v[i.dataset.gf] = i.type === "checkbox" ? i.checked : i.value);
+            if (v.published && !g.published && !(g.photos || []).length && !confirm("This gallery has no photos yet. Make it visible anyway?")) return;
+            await api({ action: "updateGallery", id: g.id, ...v }); galNote("Saved.", "ok"); return loadGalleries();
+          }
+          if (act === "email") {
+            const pv = await api({ action: "previewGalleryEmail", id: g.id });
+            pendingEmail = { gallery: g.id };
+            $("ep-to").textContent = `To: ${pv.to}`; $("ep-subject").textContent = pv.subject; $("ep-frame").srcdoc = pv.html;
+            const blocked = !pv.mailReady ? "Email sending is off — add the Gmail details in Netlify first." : !g.published ? "Turn on “Visible to client” and save before sending." : "";
+            $("ep-message").textContent = blocked; $("ep-message").className = `message ${blocked ? "bad" : ""}`; $("ep-send").disabled = Boolean(blocked);
+            return $("email-dialog").showModal();
+          }
+          if (act === "delete") {
+            if (!confirm(`Permanently delete ${g.clientName}'s gallery and all ${g.photoCount} photos in it? The link will stop working. This can't be undone (your Lightroom originals aren't affected).`)) return;
+            await api({ action: "deleteGallery", id: g.id }); openGallery = null; galNote("Gallery deleted.", "ok"); return loadGalleries();
+          }
+        } catch (e) { galNote(e.message, "bad"); }
+      }
+
+      $("gal-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+          const r = await api({ action: "createGallery", clientName: $("gl-name").value, email: $("gl-email").value, inquiryId: $("gl-inq").value, pin: $("gl-pin").value, expiresAt: $("gl-exp").value });
+          openGallery = r.gallery.id; $("gl-name").value = ""; $("gl-email").value = ""; $("gl-pin").value = ""; $("gl-inq").value = "";
+          galNote("Gallery created. Drop the photos in below; it stays hidden from the client until you switch on “Visible to client”.", "ok");
+          await loadGalleries();
+        } catch (err) { galNote(err.message, "bad"); }
+      });
+
+      // ---- uploads: the browser makes the thumbnail and web copies; the full export is sent in 4 MB parts ----
+      async function resized(file, long, quality) {
+        const bmp = await createImageBitmap(file);
+        const k = Math.min(1, long / Math.max(bmp.width, bmp.height));
+        const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+        c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+        const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", quality));
+        return { blob, w: bmp.width, h: bmp.height };
+      }
+      async function putFile(g, pid, v, blob) {
+        const CH = 4 * 1024 * 1024; const parts = Math.max(1, Math.ceil(blob.size / CH));
+        for (let n = 0; n < parts; n++) {
+          for (let attempt = 0; ; attempt++) {
+            const res = await fetch(`/api/gallery-upload?g=${g.id}&p=${pid}&v=${v}&n=${n}`, { method: "PUT", headers: { "x-admin-password": password }, body: blob.slice(n * CH, (n + 1) * CH) });
+            if (res.ok) break;
+            if (attempt >= 2) throw new Error((await res.json().catch(() => ({}))).message || "Upload failed.");
+            await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+          }
+        }
+        return { parts, size: blob.size, type: blob.type || "image/jpeg" };
+      }
+      async function uploadFiles(g, files, box) {
+        if (!files.length) return;
+        const thumbs = box.querySelector("[data-thumbs]");
+        const slots = files.map((f) => { const fig = document.createElement("figure"); fig.className = "up"; fig.innerHTML = `<div class="up">Waiting…</div>`; thumbs.append(fig); return fig; });
+        let done = 0, failed = 0, i = 0;
+        galNote(`Uploading ${files.length} photo${files.length === 1 ? "" : "s"}… keep this page open.`);
+        const worker = async () => {
+          while (i < files.length) {
+            const k = i++, f = files[k], fig = slots[k];
+            try {
+              fig.innerHTML = `<div class="up">Preparing…</div>`;
+              const pid = randId();
+              const thumb = await resized(f, 700, 0.8), web = await resized(f, 2048, 0.86);
+              fig.innerHTML = `<img src="${URL.createObjectURL(thumb.blob)}" alt=""><div class="up" style="position:absolute;inset:auto 0 0 0;background:rgba(255,255,255,.85);padding:2px">Uploading…</div>`;
+              const filesMeta = { thumb: await putFile(g, pid, "thumb", thumb.blob), web: await putFile(g, pid, "web", web.blob), full: await putFile(g, pid, "full", f) };
+              await api({ action: "addGalleryPhoto", id: g.id, photo: { id: pid, name: f.name, w: thumb.w, h: thumb.h, files: filesMeta } });
+              fig.querySelector(".up")?.remove(); done++;
+            } catch (e) { failed++; fig.innerHTML = `<div class="up" style="color:var(--red)">Failed: ${esc(f.name)}</div>`; }
+            galNote(`Uploaded ${done} of ${files.length}${failed ? ` · ${failed} failed` : ""}…`);
+          }
+        };
+        await Promise.all([worker(), worker()]);
+        galNote(`${done} photo${done === 1 ? "" : "s"} added${failed ? `, ${failed} failed (try those again)` : ""}.`, failed ? "bad" : "ok");
+        await loadGalleries();
+      }
+
+      // ---- QR card ----
+      let qrGallery = null;
+      function showQr(g) {
+        qrGallery = g;
+        const link = galLink(g);
+        $("qr-card").innerHTML = `<div class="k">Zako Studio · ${esc(g.title || "Christmas 2026")}</div>
+          <div class="t">${esc(g.clientName)},<br><i>your photographs are waiting.</i></div>
+          <div class="q">${window.ZSQR ? ZSQR.svg(link, { level: "M", border: 2, fg: "#243B2E", bg: "#ffffff" }) : ""}</div>
+          <div class="u">Scan with your phone camera · ${esc(link.replace(/^https?:\/\//, ""))}${g.pin ? `<br>PIN ${esc(g.pin)}` : ""}</div>`;
+        $("qr-dialog").showModal();
+      }
+      $("qr-close").onclick = () => $("qr-dialog").close();
+      $("qr-copy").onclick = async () => { await navigator.clipboard.writeText(galLink(qrGallery)); $("qr-copy").textContent = "Copied"; setTimeout(() => $("qr-copy").textContent = "Copy link", 1500); };
+      $("qr-print").onclick = () => {
+        const w = window.open("", "_blank"); if (!w) return;
+        w.document.write(`<!doctype html><title>QR card</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital@0;1&family=Jost&display=swap" rel="stylesheet"><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#fff}.c{width:4in;padding:.35in;background:#F5F0E7;text-align:center;font-family:Jost,sans-serif;color:#292622}.k{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#AD9361}.t{font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.05;margin:8px 0 14px}.q{width:2in;height:2in;margin:0 auto;background:#fff;padding:.08in}.q svg{width:100%;height:100%}.u{font-size:9px;color:#6A635A;margin-top:10px;word-break:break-all}</style><div class="c">${$("qr-card").innerHTML}</div><script>setTimeout(()=>print(),600)<\/script>`);
+        w.document.close();
+      };
+      $("qr-png").onclick = async () => {
+        const g = qrGallery, W = 1080, H = 1350, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+        try { await document.fonts.load('64px "Cormorant Garamond"'); } catch {}
+        x.fillStyle = "#F5F0E7"; x.fillRect(0, 0, W, H); x.textAlign = "center";
+        x.fillStyle = "#AD9361"; x.font = '500 26px Jost, sans-serif'; x.fillText(`ZAKO STUDIO · ${(g.title || "Christmas 2026").toUpperCase()}`, W / 2, 150);
+        x.fillStyle = "#292622"; x.font = '400 78px "Cormorant Garamond", Georgia, serif'; x.fillText(`${g.clientName},`, W / 2, 270);
+        x.font = 'italic 400 70px "Cormorant Garamond", Georgia, serif'; x.fillText("your photographs are waiting.", W / 2, 360);
+        const img = new Image(); img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(ZSQR.svg(galLink(g), { level: "M", border: 2, fg: "#243B2E" }));
+        await img.decode(); x.fillStyle = "#fff"; x.fillRect(W / 2 - 290, 450, 580, 580); x.imageSmoothingEnabled = false; x.drawImage(img, W / 2 - 270, 470, 540, 540);
+        x.fillStyle = "#6A635A"; x.font = '400 28px Jost, sans-serif'; x.fillText("Scan with your phone camera", W / 2, 1110);
+        x.fillText(galLink(g).replace(/^https?:\/\//, ""), W / 2, 1155); if (g.pin) x.fillText(`PIN ${g.pin}`, W / 2, 1200);
+        x.fillStyle = "#292622"; x.font = 'italic 400 34px "Cormorant Garamond", Georgia, serif'; x.fillText("Christmas, as we remember it.", W / 2, 1280);
+        const a = document.createElement("a"); a.href = c.toDataURL("image/png"); a.download = `${g.clientName} – gallery QR.png`; a.click();
+      };
 
       if (password) load().catch(() => signOut());
     </script>

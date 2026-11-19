@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
+<title>Your gallery · Zako Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root { --forest:#243B2E; --ivory:#F5F0E7; --ivory-deep:#ECE4D6; --gold:#AD9361; --cranberry:#812E2B; --ink:#292622; --soft:#6A635A; --line:rgba(41,38,34,.14); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ivory); color: var(--ink); font: 16px/1.6 Jost, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .serif { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 400; }
+  header.top { display: flex; justify-content: space-between; align-items: center; padding: 22px clamp(18px, 4vw, 48px); border-bottom: 1px solid var(--line); }
+  header.top .brand { font-family: "Cormorant Garamond", Georgia, serif; font-size: 26px; }
+  header.top .k { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--gold); }
+  .hero { padding: clamp(36px, 7vw, 80px) clamp(18px, 4vw, 48px) 26px; max-width: 1240px; margin: 0 auto; }
+  .hero .k { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); }
+  .hero h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 400; font-size: clamp(42px, 7vw, 76px); line-height: 1; margin: 12px 0 14px; }
+  .hero h1 i { color: var(--cranberry); }
+  .hero p { margin: 0; color: var(--soft); max-width: 640px; }
+  .bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 24px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 1px solid var(--forest); background: var(--forest); color: var(--ivory); font: 500 13px Jost, sans-serif; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; text-decoration: none; }
+  .btn.ghost { background: transparent; color: var(--forest); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .meta { font-size: 14px; color: var(--soft); }
+  .filters { display: flex; gap: 6px; }
+  .filters button { min-height: 36px; padding: 0 14px; border: 1px solid var(--line); background: transparent; font: 14px Jost; cursor: pointer; }
+  .filters button[aria-pressed="true"] { border-color: var(--forest); background: var(--forest); color: var(--ivory); }
+  .grid { max-width: 1240px; margin: 0 auto; padding: 0 clamp(12px, 3vw, 48px) 80px; columns: 3 300px; column-gap: 12px; }
+  .tile { position: relative; break-inside: avoid; margin: 0 0 12px; background: var(--ivory-deep); cursor: zoom-in; overflow: hidden; }
+  .tile img { display: block; width: 100%; height: auto; transition: transform .4s ease; }
+  .tile:hover img { transform: scale(1.015); }
+  .heart { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(245,240,231,.88); cursor: pointer; display: grid; place-items: center; font-size: 19px; color: var(--cranberry); }
+  .heart[aria-pressed="false"] { color: var(--soft); }
+  .center { min-height: 70vh; display: grid; place-items: center; text-align: center; padding: 40px 20px; }
+  .center .card { max-width: 460px; }
+  .center h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 400; font-size: 46px; line-height: 1.05; margin: 10px 0 14px; }
+  .pin { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+  .pin input { width: 160px; min-height: 48px; font: 22px Jost; letter-spacing: .4em; text-align: center; border: 1px solid var(--line); background: #FBF8F2; }
+  .err { color: var(--cranberry); font-size: 14px; min-height: 20px; margin-top: 10px; }
+  /* lightbox */
+  .lb { position: fixed; inset: 0; background: rgba(22,24,22,.96); display: none; z-index: 20; color: var(--ivory); }
+  .lb.on { display: grid; grid-template-rows: auto 1fr auto; }
+  .lb .tbar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; gap: 10px; font-size: 14px; }
+  .lb .stage { position: relative; display: grid; place-items: center; min-height: 0; padding: 0 56px; }
+  .lb .stage img { max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain; }
+  .lb .nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border: 0; border-radius: 50%; background: rgba(245,240,231,.12); color: var(--ivory); font-size: 26px; cursor: pointer; }
+  .lb .prev { left: 6px; } .lb .next { right: 6px; }
+  .lb .bbar { display: flex; justify-content: center; gap: 10px; padding: 12px 16px 18px; flex-wrap: wrap; }
+  .lb .btn { border-color: var(--ivory); background: var(--ivory); color: var(--forest); }
+  .lb .btn.ghost { background: transparent; color: var(--ivory); }
+  .lb .x { background: none; border: 0; color: var(--ivory); font-size: 30px; cursor: pointer; width: 44px; height: 44px; }
+  .progress { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--forest); color: var(--ivory); padding: 12px 20px; font-size: 14px; display: none; z-index: 30; }
+  .progress.on { display: block; }
+  footer { text-align: center; padding: 30px 20px 50px; color: var(--soft); font-size: 13px; border-top: 1px solid var(--line); }
+  footer .serif { font-style: italic; font-size: 18px; color: var(--ink); display: block; margin-bottom: 4px; }
+  @media (max-width: 600px) { .grid { columns: 2; column-gap: 6px; } .tile { margin-bottom: 6px; } .lb .stage { padding: 0 6px; } .lb .nav { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .tile img { transition: none; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">Zako Studio</div><div class="k">Private gallery</div></header>
+<main id="app"><div class="center"><div class="card"><p class="meta">Opening your gallery…</p></div></div></main>
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Photo viewer">
+  <div class="tbar"><span id="lb-count"></span><button class="x" id="lb-x" aria-label="Close">×</button></div>
+  <div class="stage"><button class="nav prev" id="lb-prev" aria-label="Previous photo">‹</button><img id="lb-img" alt="" /><button class="nav next" id="lb-next" aria-label="Next photo">›</button></div>
+  <div class="bbar"><button class="btn ghost" id="lb-heart">♡ Favourite</button><a class="btn" id="lb-dl" href="#">Download</a></div>
+</div>
+<div class="progress" id="progress" role="status"></div>
+<footer><span class="serif">Christmas, as we remember it.</span>Zako Studio · Instagram @zakostudi0</footer>
+
+<script>
+{
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const id = (location.pathname.match(/\/gallery\/([A-Za-z0-9_-]{16,40})/) || [])[1] || new URLSearchParams(location.search).get("g");
+  const tokKey = "zs-gallery-" + id;
+  const saved = () => { try { return sessionStorage.getItem(tokKey) || ""; } catch { return ""; } };
+  let G = null, idx = 0, filter = "all";
+
+  const fileUrl = (p, v, dl) => `/api/gallery-file?g=${encodeURIComponent(G.id)}&p=${p.id}&v=${v}&t=${G.token}${dl ? "&dl=1" : ""}`;
+  const first = (n) => { n = String(n || "").trim(); return /^the\s|family|&| and /i.test(n) ? n : n.split(/\s+/)[0]; };
+  const until = (iso) => iso ? new Date(iso + "T12:00:00").toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" }) : "";
+  const mb = (b) => b > 1e9 ? (b / 1e9).toFixed(1) + " GB" : Math.max(1, Math.round(b / 1e6)) + " MB";
+
+  function screen(title, text, extra = "") {
+    $("app").innerHTML = `<div class="center"><div class="card"><div class="k" style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)">Zako Studio</div>
+      <h1>${title}</h1><p class="meta">${text}</p>${extra}</div></div>`;
+  }
+
+  async function load(pin) {
+    if (!id) return screen("Gallery not found", "This link looks incomplete. Please check it, or message Zako Studio on Instagram.");
+    const q = new URLSearchParams({ g: id });
+    if (pin) q.set("pin", pin); else if (saved()) q.set("t", saved());
+    let res, data;
+    try { res = await fetch("/api/gallery?" + q); data = await res.json(); }
+    catch { return screen("We couldn't open your gallery", "Please check your connection and try again.", `<p><button class="btn" onclick="location.reload()">Try again</button></p>`); }
+    if (res.ok) { G = data; try { sessionStorage.setItem(tokKey, G.token); } catch {} return render(); }
+    if (data.state === "pin") {
+      screen(`Welcome${data.clientName ? ", " + esc(first(data.clientName)) : ""}`, "Your gallery is protected. Enter the PIN from your email to open it.",
+        `<form class="pin" id="pin-form"><input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="8" aria-label="Gallery PIN" required><button class="btn">Open</button></form><div class="err" id="pin-err">${data.wrong ? "That PIN didn't match. Please try again." : ""}</div>`);
+      $("pin-form").onsubmit = (e) => { e.preventDefault(); load($("pin").value.trim()); };
+      $("pin").focus();
+      return;
+    }
+    if (data.state === "preparing") return screen("Almost ready", esc(data.message));
+    if (data.state === "expired") return screen("This gallery has closed", esc(data.message));
+    return screen("Gallery not found", esc(data.message || "Please check the link, or message Zako Studio on Instagram."));
+  }
+
+  const list = () => filter === "fav" ? G.photos.filter((p) => p.favourite) : G.photos;
+
+  function render() {
+    const favs = G.photos.filter((p) => p.favourite).length;
+    const total = G.photos.reduce((t, p) => t + (p.size || 0), 0);
+    document.title = `${G.clientName} · ${G.title} · Zako Studio`;
+    $("app").innerHTML = `<section class="hero"><div class="k">${esc(G.title)}</div>
+      <h1>${esc(first(G.clientName))}, <i>your photographs.</i></h1>
+      <p>${esc(G.message || "Thank you for spending part of your Christmas with me. Tap any photograph to see it full size, heart your favourites, and download them to keep.")}</p>
+      <div class="bar">
+        ${G.allowDownload ? `<button class="btn" id="dl-all">Download all · ${G.photos.length} photos${total ? " · " + mb(total) : ""}</button>` : ""}
+        <div class="filters"><button data-f="all" aria-pressed="${filter === "all"}">All ${G.photos.length}</button><button data-f="fav" aria-pressed="${filter === "fav"}">♥ Favourites ${favs}</button></div>
+        ${G.expiresAt ? `<span class="meta">Open until ${until(G.expiresAt)}</span>` : ""}
+      </div></section>
+      <section class="grid" id="grid">${list().map((p, i) => `<figure class="tile" data-i="${i}">
+        <img src="${fileUrl(p, "thumb")}" alt="Photograph ${i + 1}" loading="lazy" width="${p.w || 3}" height="${p.h || 2}">
+        <button class="heart" data-heart="${p.id}" aria-pressed="${p.favourite}" aria-label="Favourite">${p.favourite ? "♥" : "♡"}</button></figure>`).join("") ||
+        `<p class="meta" style="padding:20px 0">${filter === "fav" ? "No favourites yet. Tap ♡ on any photograph." : "Your photographs will appear here."}</p>`}</section>`;
+    document.querySelectorAll("[data-f]").forEach((b) => b.onclick = () => { filter = b.dataset.f; render(); });
+    $("grid").onclick = (e) => {
+      const h = e.target.closest("[data-heart]");
+      if (h) { e.stopPropagation(); return toggleFav(h.dataset.heart); }
+      const t = e.target.closest(".tile"); if (t) open(Number(t.dataset.i));
+    };
+    if ($("dl-all")) $("dl-all").onclick = downloadAll;
+  }
+
+  async function toggleFav(pid) {
+    const p = G.photos.find((x) => x.id === pid); p.favourite = !p.favourite; render(); if ($("lb").classList.contains("on")) show();
+    try { await fetch("/api/gallery", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ g: G.id, t: G.token, photo: pid, favourite: p.favourite }) }); } catch {}
+  }
+
+  function open(i) { idx = i; $("lb").classList.add("on"); show(); }
+  function show() {
+    const L = list(); const p = L[idx]; if (!p) return close();
+    $("lb-img").src = fileUrl(p, "web"); $("lb-img").alt = `Photograph ${idx + 1} of ${L.length}`;
+    $("lb-count").textContent = `${idx + 1} / ${L.length}`;
+    $("lb-heart").textContent = p.favourite ? "♥ Favourite" : "♡ Favourite";
+    $("lb-dl").style.display = G.allowDownload ? "" : "none";
+    $("lb-dl").href = fileUrl(p, "full", true);
+    const nx = L[idx + 1]; if (nx) new Image().src = fileUrl(nx, "web");
+  }
+  function close() { $("lb").classList.remove("on"); $("lb-img").src = ""; }
+  const step = (d) => { const L = list(); idx = (idx + d + L.length) % L.length; show(); };
+  $("lb-x").onclick = close; $("lb-prev").onclick = () => step(-1); $("lb-next").onclick = () => step(1);
+  $("lb-heart").onclick = () => toggleFav(list()[idx].id);
+  document.addEventListener("keydown", (e) => { if (!$("lb").classList.contains("on")) return; if (e.key === "Escape") close(); if (e.key === "ArrowRight") step(1); if (e.key === "ArrowLeft") step(-1); });
+  let sx = null; $("lb").addEventListener("touchstart", (e) => sx = e.touches[0].clientX, { passive: true });
+  $("lb").addEventListener("touchend", (e) => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1); sx = null; });
+
+  // ---- Download all: a plain (stored) .zip built in the browser, one photo at a time ----
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (u8) => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(entries) {
+    const parts = [], central = []; let offset = 0;
+    const enc = new TextEncoder();
+    for (const e of entries) {
+      const name = enc.encode(e.name), h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+      h.setUint32(14, e.crc, true); h.setUint32(18, e.size, true); h.setUint32(22, e.size, true); h.setUint16(26, name.length, true);
+      parts.push(h.buffer, name, e.blob);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint32(16, e.crc, true); c.setUint32(20, e.size, true); c.setUint32(24, e.size, true); c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+      central.push(c.buffer, name);
+      offset += 30 + name.length + e.size;
+    }
+    const cdSize = central.reduce((t, x) => t + (x.byteLength ?? x.length), 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true); end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
+  }
+  async function downloadAll() {
+    const btn = $("dl-all"); btn.disabled = true; const prog = $("progress"); prog.classList.add("on");
+    const entries = []; const used = new Set();
+    try {
+      for (let i = 0; i < G.photos.length; i++) {
+        const p = G.photos[i]; prog.textContent = `Preparing your photographs… ${i + 1} of ${G.photos.length}`;
+        const blob = await (await fetch(fileUrl(p, "full"))).blob();
+        const u8 = new Uint8Array(await blob.arrayBuffer());
+        let name = (p.name || `photo-${i + 1}.jpg`).replace(/[\\/:*?"<>|]+/g, "_"); while (used.has(name)) name = name.replace(/(\.\w+)?$/, "-" + i + "$1"); used.add(name);
+        entries.push({ name, blob, size: u8.length, crc: crc32(u8) });
+      }
+      const a = document.createElement("a"); a.href = URL.createObjectURL(zip(entries));
+      a.download = `${G.clientName} – Zako Studio ${G.title}.zip`.replace(/[\\/:*?"<>|]+/g, ""); document.body.append(a); a.click(); a.remove();
+      prog.textContent = "Download started. Keep a copy somewhere safe.";
+    } catch { prog.textContent = "Something went wrong. Please try again, or download photos one by one."; }
+    btn.disabled = false; setTimeout(() => prog.classList.remove("on"), 4000);
+  }
+
+  load();
+}
+</script>
+</body>
+</html>
