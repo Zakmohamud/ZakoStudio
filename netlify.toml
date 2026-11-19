@@ -37,6 +37,12 @@
   status = 301
   force = true
 
+# Client galleries: /gallery/<private id> is served by one page that loads that gallery.
+[[redirects]]
+  from = "/gallery/*"
+  to = "/gallery/index.html"
+  status = 200
+
 # Long cache for campaign photos (file names change if photos change).
 [[headers]]
   for = "/christmas/img/*"
@@ -59,3 +65,10 @@
     X-Frame-Options = "DENY"
     Referrer-Policy = "no-referrer"
     Cache-Control = "no-store"
+
+[[headers]]
+  for = "/gallery/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"

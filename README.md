@@ -90,3 +90,15 @@ Everything for the campaign lives in `/christmas/` so it can be removed after th
 Session days, opening hours, studio status (secured / pending), the buffer between sessions, session lengths and the deposit % are set on `/referral-admin.html`. Until days are edited there, every weekend until 2026-12-20 is offered 10 a.m.–2 p.m. as *pending studio confirmation*. Offered times are grouped next to existing bookings so families are booked back to back.
 
 Analytics: `/api/track` stores anonymous, cookie-free events (landing/booking views, Reserve clicks, experience/date/time picks, form start/submit, Instagram clicks) with UTM source/campaign. Totals show on the bookings page. Confirmed bookings are only the sessions you mark as booked; online deposits aren't tracked because deposits are arranged by email.
+
+## Client galleries
+
+Private galleries on the site at `/gallery/<id>` (bookings page → **Client galleries**).
+
+- Create a gallery, drop in the Lightroom exports (any size; large files are uploaded in 4 MB parts).
+  The browser makes a ~700 px thumbnail and a ~2048 px web copy; the original is kept for downloads.
+- Hidden from the client until **Visible to client** is switched on. Optional PIN, closing date, downloads on/off.
+- Clients can view, heart favourites (you see the ♥ on the bookings page), download single photos or **Download all** (a .zip built in their browser).
+- **QR card**: print it or download it as a PNG. **Email "your photos are ready"** uses the same email styling.
+- Storage: Netlify Blobs (`client-galleries`, `client-gallery-files`). `netlify/lib/gallery.mjs` is the only place that touches
+  files, so moving the photos to Cloudflare R2 later only changes that module. Optional env `GALLERY_SECRET` signs the links.
