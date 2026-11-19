@@ -338,25 +338,38 @@ export default async function handler(request) {
       }
 
       case "analytics": {
-        const span = Math.min(Math.max(Number(body.days) || 14, 1), 90);
+        // Period: a single day ("day"), a from/to range, or the last N days. Also returns the period just before it
+        // (same length) for comparison, and visitors per day.
         const includePreview = Boolean(body.includePreview);
         const isLive = (ctx) => includePreview || !ctx || ctx === "production" || ctx === "unknown";
         const sourceKey = (utm) => [utm?.source, utm?.campaign].filter(Boolean).join(" / ") || "direct / unknown";
         const store = await eventsStore();
         const today = vancouverToday();
-        const dates = [];
-        for (let n = 0; n < span; n++) {
-          const d = new Date(`${today}T12:00:00Z`);
-          d.setUTCDate(d.getUTCDate() - n);
-          dates.push(d.toISOString().slice(0, 10));
-        }
-        const since = dates[dates.length - 1];
+        const shift = (iso, n) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+        let to = today, from;
+        if (isISODate(body.day)) { from = to = body.day > today ? today : body.day; }
+        else if (isISODate(body.from) && isISODate(body.to) && body.from <= body.to) { from = body.from; to = body.to > today ? today : body.to; }
+        else { from = shift(today, -(Math.min(Math.max(Number(body.days) || 14, 1), 90) - 1)); }
+        const span = Math.round((new Date(`${to}T12:00:00Z`) - new Date(`${from}T12:00:00Z`)) / 864e5) + 1;
+        if (span > 120) return jsonResponse(400, { message: "Pick a period of 120 days or less." });
+        const datesBetween = (a, b) => { const out = []; for (let d = b; d >= a; d = shift(d, -1)) out.push(d); return out; };
+        const vanDate = (iso) => iso ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/Vancouver" }).format(new Date(iso)) : "";
+
+        const inqKeys = (await inquiries.list()).blobs.map((b) => b.key);
+        const allInq = (await Promise.all(inqKeys.map((k) => inquiries.get(k, { type: "json" })))).filter(Boolean)
+          .filter((i) => isLive(i.ctx));
+        const settings = await readSettings();
+        const spend = settings.adSpend || {};
+
+        async function period(dates) {
+        const since = dates[dates.length - 1], until = dates[0];
         const keys = [];
         for (const d of dates) keys.push(...(await store.list({ prefix: `${d}/` })).blobs.map((b) => b.key));
-        const events = (await Promise.all(keys.map((k) => store.get(k, { type: "json" }))))
+        const events = (await Promise.all(keys.map(async (k) => { const ev = await store.get(k, { type: "json" }); return ev && { ...ev, day: k.slice(0, 10) }; })))
           .filter(Boolean)
           .filter((ev) => isLive(ev.ctx));
-
+        const perDay = {};
+        for (const ev of events) if (ev.e === "landing_view" || ev.e === "booking_view") (perDay[ev.day] ||= new Set()).add(ev.s);
         const sets = {};                 // event -> Set(session)
         const bySource = {};             // source -> { visitors:Set, requests, confirmed, revenue }
         const pkgPicks = {};             // pkg -> unique sessions that picked it
@@ -379,10 +392,7 @@ export default async function handler(request) {
         const u = (e) => sets[e]?.size || 0;
 
         // Requests and bookings come from the inquiries themselves, not page events.
-        const inqKeys = (await inquiries.list()).blobs.map((b) => b.key);
-        const allInq = (await Promise.all(inqKeys.map((k) => inquiries.get(k, { type: "json" })))).filter(Boolean)
-          .filter((i) => isLive(i.ctx));
-        const periodInq = allInq.filter((i) => (i.createdAt || "").slice(0, 10) >= since);
+        const periodInq = allInq.filter((i) => { const d = vanDate(i.createdAt); return d >= since && d <= until; });
         const pkgRequests = {};
         const pkgBooked = {};
         for (const i of periodInq) {
@@ -397,8 +407,6 @@ export default async function handler(request) {
           }
         }
 
-        const settings = await readSettings();
-        const spend = settings.adSpend || {};
         for (const k of Object.keys(spend)) src(k);
         const sources = Object.fromEntries(Object.entries(bySource).map(([k, v]) => {
           const adSpend = Number(spend[k]) || 0;
@@ -418,9 +426,11 @@ export default async function handler(request) {
         const requests = periodInq.length;
         const confirmed = periodInq.filter((i) => i.booked && i.bookedDate).length;
         const totalSpend = Object.values(spend).reduce((t, n) => t + (Number(n) || 0), 0);
-        return jsonResponse(200, {
+        return {
           span,
           since,
+          until,
+          daily: dates.map((d) => ({ date: d, visitors: perDay[d]?.size || 0, requests: periodInq.filter((i) => vanDate(i.createdAt) === d).length })),
           visitors,
           landingVisitors: u("landing_view"),
           funnel: [
@@ -447,6 +457,15 @@ export default async function handler(request) {
           totalSpend,
           revenue: Math.round(periodInq.filter((i) => i.booked && i.bookedDate).reduce((t, i) => t + (Number(i.finalPrice ?? i.price) || 0), 0) * 100) / 100,
           cac: confirmed ? Math.round((totalSpend / confirmed) * 100) / 100 : null
+        };
+        }
+
+        const current = await period(datesBetween(from, to));
+        const prev = await period(datesBetween(shift(from, -span), shift(from, -1)));
+        return jsonResponse(200, {
+          ...current,
+          previous: { since: prev.since, until: prev.until, visitors: prev.visitors, requests: prev.requests, confirmed: prev.confirmed, revenue: prev.revenue,
+            funnel: prev.funnel, daily: prev.daily }
         });
       }
 
