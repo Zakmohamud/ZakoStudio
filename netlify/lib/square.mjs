@@ -56,7 +56,14 @@ export async function squareStatus() {
     const loc = locations.find((l) => l.id === id);
     return { ready: true, location: loc?.name || id, currency: loc?.currency || "CAD", webhook: true };
   } catch (error) {
-    return { ready: false, error: error.message };
+    const token = env("SQUARE_ACCESS_TOKEN");
+    let hint = "";
+    if (error.status === 401 && env("SQUARE_ENVIRONMENT") !== "sandbox") {
+      // A common mix-up: the Sandbox token pasted instead of the Production one.
+      const res = await fetch("https://connect.squareupsandbox.com/v2/locations", { headers: { authorization: `Bearer ${token}`, "square-version": VERSION } }).catch(() => null);
+      if (res?.ok) hint = "This is the Sandbox (test) access token. Paste the Production access token instead.";
+    }
+    return { ready: false, error: hint || error.message, tokenLength: token.length, hadSpaces: token !== String(process.env.SQUARE_ACCESS_TOKEN || "") };
   }
 }
 
