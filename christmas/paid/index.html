@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#243B2E" />
+    <meta name="robots" content="noindex" />
+    <title>Thank you — Zako Studio</title>
+    <link rel="icon" type="image/png" href="/images/zako-studio-logo-trim.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/christmas/campaign.css" />
+    <style>
+      body { background: var(--forest); color: var(--ivory); min-height: 100vh; margin: 0; display: grid; place-items: center; }
+      .paid { max-width: 560px; padding: 48px var(--pad); text-align: center; }
+      .paid .k { font-family: var(--sans); font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin: 0 0 18px; }
+      .paid h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 8vw, 64px); line-height: 1.05; margin: 0 0 22px; }
+      .paid h1 em { font-style: italic; }
+      .paid p { font-family: var(--sans); font-size: 17px; line-height: 1.7; margin: 0 0 16px; color: rgba(245, 240, 231, 0.88); }
+      .paid .rule { width: 48px; height: 1px; background: var(--gold); margin: 30px auto; border: 0; }
+      .paid a { color: var(--ivory); font-family: var(--sans); font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid var(--gold); padding-bottom: 4px; }
+    </style>
+  </head>
+  <body>
+    <main class="paid">
+      <p class="k">Zako Studio · The Christmas Collection</p>
+      <h1 id="title">Thank you. <em>Your payment is in.</em></h1>
+      <p id="line">Your reservation fee has been received. I'll send your official booking confirmation by email shortly.</p>
+      <p>A receipt from Square is on its way to your inbox.</p>
+      <hr class="rule" />
+      <a href="/christmas/">Back to the Christmas Collection</a>
+    </main>
+    <script>
+      if (new URLSearchParams(location.search).get("for") === "balance") {
+        document.getElementById("title").innerHTML = "Thank you. <em>You're all paid up.</em>";
+        document.getElementById("line").textContent = "Your remaining balance has been received. Your photographs will follow in your private online gallery.";
+      }
+    </script>
+  </body>
+</html>
