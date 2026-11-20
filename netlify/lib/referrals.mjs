@@ -140,6 +140,7 @@ export const inquiriesStore = () => openStore(INQUIRIES_STORE);
 export const scheduleStore = () => openStore(SCHEDULE_STORE);
 export const galleriesStore = () => openStore("client-galleries");
 export const galleryFilesStore = () => openStore("client-gallery-files");
+export const squareOrdersStore = () => openStore("square-orders");
 
 // Every schedule entry: { id, date, start, end, kind: "session" | "block", label }
 export async function readSchedule() {

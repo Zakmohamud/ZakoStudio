@@ -301,7 +301,7 @@ test("client emails: acknowledgement is automatic, fee request and confirmation 
 
   // without a fake mailer and without env vars, sending is refused (no stored password path)
   delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
-  res = await adminCall({ action: "sendEmail", id: ana.id, type: "feeRequest" });
+  res = await adminCall({ action: "sendEmail", id: ana.id, type: "confirmation" });
   assert.equal(res.status, 503);
 });
 
@@ -498,4 +498,123 @@ test("visitor tracker: pick a single day or a range, compare with the period bef
   assert.equal(r.previous.until, back(3));
   const future = await (await adminCall({ action: "analytics", day: "2099-01-01" })).json();
   assert.equal(future.since, today, "future days are clamped to today");
+});
+
+test("Square: fee request carries a Pay link, webhook marks the fee received, balance email and webhook mark it paid", async () => {
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+  const { createHmac } = await import("node:crypto");
+  const webhook = (await import("../netlify/functions/square-webhook.mjs")).default;
+  const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  const saved = { t: process.env.SQUARE_ACCESS_TOKEN, k: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY, u: process.env.URL };
+  Object.assign(process.env, { SQUARE_ACCESS_TOKEN: "tok", SQUARE_WEBHOOK_SIGNATURE_KEY: "sigkey", URL: "https://zako.test" });
+  const realFetch = globalThis.fetch;
+  const links = []; let n = 0;
+  globalThis.fetch = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.endsWith("/v2/locations")) return new Response(JSON.stringify({ locations: [{ id: "LOC1", name: "Zako Studio", status: "ACTIVE", capabilities: ["CREDIT_CARD_PROCESSING"], currency: "CAD" }] }));
+    if (u.endsWith("/v2/online-checkout/payment-links") && opts.method === "POST") {
+      const body = JSON.parse(opts.body); links.push(body); n++;
+      return new Response(JSON.stringify({ payment_link: { id: `PL${n}`, url: `https://square.link/u/pay${n}`, order_id: `ORD${n}` } }));
+    }
+    const m = u.match(/\/v2\/payments\/(\w+)$/);
+    if (m && paymentsAtSquare[m[1]]) return new Response(JSON.stringify({ payment: paymentsAtSquare[m[1]] }));
+    return new Response("{}", { status: 404 });
+  };
+  const paymentsAtSquare = {};
+  const hook = (payment) => {
+    const raw = JSON.stringify({ type: "payment.updated", data: { object: { payment } } });
+    const sig = createHmac("sha256", "sigkey").update("https://zako.test/api/square-webhook" + raw).digest("base64");
+    return webhook(new Request("https://zako.test/.netlify/functions/square-webhook", { method: "POST", headers: { "x-square-hmacsha256-signature": sig }, body: raw }));
+  };
+  try {
+    await referral(new Request("https://x.test/api/referral", { method: "POST",
+      body: JSON.stringify({ package: "mini", name: "Bea Ford", email: "bea@example.com", dateISO: "2030-12-20", startMin: 660, date: "Friday, December 20", time: "11:00 a.m." }) }));
+    const bea = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.email === "bea@example.com");
+    assert.doesNotMatch(sent.at(-1).text, /square\.link|Pay /, "the first email asks for no payment");
+
+    const st = await (await adminCall({ action: "getSettings" })).json();
+    assert.equal(st.square.ready, true);
+
+    // preview: no link made yet
+    let res = await adminCall({ action: "previewEmail", id: bea.id, type: "feeRequest" });
+    assert.equal(links.length, 0);
+    assert.match((await res.json()).html, /to reserve/);
+
+    res = await adminCall({ action: "sendEmail", id: bea.id, type: "feeRequest" });
+    assert.equal(res.status, 200);
+    assert.equal(links.length, 1);
+    assert.equal(links[0].quick_pay.price_money.amount, 15000);
+    assert.equal(links[0].quick_pay.price_money.currency, "CAD");
+    assert.equal(links[0].quick_pay.location_id, "LOC1");
+    assert.equal(links[0].pre_populated_data.buyer_email, "bea@example.com");
+    assert.match(links[0].checkout_options.redirect_url, /\/christmas\/paid\/\?for=fee$/);
+    assert.match(sent.at(-1).text, /https:\/\/square\.link\/u\/pay1/);
+    assert.doesNotMatch(sent.at(-1).text, /e-Transfer/, "e-Transfer is off unless switched on");
+
+    // resending reuses the same link
+    await adminCall({ action: "sendEmail", id: bea.id, type: "feeRequest" });
+    assert.equal(links.length, 1);
+
+    // forged webhook is refused
+    const bad = await webhook(new Request("https://zako.test/api/square-webhook", { method: "POST", headers: { "x-square-hmacsha256-signature": "nope" }, body: "{}" }));
+    assert.equal(bad.status, 401);
+
+    // payment completes -> fee received on its own
+    assert.equal((await hook({ id: "PAY1", status: "COMPLETED", order_id: "ORD1", amount_money: { amount: 15000, currency: "CAD" } })).status, 200);
+    let now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.depositReceived, true);
+    assert.equal(now.depositAmount, 150);
+    assert.equal(now.depositVia, "Square");
+    // duplicate delivery is harmless
+    await hook({ id: "PAY1", status: "COMPLETED", order_id: "ORD1", amount_money: { amount: 15000, currency: "CAD" } });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.paymentLog.length, 1);
+    // fee request can't be sent again once paid
+    assert.equal((await adminCall({ action: "sendEmail", id: bea.id, type: "feeRequest" })).status, 400);
+
+    // balance after the session
+    assert.equal((await adminCall({ action: "sendEmail", id: bea.id, type: "balanceRequest" })).status, 400, "needs booking first");
+    await adminCall({ action: "book", id: bea.id, date: "2030-12-20", start: 660 });
+    res = await adminCall({ action: "sendEmail", id: bea.id, type: "balanceRequest" });
+    assert.equal(res.status, 200);
+    assert.equal(links[1].quick_pay.price_money.amount, 15000);
+    assert.match(links[1].checkout_options.redirect_url, /for=balance$/);
+    assert.match(sent.at(-1).subject, /remaining balance/i);
+    assert.match(sent.at(-1).text, /square\.link\/u\/pay2/);
+    await hook({ id: "PAY2", status: "COMPLETED", order_id: "ORD2", amount_money: { amount: 15000, currency: "CAD" } });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaid, true);
+    assert.equal(now.balancePaidVia, "Square");
+
+    // e-Transfer can be switched back on as a second option
+    await adminCall({ action: "saveEmailSettings", studioAddress: "1909 Lilac Dr", paymentEmail: "zakotarastudio@gmail.com", balanceDue: "After your session, by Interac e-Transfer to zakotarastudio@gmail.com", offerETransfer: true });
+    res = await adminCall({ action: "previewEmail", id: bea.id, type: "confirmation" });
+    assert.match((await res.json()).html, /e-Transfer/);
+    await adminCall({ action: "saveEmailSettings", studioAddress: "1909 Lilac Dr", paymentEmail: "zakotarastudio@gmail.com", balanceDue: "After your session, by Interac e-Transfer to zakotarastudio@gmail.com", offerETransfer: false });
+    res = await adminCall({ action: "previewEmail", id: bea.id, type: "confirmation" });
+    const html = (await res.json()).html;
+    assert.doesNotMatch(html, /e-Transfer/);
+    assert.match(html, /secure online payment/);
+
+    // without a signature key: the payment is looked up with Square, so made-up notifications do nothing
+    delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    await adminCall({ action: "setBalance", id: bea.id, paid: false });
+    const unsigned = (payment) => webhook(new Request("https://zako.test/api/square-webhook", { method: "POST", body: JSON.stringify({ data: { object: { payment } } }) }));
+    await unsigned({ id: "FAKE", status: "COMPLETED", order_id: "ORD2", amount_money: { amount: 15000 } });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaid, false, "a made-up payment is ignored");
+    paymentsAtSquare.PAY3 = { id: "PAY3", status: "COMPLETED", order_id: "ORD2", amount_money: { amount: 15000, currency: "CAD" } };
+    await unsigned({ id: "PAY3", status: "PENDING" });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaid, true, "a real payment, confirmed with Square, counts");
+
+    // manual balance marking (tap at the studio)
+    await adminCall({ action: "setBalance", id: bea.id, paid: false });
+    await adminCall({ action: "setBalance", id: bea.id, paid: true, via: "Square tap at studio" });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaidVia, "Square tap at studio");
+  } finally {
+    globalThis.fetch = realFetch; setMailer(null);
+    for (const [k, v] of [["SQUARE_ACCESS_TOKEN", saved.t], ["SQUARE_WEBHOOK_SIGNATURE_KEY", saved.k], ["URL", saved.u]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
 });

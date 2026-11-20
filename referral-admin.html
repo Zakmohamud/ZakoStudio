@@ -256,8 +256,10 @@
         <section>
           <h2>Client emails</h2>
           <p class="mail-status" id="mail-status"></p>
+          <p class="mail-status" id="square-status"></p>
           <form id="email-settings-form" class="email-grid" style="margin-top:18px">
             <label class="wide">Studio address (goes in the confirmation email)<input id="es-address" type="text" maxlength="200" required /></label>
+            <label class="check wide"><input type="checkbox" id="es-etransfer" /> Also offer Interac e-Transfer in the payment emails</label>
             <label>e-Transfer email<input id="es-payment" type="email" maxlength="120" required /></label>
             <label>When the remaining balance is due<input id="es-due" type="text" maxlength="200" /></label>
             <div class="wide"><button class="btn red" type="submit">Save email details</button></div>
@@ -451,7 +453,14 @@
         st.textContent = m.ready
           ? `Email sending is on. Emails go out from ${m.user}.`
           : "Email sending is off. Add GMAIL_USER and GMAIL_APP_PASSWORD in Netlify (Project configuration → Environment variables) to turn it on. Requests still reach you as before.";
+        const sq = settingsData.square || {};
+        const ss = $("square-status");
+        ss.className = `mail-status ${sq.ready ? "on" : "off"}`;
+        ss.textContent = sq.ready
+          ? `Square payments are on (${sq.location}). Fee and balance emails include a “Pay” button${sq.webhook ? ", and payments mark themselves received." : ". Payments won’t mark themselves received until the webhook key is added in Netlify."}`
+          : sq.error ? `Square isn’t connecting: ${sq.error}` : "Square payments are off. Payment emails ask for an Interac e-Transfer.";
         if (document.activeElement?.closest("#email-settings-form")) return;
+        $("es-etransfer").checked = Boolean(s.offerETransfer);
         $("es-address").value = s.studioAddress || "";
         $("es-payment").value = s.paymentEmail || "";
         $("es-due").value = s.balanceDue || "";
@@ -686,11 +695,13 @@
         const hasTime = (i.bookedDate || i.dateISO) && (Number.isInteger(i.bookedStart) || Number.isInteger(i.startMin));
         const btn = (type, label) => {
           const at = sentAt(type);
-          return `<button class="btn ghost small" data-act="email" data-type="${type}" data-id="${esc(i.id)}">${at ? "Resend" : label}</button>${at ? ` <span class="sent">✓ ${type === "feeRequest" ? "Fee request" : "Confirmation"} sent ${fullWhen(at)}</span>` : ""}`;
+          const name = { feeRequest: "Fee request", confirmation: "Confirmation", balanceRequest: "Balance request" }[type];
+          return `<button class="btn ghost small" data-act="email" data-type="${type}" data-id="${esc(i.id)}">${at ? "Resend" : label}</button>${at ? ` <span class="sent">✓ ${name} sent ${fullWhen(at)}</span>` : ""}`;
         };
         const parts = [];
-        if (hasTime) parts.push(btn("feeRequest", "Send reservation fee request"));
+        if (hasTime && !i.depositReceived) parts.push(btn("feeRequest", "Send reservation fee request"));
         if (i.booked && i.bookedDate && i.depositReceived) parts.push(btn("confirmation", "Send booking confirmation"));
+        if (i.booked && i.bookedDate && i.depositReceived && !i.balancePaid) parts.push(btn("balanceRequest", "Send balance request"));
         const log = i.emailLog || (sentAt("acknowledgement") ? [{ label: "Request received", at: sentAt("acknowledgement"), status: "sent", to: i.email }] : []);
         const history = `<details class="history"><summary>Email history (${log.length})</summary>${log.length
           ? `<ol>${log.map((e) => `<li class="${e.status === "failed" ? "failed" : ""}">${esc(e.label)} · ${fullWhen(e.at)}${e.status === "failed" ? ` · <b>not sent</b>${e.error ? ` (${esc(e.error)})` : ""}` : ` · to ${esc(e.to || i.email)}`}</li>`).join("")}</ol>`
@@ -706,10 +717,14 @@
         if (i.booked && i.bookedDate) {
           const due = Math.round(priceOf(i) * (settingsData?.settings.depositPercent ?? 50)) / 100;
           const dep = i.depositReceived
-            ? `<span class="deposit pos">Reservation fee received${i.depositAmount ? ` · ${money(i.depositAmount)}` : ""} · <button class="linkish" data-act="deposit" data-id="${esc(i.id)}" data-received="0">undo</button></span>`
+            ? `<span class="deposit pos">Reservation fee received${i.depositAmount ? ` · ${money(i.depositAmount)}` : ""}${i.depositVia ? ` · paid by ${esc(i.depositVia)}` : ""} · <button class="linkish" data-act="deposit" data-id="${esc(i.id)}" data-received="0">undo</button></span>`
             : `<span class="deposit neg">Reservation fee outstanding · ${money(due)}</span><button class="btn small" data-act="deposit" data-id="${esc(i.id)}" data-received="1" data-due="${due}">Reservation fee received</button>`;
+          const left = Math.max(priceOf(i) - (i.depositReceived ? Number(i.depositAmount) || due : due), 0);
+          const bal = !i.depositReceived ? "" : i.balancePaid
+            ? `<span class="deposit pos">Balance paid${i.balancePaidVia ? ` · ${esc(i.balancePaidVia)}` : ""} · <button class="linkish" data-act="balance" data-id="${esc(i.id)}" data-paid="0">undo</button></span>`
+            : `<span class="deposit neg">Balance outstanding · ${money(left)}</span><button class="btn ghost small" data-act="balance" data-id="${esc(i.id)}" data-paid="1">Balance paid</button>`;
           return `<span class="booked-tag">✓ ${esc(dayLabel(i.bookedDate))}<br>${clock(i.bookedStart)}–${clock(i.bookedEnd)}</span>
-            ${dep}<br><button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo booking</button>`;
+            ${dep}${bal ? `<br>${bal}` : ""}<br><button class="linkish" data-act="unbook" data-id="${esc(i.id)}">Undo booking</button>`;
         }
         const date = i.bookedDate || i.dateISO || "";
         const time = Number.isInteger(i.startMin) ? toHHMM(i.startMin) : "";
@@ -868,6 +883,14 @@
             } else {
               await api({ action: "setDeposit", id: el.dataset.id, received: false });
             }
+          } else if (el.dataset.act === "balance") {
+            if (el.dataset.paid === "1") {
+              const via = prompt("How was the balance paid? (e.g. Square tap at studio, cash)", "Square tap at studio");
+              if (via === null) return;
+              await api({ action: "setBalance", id: el.dataset.id, paid: true, via });
+            } else {
+              await api({ action: "setBalance", id: el.dataset.id, paid: false });
+            }
           } else if (el.dataset.act === "unbook") {
             if (!confirm("Undo this booking? The time will open up again on the booking page.")) return;
             await api({ action: "unbook", id: el.dataset.id });
@@ -915,7 +938,7 @@
           }
           await api({ action: "sendEmail", ...pendingEmail });
           $("email-dialog").close();
-          inquiryNote(pendingEmail.type === "feeRequest" ? "Reservation fee request sent." : "Booking confirmation sent.", "ok");
+          inquiryNote({ feeRequest: "Reservation fee request sent.", confirmation: "Booking confirmation sent.", balanceRequest: "Balance request sent." }[pendingEmail.type] || "Email sent.", "ok");
           await load();
         } catch (error) {
           $("ep-message").textContent = error.message;
@@ -935,7 +958,8 @@
             action: "saveEmailSettings",
             studioAddress: $("es-address").value,
             paymentEmail: $("es-payment").value,
-            balanceDue: $("es-due").value
+            balanceDue: $("es-due").value,
+            offerETransfer: $("es-etransfer").checked
           });
           document.activeElement?.blur();
           renderEmailSettings();

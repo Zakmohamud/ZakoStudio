@@ -1,6 +1,7 @@
 // Private endpoint for the referral-code manager (referral-admin.html).
 // Every request must send the REFERRAL_ADMIN_PASSWORD in the x-admin-password header.
 import { randomUUID } from "node:crypto";
+import { createPaymentLink, deletePaymentLink, squareEnabled, squareStatus } from "../lib/square.mjs";
 import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
 import { logEmail, galleryEmail } from "../lib/emails.mjs";
@@ -14,6 +15,7 @@ import {
   codesStore,
   formatMinutes,
   inquiriesStore,
+  squareOrdersStore,
   isCodeUsable,
   isISODate,
   isMinute,
@@ -224,7 +226,7 @@ export default async function handler(request) {
 
       case "getSettings": {
         const settings = await readSettings();
-        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus() });
+        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus(), square: await squareStatus() });
       }
 
       case "saveEmailSettings": {
@@ -236,10 +238,11 @@ export default async function handler(request) {
         Object.assign(settings, {
           studioAddress: cleanText(body.studioAddress, 200),
           paymentEmail: paymentEmail || settings.paymentEmail,
-          balanceDue: cleanText(body.balanceDue, 200)
+          balanceDue: cleanText(body.balanceDue, 200),
+          ...(body.offerETransfer === undefined ? {} : { offerETransfer: Boolean(body.offerETransfer) })
         });
         await writeSettings(settings);
-        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus() });
+        return jsonResponse(200, { settings, days: sessionDays(settings), mail: await mailStatus(), square: await squareStatus() });
       }
 
       case "previewEmail":
@@ -257,9 +260,44 @@ export default async function handler(request) {
         if (type === "confirmation" && !(inquiry.booked && inquiry.bookedDate && inquiry.depositReceived)) {
           return jsonResponse(400, { message: "Mark the session booked and its reservation fee received before sending the confirmation." });
         }
+        if (type === "feeRequest" && inquiry.depositReceived) {
+          return jsonResponse(400, { message: "The reservation fee is already marked received." });
+        }
+        if (type === "balanceRequest" && !(inquiry.booked && inquiry.bookedDate && inquiry.depositReceived)) {
+          return jsonResponse(400, { message: "Mark the session booked and its reservation fee received first." });
+        }
+        if (type === "balanceRequest" && inquiry.balancePaid) return jsonResponse(400, { message: "The balance is already marked paid." });
         const settings = await readSettings();
+        const preview = body.action === "previewEmail";
+        // A real Square "Pay" link is made when the email is sent (the preview shows a placeholder button).
+        if (!preview && squareEnabled() && (type === "feeRequest" || type === "balanceRequest")) {
+          const kind = type === "feeRequest" ? "fee" : "balance";
+          const d = emailDetails(inquiry, settings);
+          const amount = Number((kind === "fee" ? d.fee : d.balance).replace(/[^0-9.]/g, ""));
+          if (!(amount > 0)) return jsonResponse(400, { message: "There's nothing to pay for this one." });
+          const existing = inquiry.payments?.[kind];
+          if (!existing?.url || existing.amount !== amount) {
+            try {
+              if (existing?.id) await deletePaymentLink(existing.id);
+              const origin = new URL(request.url).origin;
+              const link = await createPaymentLink({
+                name: `Zako Studio · ${kind === "fee" ? "Reservation fee" : "Remaining balance"} · ${d.experience}`,
+                amount,
+                note: `${kind === "fee" ? "Reservation fee" : "Balance"} · ${inquiry.name || ""} · ${d.date} ${d.time} · ref ${inquiry.id}`,
+                email: inquiry.email,
+                redirectUrl: `${origin}/christmas/paid/?for=${kind}`
+              });
+              inquiry.payments = { ...(inquiry.payments || {}), [kind]: { ...link, amount, createdAt: new Date().toISOString() } };
+              await (await squareOrdersStore()).setJSON(link.orderId, { inquiryId: inquiry.id, kind, amount });
+              await inquiries.setJSON(id, inquiry);
+            } catch (error) {
+              console.error("Square link failed.", error);
+              return jsonResponse(502, { message: `Couldn't make the Square payment link: ${error.message}` });
+            }
+          }
+        }
         const mail = build(emailDetails(inquiry, settings));
-        if (body.action === "previewEmail") {
+        if (preview) {
           return jsonResponse(200, { to: inquiry.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
         }
         if (!(await mailReady())) return jsonResponse(503, { message: "Email sending isn’t set up yet. Add GMAIL_USER and GMAIL_APP_PASSWORD in Netlify first." });
@@ -481,6 +519,32 @@ export default async function handler(request) {
         settings.adSpend = adSpend;
         await writeSettings(settings);
         return jsonResponse(200, { adSpend });
+      }
+
+      case "squareTest": {
+        // $1 test payment: makes a link, and later reports whether the site heard about the payment.
+        if (!squareEnabled()) return jsonResponse(400, { message: "Square isn't set up." });
+        const orders = await squareOrdersStore();
+        if (body.check) {
+          const ref = await orders.get(cleanText(body.check, 80), { type: "json" });
+          return jsonResponse(200, { paid: Boolean(ref?.paidAt), paidAt: ref?.paidAt || null, amount: ref?.paidAmount ?? null });
+        }
+        const origin = new URL(request.url).origin;
+        const link = await createPaymentLink({ name: "Zako Studio · $1 test payment", amount: 1, note: "Website test payment (refund me)", redirectUrl: `${origin}/christmas/paid/?for=fee` });
+        await orders.setJSON(link.orderId, { kind: "test", amount: 1 });
+        return jsonResponse(200, { url: link.url, orderId: link.orderId });
+      }
+
+      case "setBalance": {
+        // Marks the remaining balance paid by hand (e.g. tapped in person at the studio).
+        const id = cleanText(body.id, 80);
+        const inquiry = id ? await inquiries.get(id, { type: "json" }) : null;
+        if (!inquiry) return jsonResponse(404, { message: "Inquiry not found." });
+        inquiry.balancePaid = Boolean(body.paid);
+        inquiry.balancePaidAt = inquiry.balancePaid ? new Date().toISOString() : null;
+        inquiry.balancePaidVia = inquiry.balancePaid ? cleanText(body.via, 40) || "marked by you" : null;
+        await inquiries.setJSON(id, inquiry);
+        return jsonResponse(200, { inquiry });
       }
 
       case "setDeposit": {

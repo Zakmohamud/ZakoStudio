@@ -1,6 +1,7 @@
 // Client emails for The Christmas Collection 2026.
 // Copy is the studio's own wording; values are filled from the request and the admin settings.
 // Email clients don't load web fonts, so headings use Georgia (a classic serif) as the closest safe match.
+import { squareEnabled } from "./square.mjs";
 import { PACKAGE_PRICES, packageIdFromName } from "./referrals.mjs";
 
 const C = {
@@ -55,9 +56,23 @@ export function emailDetails(inquiry, settings) {
     balance: money(Math.max(total - fee, 0)),
     paymentEmail: settings?.paymentEmail || "zakotarastudio@gmail.com",
     studioAddress: settings?.studioAddress || "",
-    balanceDue: settings?.balanceDue || ""
+    balanceDue: balanceDueText(settings),
+    payFeeUrl: inquiry.payments?.fee?.url || "",
+    payBalanceUrl: inquiry.payments?.balance?.url || "",
+    offerETransfer: !squareEnabled() || Boolean(settings?.offerETransfer),
+    square: squareEnabled()
   };
 }
+
+// With Square on and e-Transfer switched off, an old "by Interac e-Transfer" wording is replaced.
+function balanceDueText(settings) {
+  const text = settings?.balanceDue || "";
+  if (squareEnabled() && !settings?.offerETransfer && /e-?transfer/i.test(text)) return "After your session, by secure online payment (I'll email you a link)";
+  return text;
+}
+
+const payButton = (url, label) => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 8px;"><tr>
+    <td style="background:${C.cranberry};padding:15px 30px;"><a href="${esc(url)}" style="font-family:${SANS};font-size:14px;letter-spacing:2px;text-transform:uppercase;color:${C.ivory};text-decoration:none;">${esc(label)}</a></td></tr></table>`;
 
 // ---------- Shared layout ----------
 function layout({ preheader, kicker, title, body }) {
@@ -159,7 +174,11 @@ export function feeRequestEmail(d) {
       rows([["Experience", d.experience], ["Date", d.date], ["Time", d.time], ["Session duration", d.duration]]) +
       h2("Securing your reservation") +
       rows([["Session total", d.total], ["Reservation fee", d.fee, true], ["Remaining balance", d.balance]]) +
-      p(`To secure your session, please send your reservation fee via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;") +
+      (d.square
+        ? p("When you're ready to commit, secure your session by paying the reservation fee online:", "margin-top:16px;margin-bottom:0;") +
+          payButton(d.payFeeUrl || "#", `Pay ${d.fee.replace(" CAD", "")} to reserve`) +
+          p(`<span style="font-size:14px;color:${C.soft};">Secure checkout by Square · card, Apple Pay or Google Pay.${d.offerETransfer ? ` Prefer Interac e-Transfer? Send it to <strong>${esc(d.paymentEmail)}</strong> instead.` : ""}</span>`)
+        : p(`To secure your session, please send your reservation fee via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;")) +
       p("Once your payment has been received, I'll send your official booking confirmation.") +
       p("I look forward to welcoming you and your loved ones.") +
       signoff(["With warm regards,", "Zako Studio", "The Christmas Collection · 2026"])
@@ -179,7 +198,9 @@ Session total: ${d.total}
 Reservation fee: ${d.fee}
 Remaining balance: ${d.balance}
 
-To secure your session, please send your reservation fee via Interac e-Transfer to ${d.paymentEmail}.
+${d.square
+  ? `When you're ready to commit, secure your session by paying the reservation fee online:\n${d.payFeeUrl || "(link)"}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
+  : `To secure your session, please send your reservation fee via Interac e-Transfer to ${d.paymentEmail}.`}
 Once your payment has been received, I'll send your official booking confirmation.
 
 I look forward to welcoming you and your loved ones.
@@ -237,6 +258,46 @@ Christmas, as we remember it.`;
   return { subject, html, text };
 }
 
+// ---------- 3b. Remaining balance (sent after the session) ----------
+export function balanceRequestEmail(d) {
+  const subject = "Thank you for today: your remaining balance";
+  const html = layout({
+    preheader: `Thank you for your Christmas session. Your remaining balance is ${d.balance}.`,
+    kicker: "Thank you",
+    title: "Thank you <em>for today.</em>",
+    body:
+      p(`Dear ${esc(d.firstName)},`) +
+      p("Thank you for letting me be part of your Christmas. It was a joy to photograph you, and I'm already looking forward to sharing your gallery.") +
+      h2("Payment summary") +
+      rows([["Session total", d.total], ["Reservation fee received", d.fee], ["Remaining balance", d.balance, true]]) +
+      (d.square
+        ? payButton(d.payBalanceUrl || "#", `Pay ${d.balance.replace(" CAD", "")}`) +
+          p(`<span style="font-size:14px;color:${C.soft};">Secure checkout by Square · card, Apple Pay or Google Pay.${d.offerETransfer ? ` Prefer Interac e-Transfer? Send it to <strong>${esc(d.paymentEmail)}</strong> instead.` : ""}</span>`)
+        : p(`Please send the remaining balance via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;")) +
+      p("Your photographs will follow in your private online gallery.", "margin-top:16px;") +
+      signoff(["With warm regards,", "Zako Studio", "Christmas, as we remember it."])
+  });
+  const text = `Dear ${d.firstName},
+
+Thank you for letting me be part of your Christmas. It was a joy to photograph you, and I'm already looking forward to sharing your gallery.
+
+Payment summary
+Session total: ${d.total}
+Reservation fee received: ${d.fee}
+Remaining balance: ${d.balance}
+
+${d.square
+  ? `Pay your remaining balance securely online:\n${d.payBalanceUrl || "(link)"}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
+  : `Please send the remaining balance via Interac e-Transfer to ${d.paymentEmail}.`}
+
+Your photographs will follow in your private online gallery.
+
+With warm regards,
+Zako Studio
+Christmas, as we remember it.`;
+  return { subject, html, text };
+}
+
 // ---------- 4. Gallery ready (sent from Client galleries) ----------
 export function galleryEmail({ firstName, link, pin, expiresAt, photoCount }) {
   const subject = "Your Christmas photographs are ready";
@@ -274,13 +335,15 @@ Christmas, as we remember it.`;
 export const EMAIL_TYPES = {
   acknowledgement: acknowledgementEmail,
   feeRequest: feeRequestEmail,
-  confirmation: confirmationEmail
+  confirmation: confirmationEmail,
+  balanceRequest: balanceRequestEmail
 };
 
 export const EMAIL_LABELS = {
   acknowledgement: "Request received",
   feeRequest: "Reservation fee request",
   confirmation: "Booking confirmation",
+  balanceRequest: "Balance request",
   gallery: "Gallery ready"
 };
 
