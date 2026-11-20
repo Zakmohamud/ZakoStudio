@@ -521,6 +521,20 @@ export default async function handler(request) {
         return jsonResponse(200, { adSpend });
       }
 
+      case "squareTest": {
+        // $1 test payment: makes a link, and later reports whether the site heard about the payment.
+        if (!squareEnabled()) return jsonResponse(400, { message: "Square isn't set up." });
+        const orders = await squareOrdersStore();
+        if (body.check) {
+          const ref = await orders.get(cleanText(body.check, 80), { type: "json" });
+          return jsonResponse(200, { paid: Boolean(ref?.paidAt), paidAt: ref?.paidAt || null, amount: ref?.paidAmount ?? null });
+        }
+        const origin = new URL(request.url).origin;
+        const link = await createPaymentLink({ name: "Zako Studio · $1 test payment", amount: 1, note: "Website test payment (refund me)", redirectUrl: `${origin}/christmas/paid/?for=fee` });
+        await orders.setJSON(link.orderId, { kind: "test", amount: 1 });
+        return jsonResponse(200, { url: link.url, orderId: link.orderId });
+      }
+
       case "setBalance": {
         // Marks the remaining balance paid by hand (e.g. tapped in person at the studio).
         const id = cleanText(body.id, 80);

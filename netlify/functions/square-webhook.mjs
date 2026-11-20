@@ -32,6 +32,11 @@ export default async function handler(request) {
   const ref = await orders.get(payment.order_id, { type: "json" });
   if (!ref) return jsonResponse(200, { ignored: true, reason: "unknown order" });
 
+  if (ref.kind === "test") {
+    await orders.setJSON(payment.order_id, { ...ref, paidAt: payment.updated_at || new Date().toISOString(), paidAmount: Number(payment.amount_money?.amount || 0) / 100 });
+    return jsonResponse(200, { ok: true, test: true });
+  }
+
   const inquiries = await inquiriesStore();
   const inquiry = await inquiries.get(ref.inquiryId, { type: "json" });
   if (!inquiry) return jsonResponse(200, { ignored: true, reason: "inquiry gone" });
