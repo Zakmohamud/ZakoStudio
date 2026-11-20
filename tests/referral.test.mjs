@@ -506,7 +506,7 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
   const webhook = (await import("../netlify/functions/square-webhook.mjs")).default;
   const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
   const saved = { t: process.env.SQUARE_ACCESS_TOKEN, k: process.env.SQUARE_WEBHOOK_SIGNATURE_KEY, u: process.env.URL };
-  Object.assign(process.env, { SQUARE_ACCESS_TOKEN: "tok", SQUARE_WEBHOOK_SIGNATURE_KEY: "sigkey", URL: "https://zako.test" });
+  Object.assign(process.env, { SQUARE_ACCESS_TOKEN: "tok", SQUARE_WEBHOOK_SIGNATURE_KEY: "sigkey", URL: "https://zako.test", PAYMENT_ALERT_EMAIL: "studio@example.com" });
   const realFetch = globalThis.fetch;
   const links = []; let n = 0;
   globalThis.fetch = async (url, opts = {}) => {
@@ -565,6 +565,11 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
     assert.equal(now.depositReceived, true);
     assert.equal(now.depositAmount, 150);
     assert.equal(now.depositVia, "Square");
+    const alert = sent.find((m) => /Reservation fee paid/.test(m.subject));
+    assert.ok(alert, "the studio gets an email when a fee is paid");
+    assert.equal(alert.to, "studio@example.com");
+    assert.match(alert.subject, /Bea Ford, \$150/);
+    assert.match(alert.text, /referral-admin\.html/);
     // duplicate delivery is harmless
     await hook({ id: "PAY1", status: "COMPLETED", order_id: "ORD1", amount_money: { amount: 15000, currency: "CAD" } });
     now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
@@ -615,6 +620,7 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
     assert.equal(now.balancePaidVia, "Square tap at studio");
   } finally {
     globalThis.fetch = realFetch; setMailer(null);
+    delete process.env.PAYMENT_ALERT_EMAIL;
     for (const [k, v] of [["SQUARE_ACCESS_TOKEN", saved.t], ["SQUARE_WEBHOOK_SIGNATURE_KEY", saved.k], ["URL", saved.u]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });
