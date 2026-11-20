@@ -516,8 +516,11 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
       const body = JSON.parse(opts.body); links.push(body); n++;
       return new Response(JSON.stringify({ payment_link: { id: `PL${n}`, url: `https://square.link/u/pay${n}`, order_id: `ORD${n}` } }));
     }
+    const m = u.match(/\/v2\/payments\/(\w+)$/);
+    if (m && paymentsAtSquare[m[1]]) return new Response(JSON.stringify({ payment: paymentsAtSquare[m[1]] }));
     return new Response("{}", { status: 404 });
   };
+  const paymentsAtSquare = {};
   const hook = (payment) => {
     const raw = JSON.stringify({ type: "payment.updated", data: { object: { payment } } });
     const sig = createHmac("sha256", "sigkey").update("https://zako.test/api/square-webhook" + raw).digest("base64");
@@ -592,6 +595,18 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
     const html = (await res.json()).html;
     assert.doesNotMatch(html, /e-Transfer/);
     assert.match(html, /secure online payment/);
+
+    // without a signature key: the payment is looked up with Square, so made-up notifications do nothing
+    delete process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
+    await adminCall({ action: "setBalance", id: bea.id, paid: false });
+    const unsigned = (payment) => webhook(new Request("https://zako.test/api/square-webhook", { method: "POST", body: JSON.stringify({ data: { object: { payment } } }) }));
+    await unsigned({ id: "FAKE", status: "COMPLETED", order_id: "ORD2", amount_money: { amount: 15000 } });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaid, false, "a made-up payment is ignored");
+    paymentsAtSquare.PAY3 = { id: "PAY3", status: "COMPLETED", order_id: "ORD2", amount_money: { amount: 15000, currency: "CAD" } };
+    await unsigned({ id: "PAY3", status: "PENDING" });
+    now = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === bea.id);
+    assert.equal(now.balancePaid, true, "a real payment, confirmed with Square, counts");
 
     // manual balance marking (tap at the studio)
     await adminCall({ action: "setBalance", id: bea.id, paid: false });

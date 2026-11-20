@@ -3,7 +3,8 @@
 //
 // Netlify environment variables (the owner pastes the two secrets in herself):
 //   SQUARE_ACCESS_TOKEN            production access token of the Square app (secret)
-//   SQUARE_WEBHOOK_SIGNATURE_KEY   signature key of the app's webhook subscription (secret)
+//   SQUARE_WEBHOOK_SIGNATURE_KEY   optional; signature key of the webhook subscription. Without it, every
+//                                  notification is double-checked by looking the payment up with Square.
 //   SQUARE_LOCATION_ID             optional; the main active location is used when left out
 //   SQUARE_ENVIRONMENT             optional; "sandbox" for Square's test environment
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
@@ -53,7 +54,7 @@ export async function squareStatus() {
     const { locations = [] } = await call("GET", "/v2/locations");
     const id = await locationId();
     const loc = locations.find((l) => l.id === id);
-    return { ready: true, location: loc?.name || id, currency: loc?.currency || "CAD", webhook: Boolean(env("SQUARE_WEBHOOK_SIGNATURE_KEY")) };
+    return { ready: true, location: loc?.name || id, currency: loc?.currency || "CAD", webhook: true };
   } catch (error) {
     return { ready: false, error: error.message };
   }
@@ -72,6 +73,12 @@ export async function createPaymentLink({ name, amount, note, email, redirectUrl
   };
   const { payment_link: link } = await call("POST", "/v2/online-checkout/payment-links", body);
   return { id: link.id, url: link.url, orderId: link.order_id };
+}
+
+// Looks a payment up directly with Square (the trusted source; webhook bodies are only a hint).
+export async function getPayment(id) {
+  const { payment } = await call("GET", `/v2/payments/${encodeURIComponent(id)}`);
+  return payment;
 }
 
 export async function deletePaymentLink(id) {

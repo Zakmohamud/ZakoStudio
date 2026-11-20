@@ -1,7 +1,7 @@
 // Public: POST /api/square-webhook — Square tells the site when a payment changes.
 // When a reservation-fee or balance payment completes, the booking is marked paid on its own.
 import { inquiriesStore, jsonResponse, squareOrdersStore } from "../lib/referrals.mjs";
-import { webhookSignatureOk } from "../lib/square.mjs";
+import { getPayment, squareEnabled, webhookSignatureOk } from "../lib/square.mjs";
 
 export default async function handler(request) {
   if (request.method !== "POST") return jsonResponse(405, { message: "Use POST." });
@@ -14,11 +14,18 @@ export default async function handler(request) {
     `${new URL(request.url).origin}/api/square-webhook`,
     request.url
   ].filter(Boolean);
-  if (!urls.some((u) => webhookSignatureOk(signature, u, raw))) return jsonResponse(401, { message: "Bad signature." });
+  const signed = Boolean(process.env.SQUARE_WEBHOOK_SIGNATURE_KEY);
+  if (signed && !urls.some((u) => webhookSignatureOk(signature, u, raw))) return jsonResponse(401, { message: "Bad signature." });
+  if (!squareEnabled()) return jsonResponse(503, { message: "Square isn't set up." });
 
   let event;
   try { event = JSON.parse(raw); } catch { return jsonResponse(400, { message: "Bad body." }); }
-  const payment = event?.data?.object?.payment;
+  let payment = event?.data?.object?.payment;
+  if (!payment?.id) return jsonResponse(200, { ignored: true });
+  // Without a signature key, trust only what Square itself says about this payment.
+  if (!signed) {
+    try { payment = await getPayment(payment.id); } catch { return jsonResponse(200, { ignored: true, reason: "not a Square payment" }); }
+  }
   if (!payment || payment.status !== "COMPLETED" || !payment.order_id) return jsonResponse(200, { ignored: true });
 
   const orders = await squareOrdersStore();
