@@ -86,6 +86,11 @@
       .spend-form label { min-width: 220px; }
       .stat small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
       .pos { color: var(--green); }
+      .alt-date { display: inline-block; }
+      .alt-date summary { list-style: none; cursor: pointer; display: inline-block; }
+      .alt-date summary::-webkit-details-marker { display: none; }
+      .alt-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 8px 0; }
+      .alt-row label { display: grid; gap: 4px; font-size: 13px; }
       .neg { color: var(--red); }
       .deposit { display: block; margin-top: 6px; font-size: 13px; }
       [hidden] { display: none !important; }
@@ -695,11 +700,15 @@
         const hasTime = (i.bookedDate || i.dateISO) && (Number.isInteger(i.bookedStart) || Number.isInteger(i.startMin));
         const btn = (type, label) => {
           const at = sentAt(type);
-          const name = { feeRequest: "Fee request", confirmation: "Confirmation", balanceRequest: "Balance request" }[type];
+          const name = { feeRequest: "Fee request", confirmation: "Confirmation", balanceRequest: "Balance request", alternativeDate: "Other date" }[type];
           return `<button class="btn ghost small" data-act="email" data-type="${type}" data-id="${esc(i.id)}">${at ? "Resend" : label}</button>${at ? ` <span class="sent">✓ ${name} sent ${fullWhen(at)}</span>` : ""}`;
         };
         const parts = [];
         if (hasTime && !i.depositReceived) parts.push(btn("feeRequest", "Send reservation fee request"));
+        if (!i.booked) parts.push(`<details class="alt-date"><summary class="btn ghost small">Date not available? Offer another</summary>
+            <div class="alt-row"><label>Date you can offer<input type="date" id="ad-${esc(i.id)}"></label>
+            <label>Time (optional)<input type="text" id="at-${esc(i.id)}" maxlength="120" placeholder="at 1:00 p.m."></label>
+            <button class="btn small" data-act="alt-date" data-id="${esc(i.id)}">Preview email</button></div></details>${sentAt("alternativeDate") ? ` <span class="sent">✓ Other date sent ${fullWhen(sentAt("alternativeDate"))}</span>` : ""}`);
         if (i.booked && i.bookedDate && i.depositReceived) parts.push(btn("confirmation", "Send booking confirmation"));
         if (i.booked && i.bookedDate && i.depositReceived && !i.balancePaid) parts.push(btn("balanceRequest", "Send balance request"));
         const log = i.emailLog || (sentAt("acknowledgement") ? [{ label: "Request received", at: sentAt("acknowledgement"), status: "sent", to: i.email }] : []);
@@ -875,6 +884,11 @@
           } else if (el.dataset.act === "email") {
             await openEmailPreview(el.dataset.id, el.dataset.type);
             return;
+          } else if (el.dataset.act === "alt-date") {
+            const altDate = $(`ad-${el.dataset.id}`).value;
+            if (!altDate) { inquiryNote("Pick the date you can offer first.", "bad"); return; }
+            await openEmailPreview(el.dataset.id, "alternativeDate", { altDate, altTimes: $(`at-${el.dataset.id}`).value });
+            return;
           } else if (el.dataset.act === "deposit") {
             if (el.dataset.received === "1") {
               const amount = prompt("Reservation fee received ($):", el.dataset.due);
@@ -910,10 +924,10 @@
       });
 
       let pendingEmail = null;
-      async function openEmailPreview(id, type) {
-        const pv = await api({ action: "previewEmail", id, type }).catch((e) => { inquiryNote(e.message, "bad"); return null; });
+      async function openEmailPreview(id, type, extra = {}) {
+        const pv = await api({ action: "previewEmail", id, type, ...extra }).catch((e) => { inquiryNote(e.message, "bad"); return null; });
         if (!pv) return;
-        pendingEmail = { id, type };
+        pendingEmail = { id, type, ...extra };
         $("ep-to").textContent = `To: ${pv.to}`;
         $("ep-subject").textContent = pv.subject;
         $("ep-frame").srcdoc = pv.html;
@@ -938,7 +952,7 @@
           }
           await api({ action: "sendEmail", ...pendingEmail });
           $("email-dialog").close();
-          inquiryNote({ feeRequest: "Reservation fee request sent.", confirmation: "Booking confirmation sent.", balanceRequest: "Balance request sent." }[pendingEmail.type] || "Email sent.", "ok");
+          inquiryNote({ feeRequest: "Reservation fee request sent.", confirmation: "Booking confirmation sent.", balanceRequest: "Balance request sent.", alternativeDate: "Email offering the other date sent." }[pendingEmail.type] || "Email sent.", "ok");
           await load();
         } catch (error) {
           $("ep-message").textContent = error.message;

@@ -49,6 +49,8 @@ export function emailDetails(inquiry, settings) {
     firstName: String(inquiry.name || "").trim().split(/\s+/)[0] || "there",
     experience: pkg?.name || inquiry.package || "Your Christmas session",
     date: dateISO ? longDate(dateISO) : inquiry.date || "To be confirmed",
+    requestedDate: inquiry.dateISO ? longDate(inquiry.dateISO) : inquiry.date || "",
+    packageId: pkgId,
     time: Number.isInteger(start) ? clock(start) : inquiry.time || "To be confirmed",
     duration: minutes ? `${minutes} minutes` : "",
     total: money(total),
@@ -258,6 +260,46 @@ Christmas, as we remember it.`;
   return { subject, html, text };
 }
 
+// ---------- 2b. Requested date isn't available: offer another one (sent manually) ----------
+export function alternativeDateEmail(d) {
+  const alt = d.altDate ? longDate(d.altDate) : "another day";
+  const asked = d.requestedDate || "the date you asked for";
+  const subject = `About your Christmas session: ${alt.replace(/, \d{4}$/, "")} is available`;
+  const html = layout({
+    preheader: `${asked} is fully booked, but ${alt} is open for you.`,
+    kicker: "A new date for you",
+    title: "Let's find <em>your date.</em>",
+    body:
+      p(`Dear ${esc(d.firstName)},`) +
+      p("Thank you so much for your interest in a Christmas session with Zako Studio.") +
+      p(`Unfortunately, <strong>${esc(asked)}</strong> is fully booked. I'd still love to photograph your family, and I have availability on <strong>${esc(alt)}</strong>${d.altTimes ? `, <strong>${esc(d.altTimes)}</strong>` : ""}${/\.$/.test(d.altTimes || "") ? "" : "."}`) +
+      h2("Your Christmas experience") +
+      rows([["Experience", d.experience], ["New date", alt], ["Time", (d.altTimes || "").replace(/^at\s+/i, "")]]) +
+      (d.altLink
+        ? payButton(d.altLink, "Choose a time") + p(`<span style="font-size:14px;color:${C.soft};">Or simply reply to this email and I'll hold a time for you.</span>`)
+        : p(d.altTimes ? "If that works for you, simply reply to this email and I'll hold it for you." : "If that works for you, simply reply to this email with the time you'd like, and I'll hold it for you.", "margin-top:16px;")) +
+      p("I look forward to hearing from you.", "margin-top:16px;") +
+      signoff(["With warm regards,", "Zako Studio", "The Christmas Collection · 2026"])
+  });
+  const text = `Dear ${d.firstName},
+
+Thank you so much for your interest in a Christmas session with Zako Studio.
+
+Unfortunately, ${asked} is fully booked. I'd still love to photograph your family, and I have availability on ${alt}${d.altTimes ? `, ${d.altTimes}` : ""}${/\.$/.test(d.altTimes || "") ? "" : "."}
+
+Experience: ${d.experience}
+New date: ${alt}${d.altTimes ? `\nTime: ${d.altTimes.replace(/^at\s+/i, "")}` : ""}
+
+${d.altLink ? `Choose a time here: ${d.altLink}\nOr simply reply to this email and I'll hold a time for you.` : d.altTimes ? "If that works for you, simply reply to this email and I'll hold it for you." : "If that works for you, simply reply to this email with the time you'd like, and I'll hold it for you."}
+
+I look forward to hearing from you.
+
+With warm regards,
+Zako Studio
+The Christmas Collection · 2026`;
+  return { subject, html, text };
+}
+
 // ---------- 3b. Remaining balance (sent after the session) ----------
 export function balanceRequestEmail(d) {
   const subject = "Thank you for today: your remaining balance";
@@ -335,6 +377,7 @@ Christmas, as we remember it.`;
 export const EMAIL_TYPES = {
   acknowledgement: acknowledgementEmail,
   feeRequest: feeRequestEmail,
+  alternativeDate: alternativeDateEmail,
   confirmation: confirmationEmail,
   balanceRequest: balanceRequestEmail
 };
@@ -342,6 +385,7 @@ export const EMAIL_TYPES = {
 export const EMAIL_LABELS = {
   acknowledgement: "Request received",
   feeRequest: "Reservation fee request",
+  alternativeDate: "Another date offered",
   confirmation: "Booking confirmation",
   balanceRequest: "Balance request",
   gallery: "Gallery ready"
