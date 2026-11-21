@@ -296,7 +296,19 @@ export default async function handler(request) {
             }
           }
         }
-        const mail = build(emailDetails(inquiry, settings));
+        let extra = {};
+        if (type === "alternativeDate") {
+          if (inquiry.booked) return jsonResponse(400, { message: "This session is already booked." });
+          if (!isISODate(body.altDate)) return jsonResponse(400, { message: "Pick the date you can offer." });
+          const open = sessionDays(settings).some((day) => day.date === body.altDate);
+          const pkgId = emailDetails(inquiry, settings).packageId;
+          extra = {
+            altDate: body.altDate,
+            altTimes: cleanText(body.altTimes, 120),
+            altLink: open ? `${new URL(request.url).origin}/christmas/book/?date=${body.altDate}${pkgId ? `&package=${pkgId}` : ""}` : ""
+          };
+        }
+        const mail = build({ ...emailDetails(inquiry, settings), ...extra });
         if (preview) {
           return jsonResponse(200, { to: inquiry.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
         }

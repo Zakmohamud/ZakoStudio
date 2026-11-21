@@ -624,3 +624,23 @@ test("Square: fee request carries a Pay link, webhook marks the fee received, ba
     for (const [k, v] of [["SQUARE_ACCESS_TOKEN", saved.t], ["SQUARE_WEBHOOK_SIGNATURE_KEY", saved.k], ["URL", saved.u]]) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });
+
+test("offer another date: email names the requested and the offered date, with a time", async () => {
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+  const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  process.env.GMAIL_USER = "studio@example.com"; process.env.GMAIL_APP_PASSWORD = "x";
+  await referral(new Request("https://x.test/api/referral", { method: "POST",
+    body: JSON.stringify({ package: "mini", name: "Cara Diaz", email: "cara@example.com", dateISO: "2026-12-13", startMin: 600, date: "Sunday, December 13", time: "10:00 a.m." }) }));
+  const cara = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.email === "cara@example.com");
+  assert.equal((await adminCall({ action: "previewEmail", id: cara.id, type: "alternativeDate" })).status, 400, "needs a date");
+  const pv = await (await adminCall({ action: "previewEmail", id: cara.id, type: "alternativeDate", altDate: "2026-12-12", altTimes: "at 1:00 p.m." })).json();
+  assert.match(pv.subject, /Saturday, December 12 is available/);
+  assert.match(pv.html, /Sunday, December 13, 2026<\/strong> is fully booked/);
+  assert.match(pv.html, /Saturday, December 12, 2026<\/strong>, <strong>at 1:00 p\.m\./);
+  const res = await adminCall({ action: "sendEmail", id: cara.id, type: "alternativeDate", altDate: "2026-12-12", altTimes: "at 1:00 p.m." });
+  assert.equal(res.status, 200);
+  assert.match(sent.at(-1).text, /reply to this email/);
+  const after = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === cara.id);
+  assert.equal(after.emailLog.at(-1).type, "alternativeDate");
+  setMailer(null); delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
+});
