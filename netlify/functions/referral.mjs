@@ -2,7 +2,7 @@
 //   GET  /api/referral?code=SARAH15   -> checks a code (never lists codes)
 //   POST /api/referral                -> records an inquiry (with or without a code)
 import { randomUUID } from "node:crypto";
-import { acknowledgementEmail, emailDetails, logEmail } from "../lib/emails.mjs";
+import { acknowledgementEmail, emailDetails, logEmail, newRequestStudioEmail } from "../lib/emails.mjs";
 import { mailReady, sendMail } from "../lib/mail.mjs";
 import {
   PACKAGE_PRICES,
@@ -117,6 +117,21 @@ export default async function handler(request) {
           logEmail(inquiry, { type: "acknowledgement", to: email, subject: "We've received your Christmas session request", error: error.message || error });
         }
         await store.setJSON(id, inquiry);
+      }
+      // A tidy alert for the studio (same look as the client emails); replying goes straight to the client.
+      const studio = process.env.REQUEST_ALERT_EMAIL || process.env.GMAIL_USER;
+      if (studio && (await mailReady())) {
+        try {
+          const settings = await readSettings();
+          const origin = process.env.URL || new URL(request.url).origin;
+          const alert = newRequestStudioEmail(inquiry, emailDetails(inquiry, settings), origin);
+          await Promise.race([
+            sendMail({ to: studio, ...alert, replyTo: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined }),
+            new Promise((_, no) => setTimeout(() => no(new Error("Email timed out")), 8000))
+          ]);
+        } catch (error) {
+          console.error("Studio alert email failed.", error);
+        }
       }
       return jsonResponse(200, { saved: true, percent, finalPrice: inquiry.finalPrice, acknowledged });
     } catch (error) {

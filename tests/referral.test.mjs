@@ -674,3 +674,21 @@ test("emails can be edited in the preview: own subject and wording are sent, pay
   assert.equal(after.emailLog.at(-1).subject, "Dec 12 instead?");
   setMailer(null); delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
 });
+
+test("new request: the studio gets a styled alert it can reply to", async () => {
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+  const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  process.env.GMAIL_USER = "studio@example.com"; process.env.GMAIL_APP_PASSWORD = "x";
+  await referral(new Request("https://x.test/api/referral", { method: "POST",
+    body: JSON.stringify({ package: "quick", name: "Fay Lo", email: "fay@example.com", phone: "604-555-0101", dateISO: "2026-12-12", startMin: 650, date: "Saturday, December 12", time: "10:50 a.m.", notes: "Two kids" }) }));
+  const alert = sent.find((m) => m.to === "studio@example.com");
+  assert.ok(alert, "studio alert sent");
+  assert.equal(alert.replyTo, "fay@example.com");
+  assert.match(alert.subject, /New request: Fay Lo, The Keepsake, Saturday, December 12/);
+  assert.match(alert.html, /Zako Studio/);
+  assert.match(alert.html, /Two kids/);
+  assert.match(alert.text, /Phone: 604-555-0101/);
+  assert.match(alert.text, /referral-admin\.html/);
+  assert.ok(sent.some((m) => m.to === "fay@example.com"), "client still gets theirs");
+  setMailer(null); delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
+});
