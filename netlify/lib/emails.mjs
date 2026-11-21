@@ -371,6 +371,51 @@ Christmas, as we remember it.`;
   return { subject, html, text };
 }
 
+// ---------- Studio alerts (to you, in the same look as the client emails) ----------
+export function studioAlertEmail({ subject, preheader, kicker, title, intro = [], items = [], note = "", link, linkLabel = "Open your bookings page" }) {
+  const html = layout({
+    preheader: preheader || subject,
+    kicker,
+    title,
+    body:
+      intro.map((t) => p(esc(t))).join("") +
+      rows(items) +
+      (note ? p(`<span style="font-size:14px;color:${C.soft};">${esc(note)}</span>`, "margin-top:14px;") : "") +
+      (link ? payButton(link, linkLabel) : "")
+  });
+  const text = [...intro, "", ...items.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`), note ? `\n${note}` : "", link ? `\n${linkLabel}: ${link}` : ""].join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return { subject, html, text };
+}
+
+// New request alert for the studio.
+export function newRequestStudioEmail(inquiry, d, origin) {
+  const fee = d.fee.replace(" CAD", "");
+  return studioAlertEmail({
+    subject: `New request: ${inquiry.name || "a client"}, ${d.experience}, ${d.date.replace(/, \d{4}$/, "")}`,
+    preheader: `${inquiry.name} asked for ${d.experience} on ${d.date} at ${d.time}.`,
+    kicker: "New request · for you",
+    title: "A new Christmas <em>session request.</em>",
+    intro: [`${inquiry.name || "Someone"} has asked for a session. They've been sent the "we've received your request" email.`],
+    items: [
+      ["Client", inquiry.name],
+      ["Email", inquiry.email],
+      ["Phone", inquiry.phone],
+      ["Experience", d.experience],
+      ["Requested date", d.date],
+      ["Requested time", d.time],
+      ["Studio day", inquiry.dayStatus === "pending" ? "Pending studio confirmation" : inquiry.dayStatus === "secured" ? "Studio secured" : ""],
+      ["Price", inquiry.finalPrice !== inquiry.price ? `${d.total} (was $${inquiry.price})` : d.total],
+      ["Code", inquiry.code ? `${inquiry.code}${inquiry.discountLabel ? ` · ${inquiry.discountLabel}` : ""}` : ""],
+      ["Reservation fee", `${fee} · balance ${d.balance.replace(" CAD", "")}`],
+      ["Heard about us", inquiry.heardFrom || [inquiry.utm?.source, inquiry.utm?.campaign].filter(Boolean).join(" / ")],
+      ["Notes", inquiry.notes]
+    ],
+    note: "Reply to this email to write to the client directly.",
+    link: `${origin}/referral-admin.html`,
+    linkLabel: "Open your bookings page"
+  });
+}
+
 // ---------- 4. Gallery ready (sent from Client galleries) ----------
 export function galleryEmail({ firstName, link, pin, expiresAt, photoCount }) {
   const subject = "Your Christmas photographs are ready";

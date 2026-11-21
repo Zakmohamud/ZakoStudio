@@ -2,18 +2,17 @@
 // When a reservation-fee or balance payment completes, the booking is marked paid on its own.
 import { inquiriesStore, jsonResponse, squareOrdersStore } from "../lib/referrals.mjs";
 import { getPayment, squareEnabled, webhookSignatureOk } from "../lib/square.mjs";
-import { emailDetails } from "../lib/emails.mjs";
+import { emailDetails, studioAlertEmail } from "../lib/emails.mjs";
 import { mailReady, sendMail } from "../lib/mail.mjs";
 import { readSettings } from "../lib/referrals.mjs";
 
-// Lets the studio know a payment came in (sent to the studio's own Gmail).
-async function tellStudio({ subject, lines, origin }) {
+// Lets the studio know a payment came in (sent to the studio's own Gmail, in the same look as the client emails).
+async function tellStudio({ subject, title, intro, items = [], note, origin, replyTo }) {
   try {
     const to = process.env.PAYMENT_ALERT_EMAIL || process.env.GMAIL_USER;
     if (!to || !(await mailReady())) return;
-    const text = `${lines.join("\n")}\n\nOpen your bookings page: ${origin}/referral-admin.html`;
-    const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#292622">${lines.map((l) => `<p style="margin:0 0 6px">${l.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])}</p>`).join("")}<p style="margin:16px 0 0"><a href="${origin}/referral-admin.html">Open your bookings page</a></p></div>`;
-    await sendMail({ to, subject, text, html });
+    const mail = studioAlertEmail({ subject, kicker: "Payment received · for you", title, intro, items, note, link: `${origin}/referral-admin.html` });
+    await sendMail({ to, ...mail, replyTo });
   } catch (error) {
     console.error("Payment alert email failed.", error);
   }
@@ -50,7 +49,7 @@ export default async function handler(request) {
 
   const origin = process.env.URL || new URL(request.url).origin;
   if (ref.kind === "test") {
-    if (!ref.paidAt) await tellStudio({ subject: "💳 Test payment received: $1.00", lines: ["Your $1 website test payment went through, and your site picked it up.", "Remember to refund it in your Square Dashboard."], origin });
+    if (!ref.paidAt) await tellStudio({ subject: "💳 Test payment received: $1.00", title: "Test payment <em>received.</em>", intro: ["Your $1 website test payment went through, and your site picked it up."], note: "Remember to refund it in your Square Dashboard.", origin });
     await orders.setJSON(payment.order_id, { ...ref, paidAt: payment.updated_at || new Date().toISOString(), paidAmount: Number(payment.amount_money?.amount || 0) / 100 });
     return jsonResponse(200, { ok: true, test: true });
   }
@@ -74,13 +73,12 @@ export default async function handler(request) {
   const money = `$${Number.isInteger(paid) ? paid : paid.toFixed(2)}`;
   await tellStudio({
     subject: ref.kind === "fee" ? `💳 Reservation fee paid: ${inquiry.name || "a client"}, ${money}` : `💳 Balance paid: ${inquiry.name || "a client"}, ${money}`,
-    lines: [
-      `${inquiry.name || "A client"} paid ${ref.kind === "fee" ? "the reservation fee" : "the remaining balance"} of ${money} by Square.`,
-      `${d.experience} · ${d.date} · ${d.time}`,
-      `Email: ${inquiry.email || ""}${inquiry.phone ? ` · Phone: ${inquiry.phone}` : ""}`,
-      ref.kind === "fee" ? "It's marked “reservation fee received”. Next: send the booking confirmation." : "It's marked “balance paid”."
-    ],
-    origin
+    title: ref.kind === "fee" ? "Reservation fee <em>paid.</em>" : "Balance <em>paid.</em>",
+    intro: [`${inquiry.name || "A client"} paid ${ref.kind === "fee" ? "the reservation fee" : "the remaining balance"} of ${money} by Square.`],
+    items: [["Client", inquiry.name], ["Experience", d.experience], ["Date", d.date], ["Time", d.time], ["Email", inquiry.email], ["Phone", inquiry.phone], ["Paid", `${money} · Square`]],
+    note: ref.kind === "fee" ? "It's marked “reservation fee received”. Next: send the booking confirmation." : "It's marked “balance paid”.",
+    origin,
+    replyTo: inquiry.email || undefined
   });
   return jsonResponse(200, { ok: true });
 }

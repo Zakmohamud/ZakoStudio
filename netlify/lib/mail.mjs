@@ -25,8 +25,8 @@ export async function mailStatus() {
 
 export const mailReady = async () => (await mailStatus()).ready;
 
-export async function sendMail({ to, subject, html, text }) {
-  if (mailer) return mailer({ to, subject, html, text });
+export async function sendMail({ to, subject, html, text, replyTo }) {
+  if (mailer) return mailer({ to, subject, html, text, replyTo });
   const c = credentials();
   if (!c) throw new Error("Email sending isn't set up yet: add GMAIL_USER and GMAIL_APP_PASSWORD in Netlify.");
   const nodemailer = (await import("nodemailer")).default;
@@ -36,7 +36,7 @@ export async function sendMail({ to, subject, html, text }) {
   });
   const info = await transport.sendMail({
     from: { name: "Zako Studio", address: c.user },
-    replyTo: c.user,
+    replyTo: replyTo || c.user,
     to,
     subject,
     html,
