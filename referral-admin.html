@@ -152,6 +152,53 @@
       .qr-card .u { font-size: 12px; color: #6A635A; margin-top: 14px; word-break: break-all; }
       .qr-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px; flex-wrap: wrap; }
       @media (max-width: 760px) { .gal-form, .gal-settings { grid-template-columns: 1fr 1fr; } }
+
+      .settings-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) auto; }
+      .jump { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; margin: 0 -4px; padding: 10px 4px; background: var(--paper); border-bottom: 1px solid var(--line); scrollbar-width: none; }
+      .jump::-webkit-scrollbar { display: none; }
+      .jump a { flex: 0 0 auto; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 99px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 500; background: var(--card); }
+      section { scroll-margin-top: 64px; }
+      /* ---- Phones ---- */
+      @media (max-width: 700px) {
+        body { padding: 0; font-size: 16px; }
+        main { border: 0; padding: 16px 14px 40px; }
+        h1 { font-size: 32px; }
+        header p { font-size: 14px; }
+        h2 { font-size: 25px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .stat { min-width: 0; padding: 10px 12px; }
+        .new-code, .settings-grid, .gal-form, .gal-settings, .block-form { grid-template-columns: 1fr 1fr !important; padding: 14px; gap: 10px; }
+        .new-code > *, .gal-form > *, .gal-settings > *, .block-form > * { min-width: 0; }
+        .new-code input, .new-code select, .gal-form input, .gal-form select, .gal-settings input, .block-form input, .block-form select { width: 100%; min-width: 0; }
+        .new-code .btn, .gal-form .btn, .settings-grid .btn { grid-column: 1 / -1; }
+        input, select { font-size: 16px; } /* stops iPhone zooming in on tap */
+        /* Tables become cards: each row a card, each cell labelled */
+        .table-wrap { overflow: visible; }
+        table.cards, table.cards tbody, table.cards tr, table.cards td { display: block; width: 100%; }
+        table.cards thead { display: none; }
+        table.cards { border: 0; background: none; }
+        table.cards tr { margin: 0 0 12px; border: 1px solid var(--line); background: var(--card); padding: 4px 0; }
+        table.cards td { border: 0; padding: 7px 14px 7px 124px; position: relative; min-height: 34px; overflow-wrap: anywhere; }
+        table.cards td::before { content: attr(data-label); position: absolute; left: 14px; top: 10px; width: 100px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+        table.cards td[data-label=""] { padding-left: 14px; }
+        table.cards td[data-label=""]::before { display: none; }
+        table.cards td:empty { display: none; }
+        table.cards td[colspan] { display: block; }
+        table.cards td[colspan]::before { display: none; }
+        #inquiries-body td.inq-booking { padding-left: 14px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 12px; }
+        .alt-date { display: block; }
+        .alt-date summary { display: inline-flex; align-items: center; }
+        #inquiries-body td.inq-booking::before { display: none; }
+        .book-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .book-form .btn, .book-form .needs-time { grid-column: 1 / -1; }
+        .email-row .btn, .alt-row .btn { min-height: 40px; }
+        .alt-row label { flex: 1 1 140px; }
+        .alt-row input { width: 100%; }
+        dialog.email-preview { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; display: flex; flex-direction: column; }
+        dialog.email-preview:not([open]) { display: none; }
+        dialog.email-preview iframe { flex: 1; height: auto; }
+        .ep-foot { flex-wrap: wrap; }
+      }
     </style>
   </head>
   <body>
@@ -163,6 +210,9 @@
         </div>
         <button class="btn ghost small" id="sign-out" hidden>Sign out</button>
       </header>
+      <nav class="jump" id="jump" hidden>
+        <a href="#sec-inquiries">Inquiries</a><a href="#sec-schedule">Schedule</a><a href="#sec-galleries">Galleries</a><a href="#sec-stats">Visitors</a><a href="#sec-days">Studio days</a><a href="#sec-emails">Emails</a><a href="#sec-codes">Codes</a>
+      </nav>
 
       <form class="login" id="login">
         <label>Manager password
@@ -173,7 +223,7 @@
       </form>
 
       <div id="app" hidden>
-        <section>
+        <section id="sec-stats">
           <h2>Christmas campaign</h2>
           <div class="filter">
             <label>Period
@@ -219,7 +269,7 @@
           <p class="muted" style="font-size:13px">Counted without cookies or personal data, and only on the live site unless you include previews. <b>Requests</b> are booking forms sent; <b>booked</b> means sessions you marked as booked. Revenue uses each booked client’s price after discount. Tag ad links like <code>?utm_source=instagram&amp;utm_campaign=christmas</code> so each ad gets its own row, and enter its spend with the same name.</p>
         </section>
 
-        <section>
+        <section id="sec-days">
           <h2>Studio days &amp; earnings</h2>
           <div class="stats" id="money-stats"></div>
           <p class="muted">Clients can only pick times on these days, inside these hours. <strong>Pending</strong> days aren’t rented yet: clients can still send requests, and the request says the studio is waiting on confirmation. Marking a day <strong>Secured</strong> counts its rental cost.</p>
@@ -247,9 +297,9 @@
           <p class="muted" style="font-size:13px" id="days-note"></p>
         </section>
 
-        <section>
+        <section id="sec-settings">
           <h2>Booking settings</h2>
-          <form class="new-code" id="settings-form" style="grid-template-columns: repeat(5, minmax(0,1fr)) auto">
+          <form class="new-code settings-grid" id="settings-form">
             <label>Buffer between sessions (min)<input id="st-buffer" type="number" min="0" max="60" step="1" required /></label>
             <label>Reservation fee %<input id="st-deposit" type="number" min="0" max="100" step="1" required /></label>
             <label>Keepsake length (min)<input id="st-quick" type="number" min="5" max="240" step="5" required /></label>
@@ -260,7 +310,7 @@
           <p class="message" id="settings-message" role="status"></p>
         </section>
 
-        <section>
+        <section id="sec-emails">
           <h2>Client emails</h2>
           <p class="mail-status" id="mail-status"></p>
           <p class="mail-status" id="square-status"></p>
@@ -275,7 +325,7 @@
           <p class="fine">Every new request gets the “We’ve received your request” email automatically. The reservation fee request and the final confirmation are sent from each inquiry below, after you preview them.</p>
         </section>
 
-        <section>
+        <section id="sec-inquiries">
           <h2>Inquiries</h2>
           <div class="stats" id="stats"></div>
           <div class="filter">
@@ -299,7 +349,7 @@
           </div>
         </section>
 
-        <section>
+        <section id="sec-galleries">
           <h2>Client galleries</h2>
           <p class="muted" style="margin-top:-6px">Private galleries on your own site. Create one, drop in the photos you exported from Lightroom, then share the link or QR card. Clients can view, favourite and download.</p>
           <form class="gal-form" id="gal-form">
@@ -314,7 +364,7 @@
           <div id="gal-list"></div>
         </section>
 
-        <section>
+        <section id="sec-block">
           <h2>Block off time</h2>
           <form class="block-form" id="block-form">
             <label>Date
@@ -335,13 +385,13 @@
           <p class="message" id="block-message" role="status"></p>
         </section>
 
-        <section>
+        <section id="sec-schedule">
           <h2>Upcoming schedule</h2>
           <p class="muted">Booked sessions include your 10-minute break afterwards on the booking page.</p>
           <div id="schedule"></div>
         </section>
 
-        <section>
+        <section id="sec-newcode">
           <h2>New referral code</h2>
           <form class="new-code" id="new-code">
             <label>Code
@@ -368,7 +418,7 @@
           <p class="message" id="code-message" role="status"></p>
         </section>
 
-        <section>
+        <section id="sec-codes">
           <h2>Your codes</h2>
           <div class="table-wrap">
             <table>
@@ -400,6 +450,19 @@
     </dialog>
     <script>
       const $ = (id) => document.getElementById(id);
+      // Phones: tables show as cards; each cell gets its column name as a label.
+      function labelTables() {
+        for (const table of document.querySelectorAll("main table")) {
+          const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+          if (!heads.length) continue;
+          table.classList.add("cards");
+          for (const tr of table.querySelectorAll("tbody tr")) {
+            [...tr.children].forEach((td, i) => { if (!td.hasAttribute("data-label")) td.setAttribute("data-label", heads[i] || ""); });
+          }
+        }
+      }
+      new MutationObserver(() => labelTables()).observe(document.querySelector("main"), { childList: true, subtree: true });
+
       let password = "";
       try { password = sessionStorage.getItem("referral-admin") || ""; } catch {}
       let data = { codes: [], inquiries: [] };
@@ -431,6 +494,7 @@
         password = "";
         try { sessionStorage.removeItem("referral-admin"); } catch {}
         $("app").hidden = true;
+        $("jump").hidden = true;
         $("sign-out").hidden = true;
         $("login").hidden = false;
       }
@@ -443,6 +507,7 @@
         data = await api({ action: "list" });
         $("login").hidden = true;
         $("app").hidden = false;
+        $("jump").hidden = false;
         $("sign-out").hidden = false;
         settingsData = await api({ action: "getSettings" });
         render();
@@ -688,7 +753,7 @@
               <td>${i.code ? `<span class="code">${esc(i.code)}</span><br><span class="muted">${esc(i.partner)}</span>` : '<span class="muted">—</span>'}</td>
               <td>${i.heardFrom ? esc(i.heardFrom) : i.utm?.source ? esc([i.utm.source, i.utm.campaign].filter(Boolean).join(" · ")) : '<span class="muted">—</span>'}</td>
               <td>${i.finalPrice !== i.price ? `${money(i.finalPrice)}<br><span class="muted"><s>${money(i.price)}</s> ${esc(i.discountLabel || `${i.percent}% off`)}</span>` : money(i.price)}</td>
-              <td>${bookingCell(i)}</td>
+              <td class="inq-booking" data-label="">${bookingCell(i)}</td>
               <td><button class="linkish" data-act="remove" data-id="${esc(i.id)}">Remove</button></td>
             </tr>`).join("")
           : '<tr><td colspan="9" class="muted">Nothing here.</td></tr>';
