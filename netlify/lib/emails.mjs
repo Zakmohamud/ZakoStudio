@@ -73,6 +73,37 @@ function balanceDueText(settings) {
   return text;
 }
 
+// Placeholder used in previews; replaced with the real Square link when the email is sent.
+export const PAY_LINK_PLACEHOLDER = "https://pay-link.zako-studio.invalid/";
+
+// Turns edited email HTML (from the preview) back into a plain-text version too.
+export function htmlToText(html) {
+  return String(html)
+    .replace(/<style[\s\S]*?<\/style>|<title[\s\S]*?<\/title>/gi, "")
+    .replace(/<div style="display:none[\s\S]*?<\/div>/i, "")
+    .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, label) => `${label.replace(/<[^>]+>/g, "")}: ${href}`)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|tr|h1|h2|div|table)>/gi, "\n")
+    .replace(/<\/td>\s*<td[^>]*>/gi, ": ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .split("\n").map((l) => l.replace(/\s+/g, " ").trim()).join("\n")
+    .replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Applies the owner's edits from the preview: own subject and wording, with the real pay link filled in.
+export function applyEdits(mail, { subject, html } = {}, links = {}) {
+  const out = { ...mail };
+  if (typeof subject === "string" && subject.trim()) out.subject = subject.replace(/\s+/g, " ").trim().slice(0, 200);
+  if (typeof html === "string" && html.length > 200 && html.length < 300000) {
+    let h = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/\son\w+="[^"]*"/gi, "").replace(/\scontenteditable="[^"]*"/gi, "");
+    for (const url of [links.fee, links.balance].filter(Boolean)) h = h.split(PAY_LINK_PLACEHOLDER).join(url);
+    out.html = h;
+    out.text = htmlToText(h);
+  }
+  return out;
+}
+
 const payButton = (url, label) => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 8px;"><tr>
     <td style="background:${C.cranberry};padding:15px 30px;"><a href="${esc(url)}" style="font-family:${SANS};font-size:14px;letter-spacing:2px;text-transform:uppercase;color:${C.ivory};text-decoration:none;">${esc(label)}</a></td></tr></table>`;
 
@@ -178,7 +209,7 @@ export function feeRequestEmail(d) {
       rows([["Session total", d.total], ["Reservation fee", d.fee, true], ["Remaining balance", d.balance]]) +
       (d.square
         ? p("When you're ready to commit, secure your session by paying the reservation fee online:", "margin-top:16px;margin-bottom:0;") +
-          payButton(d.payFeeUrl || "#", `Pay ${d.fee.replace(" CAD", "")} to reserve`) +
+          payButton(d.payFeeUrl || PAY_LINK_PLACEHOLDER, `Pay ${d.fee.replace(" CAD", "")} to reserve`) +
           p(`<span style="font-size:14px;color:${C.soft};">Secure checkout by Square · card, Apple Pay or Google Pay.${d.offerETransfer ? ` Prefer Interac e-Transfer? Send it to <strong>${esc(d.paymentEmail)}</strong> instead.` : ""}</span>`)
         : p(`To secure your session, please send your reservation fee via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;")) +
       p("Once your payment has been received, I'll send your official booking confirmation.") +
@@ -201,7 +232,7 @@ Reservation fee: ${d.fee}
 Remaining balance: ${d.balance}
 
 ${d.square
-  ? `When you're ready to commit, secure your session by paying the reservation fee online:\n${d.payFeeUrl || "(link)"}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
+  ? `When you're ready to commit, secure your session by paying the reservation fee online:\n${d.payFeeUrl || PAY_LINK_PLACEHOLDER}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
   : `To secure your session, please send your reservation fee via Interac e-Transfer to ${d.paymentEmail}.`}
 Once your payment has been received, I'll send your official booking confirmation.
 
@@ -313,7 +344,7 @@ export function balanceRequestEmail(d) {
       h2("Payment summary") +
       rows([["Session total", d.total], ["Reservation fee received", d.fee], ["Remaining balance", d.balance, true]]) +
       (d.square
-        ? payButton(d.payBalanceUrl || "#", `Pay ${d.balance.replace(" CAD", "")}`) +
+        ? payButton(d.payBalanceUrl || PAY_LINK_PLACEHOLDER, `Pay ${d.balance.replace(" CAD", "")}`) +
           p(`<span style="font-size:14px;color:${C.soft};">Secure checkout by Square · card, Apple Pay or Google Pay.${d.offerETransfer ? ` Prefer Interac e-Transfer? Send it to <strong>${esc(d.paymentEmail)}</strong> instead.` : ""}</span>`)
         : p(`Please send the remaining balance via <strong>Interac e-Transfer</strong> to <strong>${esc(d.paymentEmail)}</strong>.`, "margin-top:16px;")) +
       p("Your photographs will follow in your private online gallery.", "margin-top:16px;") +
@@ -329,7 +360,7 @@ Reservation fee received: ${d.fee}
 Remaining balance: ${d.balance}
 
 ${d.square
-  ? `Pay your remaining balance securely online:\n${d.payBalanceUrl || "(link)"}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
+  ? `Pay your remaining balance securely online:\n${d.payBalanceUrl || PAY_LINK_PLACEHOLDER}\nSecure checkout by Square: card, Apple Pay or Google Pay.${d.offerETransfer ? `\nPrefer Interac e-Transfer? Send it to ${d.paymentEmail} instead.` : ""}`
   : `Please send the remaining balance via Interac e-Transfer to ${d.paymentEmail}.`}
 
 Your photographs will follow in your private online gallery.

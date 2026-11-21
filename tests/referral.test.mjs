@@ -644,3 +644,33 @@ test("offer another date: email names the requested and the offered date, with a
   assert.equal(after.emailLog.at(-1).type, "alternativeDate");
   setMailer(null); delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
 });
+
+test("emails can be edited in the preview: own subject and wording are sent, pay link filled in", async () => {
+  const { applyEdits, PAY_LINK_PLACEHOLDER, htmlToText } = await import("../netlify/lib/emails.mjs");
+  const base = { subject: "Original", html: "<p>x</p>", text: "x" };
+  const html = `<!DOCTYPE html><html><body contenteditable="true"><p>Dear Ana,</p><p>Hi there, custom words.</p><a href="${PAY_LINK_PLACEHOLDER}" onclick="steal()">Pay $150 to reserve</a><script>bad()</script>${"<p>pad</p>".repeat(30)}</body></html>`;
+  const out = applyEdits(base, { subject: "  My own subject ", html }, { fee: "https://square.link/u/real" });
+  assert.equal(out.subject, "My own subject");
+  assert.match(out.html, /custom words/);
+  assert.match(out.html, /https:\/\/square\.link\/u\/real/);
+  assert.doesNotMatch(out.html, /pay-link\.zako-studio\.invalid|<script|onclick|contenteditable/);
+  assert.match(out.text, /Hi there, custom words\./);
+  assert.match(out.text, /Pay \$150 to reserve: https:\/\/square\.link\/u\/real/);
+  assert.deepEqual(applyEdits(base, {}), base, "no edits, no change");
+  assert.equal(htmlToText("<p>A &amp; B</p><p>C</p>"), "A & B\nC");
+
+  // through the admin: an edited alternative-date email is sent as edited
+  const { setMailer } = await import("../netlify/lib/mail.mjs");
+  const sent = []; setMailer(async (m) => { sent.push(m); return { id: "x" }; });
+  process.env.GMAIL_USER = "studio@example.com"; process.env.GMAIL_APP_PASSWORD = "x";
+  await referral(new Request("https://x.test/api/referral", { method: "POST",
+    body: JSON.stringify({ package: "quick", name: "Dee Ng", email: "dee@example.com", dateISO: "2026-12-13", startMin: 600, date: "Sunday, December 13", time: "10:00 a.m." }) }));
+  const dee = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.email === "dee@example.com");
+  const res = await adminCall({ action: "sendEmail", id: dee.id, type: "alternativeDate", altDate: "2026-12-12", altTimes: "at 1:00 p.m.", subject: "Dec 12 instead?", html: html.replace("custom words", "see you on the 12th") });
+  assert.equal(res.status, 200);
+  assert.equal(sent.at(-1).subject, "Dec 12 instead?");
+  assert.match(sent.at(-1).text, /see you on the 12th/);
+  const after = (await (await adminCall({ action: "list" })).json()).inquiries.find((i) => i.id === dee.id);
+  assert.equal(after.emailLog.at(-1).subject, "Dec 12 instead?");
+  setMailer(null); delete process.env.GMAIL_USER; delete process.env.GMAIL_APP_PASSWORD;
+});

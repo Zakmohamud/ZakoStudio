@@ -2,7 +2,7 @@
 // Every request must send the REFERRAL_ADMIN_PASSWORD in the x-admin-password header.
 import { randomUUID } from "node:crypto";
 import { createPaymentLink, deletePaymentLink, squareEnabled, squareStatus } from "../lib/square.mjs";
-import { EMAIL_TYPES, emailDetails } from "../lib/emails.mjs";
+import { EMAIL_TYPES, applyEdits, emailDetails } from "../lib/emails.mjs";
 import { mailReady, mailStatus, sendMail } from "../lib/mail.mjs";
 import { logEmail, galleryEmail } from "../lib/emails.mjs";
 import { MAX_PHOTOS, VARIANTS, accessToken, deletePhotoFiles, isId, listGalleries, newId, r2Enabled, r2Size, readGallery, uploadUrls, writeGallery } from "../lib/gallery.mjs";
@@ -167,10 +167,11 @@ export default async function handler(request) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email || "")) return jsonResponse(400, { message: "Add the client's email to the gallery first." });
         const origin = new URL(request.url).origin;
         const link = `${origin}/gallery/${g.id}`;
-        const mail = galleryEmail({ firstName: /^the\s|family|&| and /i.test(g.clientName) ? g.clientName : g.clientName.split(/\s+/)[0], link, pin: g.pin, expiresAt: g.expiresAt, photoCount: (g.photos || []).length });
+        let mail = galleryEmail({ firstName: /^the\s|family|&| and /i.test(g.clientName) ? g.clientName : g.clientName.split(/\s+/)[0], link, pin: g.pin, expiresAt: g.expiresAt, photoCount: (g.photos || []).length });
         if (body.action === "previewGalleryEmail") return jsonResponse(200, { to: g.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
         if (!g.published) return jsonResponse(400, { message: "Turn on “Visible to client” before sending the link." });
         if (!(await mailReady())) return jsonResponse(503, { message: "Email sending isn’t set up yet." });
+        mail = applyEdits(mail, { subject: body.subject, html: body.html });
         try { await sendMail({ to: g.email, ...mail }); }
         catch (error) { return jsonResponse(502, { message: `The email couldn’t be sent: ${String(error.message || error).slice(0, 160)}` }); }
         g.emailLog = [...(g.emailLog || []), { at: new Date().toISOString(), to: g.email }];
@@ -305,10 +306,15 @@ export default async function handler(request) {
           extra = {
             altDate: body.altDate,
             altTimes: cleanText(body.altTimes, 120),
-            altLink: open ? `${new URL(request.url).origin}/christmas/book/?date=${body.altDate}${pkgId ? `&package=${pkgId}` : ""}` : ""
+            // With a set time, the client just replies; the booking link is only for "any time that day".
+            altLink: open && !cleanText(body.altTimes, 120) ? `${new URL(request.url).origin}/christmas/book/?date=${body.altDate}${pkgId ? `&package=${pkgId}` : ""}` : ""
           };
         }
-        const mail = build({ ...emailDetails(inquiry, settings), ...extra });
+        let mail = build({ ...emailDetails(inquiry, settings), ...extra });
+        if (!preview) {
+          const kind = type === "feeRequest" ? "fee" : type === "balanceRequest" ? "balance" : null;
+          mail = applyEdits(mail, { subject: body.subject, html: body.html }, kind ? { [kind]: inquiry.payments?.[kind]?.url } : {});
+        }
         if (preview) {
           return jsonResponse(200, { to: inquiry.email, subject: mail.subject, html: mail.html, mailReady: await mailReady() });
         }

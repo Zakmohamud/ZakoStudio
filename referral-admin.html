@@ -118,7 +118,9 @@
       dialog.email-preview { width: min(760px, 94vw); border: 0; border-radius: 12px; padding: 0; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
       dialog.email-preview::backdrop { background: rgba(20,20,20,.45); }
       .ep-head { padding: 16px 20px; border-bottom: 1px solid #e6e0d4; font-size: 14px; }
-      .ep-head b { display: block; font-size: 16px; margin-top: 2px; }
+      .ep-subj { display: grid; gap: 4px; margin-top: 8px; font-size: 13px; }
+      .ep-subj input { font: inherit; font-size: 16px; font-weight: 600; padding: 8px 10px; border: 1px solid #d8d0c2; border-radius: 6px; }
+      .ep-hint { margin: 8px 0 0; font-size: 13px; color: #6b6259; }
       dialog.email-preview iframe { width: 100%; height: 62vh; border: 0; background: #f5f0e7; display: block; }
       .ep-foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 20px; border-top: 1px solid #e6e0d4; }
       .ep-foot .message { margin: 0 auto 0 0; }
@@ -386,8 +388,10 @@
     </dialog>
     <script src="/js/qrcode.js"></script>
     <dialog class="email-preview" id="email-dialog">
-      <div class="ep-head"><span id="ep-to"></span><b id="ep-subject"></b></div>
-      <iframe id="ep-frame" title="Email preview" sandbox=""></iframe>
+      <div class="ep-head"><span id="ep-to"></span>
+        <label class="ep-subj">Subject <input id="ep-subject" type="text" maxlength="200"></label>
+        <p class="ep-hint">✎ Click anywhere in the email below to change the wording before you send.</p></div>
+      <iframe id="ep-frame" title="Email preview (editable)" sandbox="allow-same-origin"></iframe>
       <div class="ep-foot">
         <p class="message" id="ep-message" role="status"></p>
         <button class="btn ghost small" type="button" id="ep-cancel">Cancel</button>
@@ -924,13 +928,44 @@
       });
 
       let pendingEmail = null;
+      let pendingOriginal = null;
+      let emailEdited = false;
+      // Loads the email into the preview and lets the owner edit its wording in place.
+      function loadEditable(html) {
+        emailEdited = false;
+        const frame = $("ep-frame");
+        frame.onload = () => {
+          const doc = frame.contentDocument;
+          if (!doc?.body) return;
+          doc.body.contentEditable = "true";
+          doc.body.style.outline = "none";
+          doc.addEventListener("input", () => { emailEdited = true; });
+          // Links stay as they are; clicking them in the editor shouldn't open anything.
+          doc.addEventListener("click", (e) => { if (e.target.closest("a")) e.preventDefault(); });
+        };
+        frame.srcdoc = html;
+      }
+      function editsForSend() {
+        const out = {};
+        const subj = $("ep-subject").value.trim();
+        if (pendingOriginal && subj && subj !== pendingOriginal.subject) out.subject = subj;
+        if (emailEdited) {
+          const doc = $("ep-frame").contentDocument;
+          doc.body.removeAttribute("contenteditable");
+          doc.body.style.outline = "";
+          out.html = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+          doc.body.contentEditable = "true";
+        }
+        return out;
+      }
       async function openEmailPreview(id, type, extra = {}) {
         const pv = await api({ action: "previewEmail", id, type, ...extra }).catch((e) => { inquiryNote(e.message, "bad"); return null; });
         if (!pv) return;
         pendingEmail = { id, type, ...extra };
         $("ep-to").textContent = `To: ${pv.to}`;
-        $("ep-subject").textContent = pv.subject;
-        $("ep-frame").srcdoc = pv.html;
+        $("ep-subject").value = pv.subject;
+        pendingOriginal = { subject: pv.subject };
+        loadEditable(pv.html);
         $("ep-message").textContent = pv.mailReady ? "" : "Email sending is off — add the Gmail details in Netlify first.";
         $("ep-message").className = `message ${pv.mailReady ? "" : "bad"}`;
         $("ep-send").disabled = !pv.mailReady;
@@ -944,13 +979,13 @@
         btn.textContent = "Sending…";
         try {
           if (pendingEmail.gallery) {
-            await api({ action: "sendGalleryEmail", id: pendingEmail.gallery });
+            await api({ action: "sendGalleryEmail", id: pendingEmail.gallery, ...editsForSend() });
             $("email-dialog").close();
             galNote("Gallery email sent.", "ok");
             await loadGalleries();
             return;
           }
-          await api({ action: "sendEmail", ...pendingEmail });
+          await api({ action: "sendEmail", ...pendingEmail, ...editsForSend() });
           $("email-dialog").close();
           inquiryNote({ feeRequest: "Reservation fee request sent.", confirmation: "Booking confirmation sent.", balanceRequest: "Balance request sent.", alternativeDate: "Email offering the other date sent." }[pendingEmail.type] || "Email sent.", "ok");
           await load();
@@ -1238,7 +1273,7 @@
           if (act === "email") {
             const pv = await api({ action: "previewGalleryEmail", id: g.id });
             pendingEmail = { gallery: g.id };
-            $("ep-to").textContent = `To: ${pv.to}`; $("ep-subject").textContent = pv.subject; $("ep-frame").srcdoc = pv.html;
+            $("ep-to").textContent = `To: ${pv.to}`; $("ep-subject").value = pv.subject; pendingOriginal = { subject: pv.subject }; loadEditable(pv.html);
             const blocked = !pv.mailReady ? "Email sending is off — add the Gmail details in Netlify first." : !g.published ? "Turn on “Visible to client” and save before sending." : "";
             $("ep-message").textContent = blocked; $("ep-message").className = `message ${blocked ? "bad" : ""}`; $("ep-send").disabled = Boolean(blocked);
             return $("email-dialog").showModal();
