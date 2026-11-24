@@ -1064,6 +1064,34 @@
           transition-duration: 0.01ms !important;
         }
       }
+
+      /* ---- Welcome (replaces the ticket) ---- */
+      .welcome { text-align: center; padding: clamp(28px, 4vw, 56px) clamp(4px, 3vw, 48px) 10px; max-width: 860px; margin: 0 auto; }
+      .welcome-kicker { margin: 0 0 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--red-deep); }
+      .welcome h1 { margin: 0; font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: clamp(38px, 5vw, 68px); line-height: 1.05; color: var(--ink); }
+      .welcome h1 em { font-style: italic; color: var(--red-deep); }
+      .welcome-copy { margin: 18px auto 0; max-width: 560px; font-size: 16px; line-height: 1.7; color: #4f4842; }
+      .welcome-ctas { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px 26px; align-items: center; margin-top: 26px; }
+      .btn-main { display: inline-flex; align-items: center; min-height: 52px; padding: 0 30px; background: var(--red-deep); color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; transition: background 160ms ease; }
+      .btn-main:hover { background: #b9382c; }
+      .btn-quiet { color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; border-bottom: 1px solid currentColor; padding-bottom: 3px; }
+      .welcome-note { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+      .xmas-card { display: grid; grid-template-columns: 180px 1fr; align-items: center; gap: 22px; margin: clamp(30px, 4vw, 48px) auto 8px; max-width: 640px; text-align: left; background: #243B2E; color: #F5F0E7; text-decoration: none; overflow: hidden; transition: transform 180ms ease; }
+      .xmas-card:hover { transform: translateY(-2px); }
+      .xmas-card img { width: 100%; height: 100%; min-height: 150px; object-fit: cover; object-position: 50% 30%; display: block; }
+      .xmas-copy { display: grid; gap: 4px; padding: 18px 20px 18px 0; }
+      .xmas-copy small { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #C9B07E; }
+      .xmas-copy strong { font-family: "Cormorant Garamond", serif; font-size: 28px; font-weight: 500; line-height: 1.1; }
+      .xmas-copy span { font-size: 14px; color: rgba(245, 240, 231, 0.85); }
+      .xmas-copy em { margin-top: 6px; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+      @media (max-width: 640px) {
+        .welcome h1 { font-size: 38px; }
+        .welcome-copy { font-size: 15px; }
+        .btn-main { width: 100%; justify-content: center; }
+        .xmas-card { grid-template-columns: 1fr; gap: 0; }
+        .xmas-card img { height: 190px; }
+        .xmas-copy { padding: 16px 18px 20px; }
+      }
     </style>
   </head>
   <body>
@@ -1091,71 +1119,25 @@
           <div class="hero-badge">Vancouver · Available for bookings</div>
         </section>
 
-        <section class="intro">
-          <h1>Book with your favourite</h1>
-          <div class="subtitle">Visual storyteller &amp; Creative Director</div>
-          <div class="divider" aria-hidden="true"></div>
-        </section>
-
-        <section class="ticket-wrap">
-          <div class="ticket">
-            <div class="ticket-inner">
-              <div class="ticket-meta">
-                <span>No</span>
-                <span>No</span>
-              </div>
-
-              <div class="ticket-artist">Zakary Maxamed</div>
-
-              <div class="shoot"><span>Shoot</span></div>
-
-              <div class="ticket-sub">Book your admission ticket</div>
-
-              <div class="ticket-grid">
-                <div class="ticket-row">
-                  <div class="cell">
-                    <span class="cell-label">Based in</span>
-                    <span class="cell-value">Vancouver</span>
-                  </div>
-                  <div class="cell">
-                    <span class="cell-label">Sessions</span>
-                    <span class="cell-value">Portraits</span>
-                  </div>
-                  <div class="cell">
-                    <span class="cell-label">Also</span>
-                    <span class="cell-value">Events</span>
-                  </div>
-                  <div class="cell">
-                    <span class="cell-label">Inquiries</span>
-                    <span class="cell-value red">Welcome</span>
-                  </div>
-                </div>
-
-                <div class="ticket-row">
-                  <div class="cell">
-                    <span class="cell-label">Creative direction</span>
-                    <span class="cell-value">Lifestyle</span>
-                  </div>
-                  <div class="cell" style="grid-column: span 3;">
-                    <span class="cell-label">Availability</span>
-                    <span class="cell-value green">Now booking</span>
-                  </div>
-                </div>
-              </div>
-
-              <a class="cta-bar" href="#booking">
-                <div class="pass">
-                  <div class="pass-copy">
-                    <small>Priority pass</small>
-                    <strong>Photography / creative projects</strong>
-                  </div>
-                </div>
-
-                <div class="cta-text">Inquire</div>
-                <div class="cta-arrow" aria-hidden="true">→</div>
-              </a>
-            </div>
+        <section class="welcome">
+          <p class="welcome-kicker">Photography by Zakary Maxamed · Vancouver</p>
+          <h1>Warm, natural photos of <em>the people you love.</em></h1>
+          <p class="welcome-copy">Portraits, couples, families and events across Vancouver. Relaxed sessions, gentle direction, and photos that feel like you.</p>
+          <div class="welcome-ctas">
+            <a class="btn-main" href="#booking">Ask about a shoot</a>
+            <a class="btn-quiet" href="#work">See my work ↓</a>
           </div>
+          <p class="welcome-note">Free to ask. I'll get back to you within a day.</p>
+
+          <a class="xmas-card" href="/christmas/">
+            <img src="/christmas/img/first-christmas-kiss-sm.jpg" alt="Parents kissing their baby's cheeks in a Santa suit" loading="lazy" />
+            <span class="xmas-copy">
+              <small>Now booking · Christmas 2026</small>
+              <strong>Christmas family sessions</strong>
+              <span>In my decorated Vancouver studio · from $190</span>
+              <em>See dates &amp; prices →</em>
+            </span>
+          </a>
         </section>
 
         <div class="meta-row">
